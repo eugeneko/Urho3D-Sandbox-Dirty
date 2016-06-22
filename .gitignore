@@ -1,0 +1,13 @@
+# Ignore generated projects
+build/
+
+# Ignore sym-linked objects
+CMake/
+
+# Ignore binaries
+bin/
+
+# Ignore standard assets
+Asset/Autoload/
+Asset/CoreData/
+Asset/Data/
