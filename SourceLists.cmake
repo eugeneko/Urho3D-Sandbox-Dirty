@@ -8,6 +8,9 @@ set (SOURCE_FILES
     "${SOURCE_FOLDER}FlexEngine/Container/Utility.h"
     "${SOURCE_FOLDER}FlexEngine/Core/StringUtils.cpp"
     "${SOURCE_FOLDER}FlexEngine/Core/StringUtils.h"
+    "${SOURCE_FOLDER}FlexEngine/Math/MathDefs.h"
+    "${SOURCE_FOLDER}FlexEngine/Math/MathFunction.cpp"
+    "${SOURCE_FOLDER}FlexEngine/Math/MathFunction.h"
     "${SOURCE_FOLDER}FlexEnginePlayer/FlexEnginePlayer.cpp"
     "${SOURCE_FOLDER}FlexEnginePlayer/FlexEnginePlayer.h"
 )
