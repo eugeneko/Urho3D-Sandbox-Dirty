@@ -1,5 +1,7 @@
 #include "FlexEnginePlayer.h"
 
+#include <FlexEngine/Component/Procedural.h>
+
 #include <Urho3D/DebugNew.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/Resource/ResourceCache.h>
@@ -13,5 +15,7 @@ FlexEnginePlayer::FlexEnginePlayer(Context* context) :
 
 void FlexEnginePlayer::Start()
 {
+    Procedural::RegisterObject(context_);
+
     Urho3DPlayer::Start();
 }
