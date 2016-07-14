@@ -20,14 +20,11 @@ endif ()
 
 # Set CMake modules search path
 set (CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMake/Modules)
-set (URHO3D_HOME ${CMAKE_SOURCE_DIR}/../Urho3D_vc15_dx11)
+set (URHO3D_HOME ${CMAKE_SOURCE_DIR}/../Urho3D)
 
 # Include Urho3D Cmake common module
+file(COPY ${URHO3D_HOME}_source/CMake DESTINATION ${CMAKE_SOURCE_DIR})
 include (Urho3D-CMake-common)
-
-# Find Urho3D library
-find_package (Urho3D REQUIRED)
-include_directories (${URHO3D_INCLUDE_DIRS})
 
 # Define source files
 set (SOURCE_FOLDER ${CMAKE_SOURCE_DIR}/Source/)
