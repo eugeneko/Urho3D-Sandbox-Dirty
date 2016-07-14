@@ -6,6 +6,8 @@ set (SOURCE_FILES
     "${SOURCE_FOLDER}FlexEngine/Common.h"
     "${SOURCE_FOLDER}FlexEngine/Component/Procedural.cpp"
     "${SOURCE_FOLDER}FlexEngine/Component/Procedural.h"
+    "${SOURCE_FOLDER}FlexEngine/Component/StaticModelEx.cpp"
+    "${SOURCE_FOLDER}FlexEngine/Component/StaticModelEx.h"
     "${SOURCE_FOLDER}FlexEngine/Container/Ptr.h"
     "${SOURCE_FOLDER}FlexEngine/Container/Utility.h"
     "${SOURCE_FOLDER}FlexEngine/Core/StringUtils.cpp"

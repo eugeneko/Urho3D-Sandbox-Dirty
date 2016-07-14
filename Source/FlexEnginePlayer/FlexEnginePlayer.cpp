@@ -1,5 +1,6 @@
 #include "FlexEnginePlayer.h"
 
+#include <FlexEngine/Component/StaticModelEx.h>
 #include <FlexEngine/Component/Procedural.h>
 
 #include <Urho3D/DebugNew.h>
@@ -16,6 +17,7 @@ FlexEnginePlayer::FlexEnginePlayer(Context* context) :
 void FlexEnginePlayer::Start()
 {
     Procedural::RegisterObject(context_);
+    StaticModelEx::RegisterObject(context_);
 
     Urho3DPlayer::Start();
 }
