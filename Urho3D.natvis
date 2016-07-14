@@ -57,6 +57,15 @@
     </Expand>
   </Type>
 
+  <!-- Urho3D::HashMap<>::Iterator -->
+  <Type Name="Urho3D::HashMap&lt;*,*&gt;::Iterator">
+    <AlternativeType Name="Urho3D::HashMap&lt;*,*&gt;::ConstIterator"/>
+    <DisplayString>{((Node*)(ptr_))->pair_}</DisplayString>
+    <Expand>
+      <ExpandedItem>((Node*)(ptr_))->pair_</ExpandedItem>
+    </Expand>
+  </Type>
+
   <!-- Urho3D::HashSet<> -->
   <Type Name="Urho3D::HashSet&lt;*&gt;">
     <DisplayString>{{ size={ptrs_ ? (unsigned)(ptrs_[0]) : 0} }}</DisplayString>
