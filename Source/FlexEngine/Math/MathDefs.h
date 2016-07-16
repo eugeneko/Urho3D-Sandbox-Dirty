@@ -46,19 +46,33 @@ auto DotProduct(const T& left, const T& right) -> decltype(left.x_)
     return left.DotProduct(right);
 }
 
-/// Cross product of two 3-vectors.
+/// Cross product of two 3D vectors.
 inline Vector3 CrossProduct(const Vector3& left, const Vector3& right)
 {
     return left.CrossProduct(right);
 }
 
+/// Project vector onto axis
+template <class T>
+auto ProjectOntoAxis(const T& axis, const T& vector) -> decltype(axis.x_)
+{
+    return DotProduct(vector, axis) / axis.Length();
+}
+
 /// Return X in power Y.
 template <class T> T Pow(T x, T y) { return pow(x, y); }
-template <> inline float Pow<float>(float x, float y) { return powf(x, y); }
 
 /// Return fractional part of passed value.
 template <class T> T Fract(T value) { T intpart; return modf(value, &intpart); }
-template <> inline float Fract<float>(float value) { float intpart; return modff(value, &intpart); }
+
+/// Round value down.
+template <class T> T Floor(T x) { return floor(x); }
+
+/// Round value to nearest integer.
+template <class T> T Round(T x) { return floor(x + 0.5f); }
+
+/// Round value up.
+template <class T> T Ceil(T x) { return ceil(x); }
 
 /// Quad interpolation among four values.
 /// @param factor1 Controls interpolation from v0 to v1 and from v2 to v3

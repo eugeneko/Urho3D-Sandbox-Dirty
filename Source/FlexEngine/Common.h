@@ -2,10 +2,11 @@
 
 #include <Urho3D/Urho3D.h>
 #include <Urho3D/Core/Object.h>
-#include <Urho3D/Container/Pair.h>
 
 namespace Urho3D
 {
+
+template <class T, class U> class Pair;
 
 }
 

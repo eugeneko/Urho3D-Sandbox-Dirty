@@ -7,7 +7,7 @@
 namespace FlexEngine
 {
 
-/// Convert string to object
+/// Convert string to object.
 template <class T>
 T To(const String& str);
 
