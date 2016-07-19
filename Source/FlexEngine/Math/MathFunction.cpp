@@ -28,7 +28,7 @@ struct MathFunctionInfo
 };
 
 /// Math functions description map.
-static HashMap<String, MathFunctionInfo> mathFunctions =
+static const HashMap<String, MathFunctionInfo> mathFunctions =
 {
     {"x",     { 0, 0, 0, 0,   &MathFunction::Construct              }},
     {"const", { 0, 0, 1, 1,   &ConstantMathFunction::Construct      }},
@@ -39,7 +39,7 @@ static HashMap<String, MathFunctionInfo> mathFunctions =
 };
 
 /// Math functions aliases
-static HashMap<String, String> mathAliases =
+static const HashMap<String, String> mathAliases =
 {
     {"zero",    "const(0)"                          },
     {"one",     "const(1)"                          },
@@ -83,7 +83,7 @@ MathFunctionSPtr ConstructMathFunction(const String& sourceString, const String&
         return nullptr;
     }
 
-    MathFunctionInfo& desc = iter->second_;
+    const MathFunctionInfo& desc = iter->second_;
 
     // Check inputs and parameters
     if (desc.minInputs_ >= 0 && inputs.Size() < static_cast<unsigned>(desc.minInputs_))

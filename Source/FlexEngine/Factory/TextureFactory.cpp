@@ -1,6 +1,7 @@
 #include <FlexEngine/Factory/TextureFactory.h>
 
 #include <FlexEngine/Core/StringUtils.h>
+#include <FlexEngine/Factory/FactoryContext.h>
 #include <FlexEngine/Factory/ProxyGeometryFactory.h>
 #include <FlexEngine/Resource/ResourceCacheHelpers.h>
 
@@ -151,7 +152,7 @@ Vector<SharedPtr<Image>> RenderStaticModel(Context* context, SharedPtr<Model> mo
     return images;
 }
 
-void GenerateTexturesFromXML(XMLElement& node, ResourceCache& resourceCache, const String& currentDir, const String& outputDir)
+void GenerateTexturesFromXML(XMLElement& node, ResourceCache& resourceCache, const FactoryContext& factoryContext)
 {
     // Load size
     const XMLElement outputNode = node.GetChild("output");
@@ -178,7 +179,7 @@ void GenerateTexturesFromXML(XMLElement& node, ResourceCache& resourceCache, con
     for (XMLElement textureNode = outputNode.GetChild("texture"); textureNode; textureNode = textureNode.GetNext("texture"))
     {
         const String renderPathName = textureNode.GetAttribute("renderpath");
-        const String outputName = textureNode.GetValue().Replaced("@", currentDir);
+        const String outputName = factoryContext.SanitateName(textureNode.GetValue());
         const SharedPtr<XMLFile> renderPath(resourceCache.GetResource<XMLFile>(renderPathName));
         if (!renderPath)
         {
@@ -190,6 +191,22 @@ void GenerateTexturesFromXML(XMLElement& node, ResourceCache& resourceCache, con
         outputNames.Push(outputName);
     }
 
+    // Skip generation if possible
+    bool alreadyGenerated = true;
+    for (const String& outputName : outputNames)
+    {
+        if (!resourceCache.GetFile(outputName))
+        {
+            alreadyGenerated = false;
+            break;
+        }
+    }
+
+    if (!factoryContext.forceGeneration_ && alreadyGenerated)
+    {
+        return;
+    }
+
     // Load source
     const XMLElement sourceNode = node.GetChild("source");
     if (!sourceNode)
@@ -199,7 +216,7 @@ void GenerateTexturesFromXML(XMLElement& node, ResourceCache& resourceCache, con
     }
 
     // Load model
-    const String modelName = sourceNode.GetChild("model").GetValue().Replaced("@", currentDir);
+    const String modelName = factoryContext.SanitateName(sourceNode.GetChild("model").GetValue());
     if (modelName.Empty())
     {
         URHO3D_LOGERROR("Procedural texture must have <source/model> node");
@@ -218,7 +235,7 @@ void GenerateTexturesFromXML(XMLElement& node, ResourceCache& resourceCache, con
     Vector<SharedPtr<Material>> materials;
     for (XMLElement materialNode = materialsNode.GetChild("material"); materialNode; materialNode = materialNode.GetNext("material"))
     {
-        const String materialName = materialNode.GetValue().Replaced("@", currentDir);
+        const String materialName = factoryContext.SanitateName(materialNode.GetValue());
         const SharedPtr<Material> material(resourceCache.GetResource<Material>(materialName));
         if (!material)
         {
@@ -241,9 +258,14 @@ void GenerateTexturesFromXML(XMLElement& node, ResourceCache& resourceCache, con
     assert(outputNames.Size() == images.Size());
     for (unsigned i = 0; i < outputNames.Size(); ++i)
     {
-        const String& outputFileName = outputDir + outputNames[i];
+        // Save
+        const String& outputFileName = factoryContext.outputDirectory_ + outputNames[i];
         CreateDirectoriesToFile(resourceCache, outputFileName);
         images[i]->SavePNG(outputFileName);
+
+        // Reload
+        SharedPtr<Texture2D> resource(resourceCache.GetResource<Texture2D>(outputNames[i]));
+        resourceCache.ReloadResource(resource);
     }
 }
 

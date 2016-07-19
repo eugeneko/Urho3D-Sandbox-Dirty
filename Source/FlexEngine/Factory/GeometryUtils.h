@@ -49,4 +49,3 @@ void AppendQuadGridToVertices(Vector<FatVertex>& vertices, Vector<FatIndex>& ind
     const unsigned numX, const unsigned numZ, bool flipped = false);
 
 }
-

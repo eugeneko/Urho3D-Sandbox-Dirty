@@ -18,4 +18,11 @@ void LoadValue(const XMLElement& elem, T& variable)
     }
 }
 
+/// Get XML value from element or default if element is empty.
+template <class T>
+T GetValue(const XMLElement& elem, const T& defaultValue)
+{
+    return elem ? To<T>(elem.GetValue()) : defaultValue;
+}
+
 }

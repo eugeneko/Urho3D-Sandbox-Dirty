@@ -19,6 +19,8 @@ class XMLFile;
 namespace FlexEngine
 {
 
+struct FactoryContext;
+
 /// View description.
 struct ViewDescription
 {
@@ -57,6 +59,6 @@ Vector<SharedPtr<Image>> RenderStaticModel(Context* context, SharedPtr<Model> mo
     unsigned width, unsigned height, const Vector<SharedPtr<XMLFile>>& renderPaths, const Vector<OrthoCameraDescription>& cameras);
 
 /// Generate textures using XML description.
-void GenerateTexturesFromXML(XMLElement& node, ResourceCache& resourceCache, const String& currentDir, const String& outputDir);
+void GenerateTexturesFromXML(XMLElement& node, ResourceCache& resourceCache, const FactoryContext& factoryContext);
 
 }

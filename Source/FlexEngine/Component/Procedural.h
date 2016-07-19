@@ -23,15 +23,25 @@ public:
     void SetDescriptionAttr(const ResourceRef& value);
     /// Return description attribute.
     ResourceRef GetDescriptionAttr() const;
+    /// Set force generation attribute.
+    void SetForceGenerationAttr(bool forceGeneration);
+    /// Set force generation attribute.
+    bool GetForceGenerationAttr() const;
+    /// Set seed attribute.
+    void SetSeedAttr(unsigned seed);
+    /// Set seed attribute.
+    unsigned GetSeedAttr() const;
 
-    /// Apply attribute changes that can not be applied immediately. Called after scene load or a network update.
-    virtual void ApplyAttributes() override;
+    /// Generate resources.
+    void GenerateResources(bool forceGeneration, unsigned seed);
 
 protected:
     /// Procedural objects description.
     SharedPtr<XMLFile> description_;
     /// Set to re-generate resources even if resources are already exist.
     bool forceGeneration_ = false;
+    /// Random generator seed.
+    unsigned seed_ = 0;
 };
 
 }

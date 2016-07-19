@@ -21,9 +21,10 @@ endif ()
 # Set CMake modules search path
 set (CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMake/Modules)
 set (URHO3D_HOME ${CMAKE_SOURCE_DIR}/../Urho3D)
+set (URHO3D_SOURCE ${URHO3D_HOME}_source)
 
 # Include Urho3D Cmake common module
-file(COPY ${URHO3D_HOME}_source/CMake DESTINATION ${CMAKE_SOURCE_DIR})
+file(COPY ${URHO3D_SOURCE}/CMake DESTINATION ${CMAKE_SOURCE_DIR})
 include (Urho3D-CMake-common)
 
 # Define source files
