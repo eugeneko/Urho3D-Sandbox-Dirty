@@ -79,7 +79,7 @@ MathFunctionSPtr ConstructMathFunction(const String& sourceString, const String&
     if (iter == mathFunctions.End())
     {
         URHO3D_LOGERRORF("Cannot parse input function '%s': unknown function '%s'",
-            sourceString.CString(), name);
+            sourceString.CString(), name.CString());
         return nullptr;
     }
 
@@ -89,28 +89,28 @@ MathFunctionSPtr ConstructMathFunction(const String& sourceString, const String&
     if (desc.minInputs_ >= 0 && inputs.Size() < static_cast<unsigned>(desc.minInputs_))
     {
         URHO3D_LOGERRORF("Cannot parse input function '%s': function '%s' must have at least %d inputs",
-            sourceString.CString(), name, desc.minInputs_);
+            sourceString.CString(), name.CString(), desc.minInputs_);
         return nullptr;
     }
 
     if (desc.maxInputs_ >= 0 && inputs.Size() > static_cast<unsigned>(desc.maxInputs_))
     {
         URHO3D_LOGERRORF("Cannot parse input function '%s': function '%s' must have at most %d inputs",
-            sourceString.CString(), name, desc.maxInputs_);
+            sourceString.CString(), name.CString(), desc.maxInputs_);
         return nullptr;
     }
 
     if (desc.minParams_ >= 0 && parameters.Size() < static_cast<unsigned>(desc.minParams_))
     {
         URHO3D_LOGERRORF("Cannot parse input function '%s': function '%s' must have at least %d parameters",
-            sourceString.CString(), name, desc.minParams_);
+            sourceString.CString(), name.CString(), desc.minParams_);
         return nullptr;
     }
 
     if (desc.maxParams_ >= 0 && parameters.Size() > static_cast<unsigned>(desc.maxParams_))
     {
         URHO3D_LOGERRORF("Cannot parse input function '%s': function '%s' must have at most %d parameters",
-            sourceString.CString(), name, desc.maxParams_);
+            sourceString.CString(), name.CString(), desc.maxParams_);
         return nullptr;
     }
 

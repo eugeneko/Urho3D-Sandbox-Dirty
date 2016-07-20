@@ -18,11 +18,11 @@ namespace
 
 void GenerateProceduralFromXML(XMLElement& node, ResourceCache& resourceCache, const FactoryContext& factoryContext)
 {
-    const String proceduralFileName = factoryContext.SanitateName(node.GetValue());
+    const String proceduralFileName = factoryContext.ExpandName(node.GetValue());
     const SharedPtr<XMLFile> proceduralXml(resourceCache.GetResource<XMLFile>(proceduralFileName));
     if (!proceduralXml)
     {
-        URHO3D_LOGERRORF("Cannot find linked procedural resource '%s'", proceduralFileName);
+        URHO3D_LOGERRORF("Cannot find linked procedural resource '%s'", proceduralFileName.CString());
         return;
     }
 
@@ -59,7 +59,7 @@ void GenerateResourcesFromXML(XMLElement& node, ResourceCache& resourceCache, co
         }
         else
         {
-            URHO3D_LOGWARNINGF("Unknown procedural resource type <%s>", resourceNode.GetName());
+            URHO3D_LOGWARNINGF("Unknown procedural resource type <%s>", resourceNode.GetName().CString());
         }
     }
 }
@@ -68,7 +68,7 @@ void GenerateResourcesFromXML(XMLFile& xmlFile, bool forceGeneration, unsigned s
 {
     if (xmlFile.GetName().Empty())
     {
-        URHO3D_LOGERRORF("Input XML file must have non-empty name");
+        URHO3D_LOGERROR("Input XML file must have non-empty name");
         return;
     }
 

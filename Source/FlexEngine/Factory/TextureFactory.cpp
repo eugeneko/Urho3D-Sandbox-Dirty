@@ -179,7 +179,7 @@ void GenerateTexturesFromXML(XMLElement& node, ResourceCache& resourceCache, con
     for (XMLElement textureNode = outputNode.GetChild("texture"); textureNode; textureNode = textureNode.GetNext("texture"))
     {
         const String renderPathName = textureNode.GetAttribute("renderpath");
-        const String outputName = factoryContext.SanitateName(textureNode.GetValue());
+        const String outputName = factoryContext.ExpandName(textureNode.GetValue());
         const SharedPtr<XMLFile> renderPath(resourceCache.GetResource<XMLFile>(renderPathName));
         if (!renderPath)
         {
@@ -216,7 +216,7 @@ void GenerateTexturesFromXML(XMLElement& node, ResourceCache& resourceCache, con
     }
 
     // Load model
-    const String modelName = factoryContext.SanitateName(sourceNode.GetChild("model").GetValue());
+    const String modelName = factoryContext.ExpandName(sourceNode.GetChild("model").GetValue());
     if (modelName.Empty())
     {
         URHO3D_LOGERROR("Procedural texture must have <source/model> node");
@@ -235,7 +235,7 @@ void GenerateTexturesFromXML(XMLElement& node, ResourceCache& resourceCache, con
     Vector<SharedPtr<Material>> materials;
     for (XMLElement materialNode = materialsNode.GetChild("material"); materialNode; materialNode = materialNode.GetNext("material"))
     {
-        const String materialName = factoryContext.SanitateName(materialNode.GetValue());
+        const String materialName = factoryContext.ExpandName(materialNode.GetValue());
         const SharedPtr<Material> material(resourceCache.GetResource<Material>(materialName));
         if (!material)
         {
@@ -261,11 +261,15 @@ void GenerateTexturesFromXML(XMLElement& node, ResourceCache& resourceCache, con
         // Save
         const String& outputFileName = factoryContext.outputDirectory_ + outputNames[i];
         CreateDirectoriesToFile(resourceCache, outputFileName);
-        images[i]->SavePNG(outputFileName);
-
-        // Reload
-        SharedPtr<Texture2D> resource(resourceCache.GetResource<Texture2D>(outputNames[i]));
-        resourceCache.ReloadResource(resource);
+        if (images[i]->SavePNG(outputFileName))
+        {
+            // Reload
+            resourceCache.ReloadResourceWithDependencies(outputNames[i]);
+        }
+        else
+        {
+            URHO3D_LOGERRORF("Cannot save texture to '%s'", outputFileName.CString());
+        }
     }
 }
 

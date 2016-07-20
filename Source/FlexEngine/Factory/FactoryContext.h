@@ -18,9 +18,9 @@ struct FactoryContext
     bool forceGeneration_;
 
     /// Replace all '@' placeholders with current directory.
-    String SanitateName(const String& fileName) const
+    String ExpandName(const String& fileName) const
     {
-        return fileName.Replaced("@", currentDirectory_);
+        return fileName.Replaced("@", currentDirectory_).Trimmed();
     }
 };
 
