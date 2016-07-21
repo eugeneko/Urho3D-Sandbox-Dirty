@@ -15,6 +15,8 @@ set (SOURCE_FILES
     "${SOURCE_FOLDER}FlexEngine/Factory/FatVertex.h"
     "${SOURCE_FOLDER}FlexEngine/Factory/GeometryUtils.cpp"
     "${SOURCE_FOLDER}FlexEngine/Factory/GeometryUtils.h"
+    "${SOURCE_FOLDER}FlexEngine/Factory/MaterialFactory.cpp"
+    "${SOURCE_FOLDER}FlexEngine/Factory/MaterialFactory.h"
     "${SOURCE_FOLDER}FlexEngine/Factory/ProceduralFactory.cpp"
     "${SOURCE_FOLDER}FlexEngine/Factory/ProceduralFactory.h"
     "${SOURCE_FOLDER}FlexEngine/Factory/ProxyGeometryFactory.cpp"

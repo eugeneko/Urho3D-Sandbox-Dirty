@@ -1,6 +1,7 @@
 #include <FlexEngine/Factory/ProceduralFactory.h>
 
 #include <FlexEngine/Factory/FactoryContext.h>
+#include <FlexEngine/Factory/MaterialFactory.h>
 #include <FlexEngine/Factory/TextureFactory.h>
 #include <FlexEngine/Resource/ResourceCacheHelpers.h>
 #include <FlexEngine/Resource/XMLHelpers.h>
@@ -42,6 +43,8 @@ using FactoryFunction = void (*) (XMLElement& node, ResourceCache& resourceCache
 static const HashMap<String, FactoryFunction> factories =
 {
     { "procedural", &GenerateProceduralFromXML },
+
+    { "material",   &GenerateMaterialsFromXML  },
     { "texture",    &GenerateTexturesFromXML   },
 };
 
