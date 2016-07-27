@@ -6,6 +6,13 @@
 #include <Urho3D/Math/Vector3.h>
 #include <Urho3D/Math/Vector4.h>
 
+namespace Urho3D
+{
+
+class XMLElement;
+
+}
+
 namespace FlexEngine
 {
 
@@ -18,10 +25,16 @@ static const unsigned MAX_VERTEX_BONES = 4;
 /// Vertex that contain all attribute data in maximum precision.
 struct FatVertex
 {
+    /// Vertex position.
     Vector3 position_;
+    /// Normal of model geometry. Should not be used for lighting.
+    Vector3 geometryNormal_;
 
+    /// Tangent, X axis.
     Vector3 tangent_;
+    /// Tangent, X axis.
     Vector3 binormal_;
+    /// Tangent, X axis.
     Vector3 normal_;
 
     Vector4 uv_[MAX_VERTEX_TEXCOORD];
@@ -36,6 +49,11 @@ struct FatVertex
     float phase_;           ///< Phase of oscillations
     float edgeOscillation_; ///< Edge oscillation factor
     /// @}
+
+    /// Construct from XML.
+    static FatVertex ConstructFromXML(const XMLElement& element);
+    /// Get packed tangent.
+    Vector4 GetPackedTangentBinormal() const;
 };
 
 /// Interpolate between fat vertices.

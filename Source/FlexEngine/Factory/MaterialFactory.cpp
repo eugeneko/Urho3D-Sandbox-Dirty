@@ -141,14 +141,14 @@ void GenerateMaterialsFromXML(XMLElement& node, ResourceCache& resourceCache, co
         SharedPtr<Material> sourceMaterial(resourceCache.GetResource<Material>(desc.sourceMaterialName_));
         if (!sourceMaterial)
         {
-            URHO3D_LOGERRORF("Source material '%s' wasn't found", desc.sourceMaterialName_.CString());
+            URHO3D_LOGERRORF("Source material '%s' was not found", desc.sourceMaterialName_.CString());
             continue;
         }
 
         // Find uniform group
         if (!uniformGroups.Contains(desc.uniformsGroup_))
         {
-            URHO3D_LOGERRORF("Uniform group '%s' wasn't found", desc.uniformsGroup_.CString());
+            URHO3D_LOGERRORF("Uniform group '%s' was not found", desc.uniformsGroup_.CString());
             continue;
         }
 

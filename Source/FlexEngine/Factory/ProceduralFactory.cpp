@@ -1,6 +1,7 @@
 #include <FlexEngine/Factory/ProceduralFactory.h>
 
 #include <FlexEngine/Factory/FactoryContext.h>
+#include <FlexEngine/Factory/GeometryFactory.h>
 #include <FlexEngine/Factory/MaterialFactory.h>
 #include <FlexEngine/Factory/TextureFactory.h>
 #include <FlexEngine/Resource/ResourceCacheHelpers.h>
@@ -23,16 +24,17 @@ void GenerateProceduralFromXML(XMLElement& node, ResourceCache& resourceCache, c
     const SharedPtr<XMLFile> proceduralXml(resourceCache.GetResource<XMLFile>(proceduralFileName));
     if (!proceduralXml)
     {
-        URHO3D_LOGERRORF("Cannot find linked procedural resource '%s'", proceduralFileName.CString());
+        URHO3D_LOGERRORF("Linked procedural resource '%s' was not found", proceduralFileName.CString());
         return;
     }
 
     FactoryContext newFactoryContext;
     newFactoryContext.outputDirectory_ = factoryContext.outputDirectory_;
     newFactoryContext.currentDirectory_ = GetFilePath(proceduralFileName);
-    newFactoryContext.forceGeneration_ = node.HasAttribute("force") ? node.GetBool("force") : factoryContext.forceGeneration_;
-    newFactoryContext.seed_ = node.HasAttribute("seed") ? node.GetUInt("seed") : factoryContext.seed_;
+    newFactoryContext.forceGeneration_ = factoryContext.forceGeneration_;
+    newFactoryContext.seed_ = factoryContext.seed_;
 
+    resourceCache.ReloadResource(proceduralXml);
     GenerateResourcesFromXML(proceduralXml->GetRoot(), resourceCache, newFactoryContext);
 }
 
@@ -42,10 +44,11 @@ using FactoryFunction = void (*) (XMLElement& node, ResourceCache& resourceCache
 /// Map of all factories.
 static const HashMap<String, FactoryFunction> factories =
 {
-    { "procedural", &GenerateProceduralFromXML },
+    { "procedural", &GenerateProceduralFromXML      },
 
-    { "material",   &GenerateMaterialsFromXML  },
-    { "texture",    &GenerateTexturesFromXML   },
+    { "geometry",   &GenerateTempGeometryFromXML    },
+    { "material",   &GenerateMaterialsFromXML       },
+    { "texture",    &GenerateTexturesFromXML        },
 };
 
 }
@@ -58,7 +61,12 @@ void GenerateResourcesFromXML(XMLElement& node, ResourceCache& resourceCache, co
         FactoryFunction* ptr = factories[resourceNode.GetName()];
         if (ptr)
         {
-            (**ptr)(resourceNode, resourceCache, factoryContext);
+            FactoryContext newFactoryContext;
+            newFactoryContext.outputDirectory_ = factoryContext.outputDirectory_;
+            newFactoryContext.currentDirectory_ = factoryContext.currentDirectory_;
+            newFactoryContext.forceGeneration_ = resourceNode.HasAttribute("force") ? resourceNode.GetBool("force") : factoryContext.forceGeneration_;
+            newFactoryContext.seed_ = resourceNode.HasAttribute("seed") ? resourceNode.GetUInt("seed") : factoryContext.seed_;
+            (**ptr)(resourceNode, resourceCache, newFactoryContext);
         }
         else
         {

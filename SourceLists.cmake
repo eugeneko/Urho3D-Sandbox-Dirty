@@ -13,6 +13,8 @@ set (SOURCE_FILES
     "${SOURCE_FOLDER}FlexEngine/Factory/FactoryContext.h"
     "${SOURCE_FOLDER}FlexEngine/Factory/FatVertex.cpp"
     "${SOURCE_FOLDER}FlexEngine/Factory/FatVertex.h"
+    "${SOURCE_FOLDER}FlexEngine/Factory/GeometryFactory.cpp"
+    "${SOURCE_FOLDER}FlexEngine/Factory/GeometryFactory.h"
     "${SOURCE_FOLDER}FlexEngine/Factory/GeometryUtils.cpp"
     "${SOURCE_FOLDER}FlexEngine/Factory/GeometryUtils.h"
     "${SOURCE_FOLDER}FlexEngine/Factory/MaterialFactory.cpp"

@@ -20,8 +20,8 @@ void FlexEnginePlayer::Start()
 
     Procedural::RegisterObject(context_);
 
+    Urho3DPlayer::Start();
+
     SharedPtr<XMLFile> xmlFile(resourceCache->GetResource<XMLFile>("Procedural.xml"));
     GenerateResourcesFromXML(*xmlFile, false, 0);
-
-    Urho3DPlayer::Start();
 }

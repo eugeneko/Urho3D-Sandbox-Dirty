@@ -71,6 +71,8 @@ void Procedural::GenerateResources(bool forceGeneration, unsigned seed)
 {
     if (description_)
     {
+        ResourceCache* resourceCache = GetSubsystem<ResourceCache>();
+        resourceCache->ReloadResource(description_);
         GenerateResourcesFromXML(*description_, forceGeneration, seed);
     }
 }

@@ -30,6 +30,10 @@ struct CylinderProxyParameters
 void GenerateCylinderProxy(const BoundingBox& boundingBox, const CylinderProxyParameters& param, unsigned width, unsigned height,
     Vector<OrthoCameraDescription>& cameras, Vector<FatVertex>& vertices, Vector<FatIndex>& indices);
 
+/// Generate plain proxy geometry and cameras.
+void GeneratePlainProxy(const BoundingBox& boundingBox, unsigned width, unsigned height,
+    Vector<OrthoCameraDescription>& cameras, Vector<FatVertex>& vertices, Vector<FatIndex>& indices);
+
 /// Generate proxy geometry and cameras from XML.
 void GenerateProxyFromXML(const BoundingBox& boundingBox, unsigned width, unsigned height, const XMLElement& node,
     Vector<OrthoCameraDescription>& cameras, Vector<FatVertex>& vertices, Vector<FatIndex>& indices);

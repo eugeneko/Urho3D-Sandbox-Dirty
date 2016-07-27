@@ -126,6 +126,7 @@ void GenerateCylinderProxy(const BoundingBox& boundingBox, const CylinderProxyPa
                 v.edgeOscillation_ = 0.0f;
 
                 v.normal_ = normal;
+                v.geometryNormal_ = normal;
             }
 
             // Generate quads
@@ -134,25 +135,50 @@ void GenerateCylinderProxy(const BoundingBox& boundingBox, const CylinderProxyPa
     }
 }
 
+void GeneratePlainProxy(const BoundingBox& boundingBox, unsigned width, unsigned height,
+    Vector<OrthoCameraDescription>& cameras, Vector<FatVertex>& vertices, Vector<FatIndex>& indices)
+{
+    const Vector3 center = boundingBox.Center();
+    const Vector3 size = boundingBox.Size();
+
+    OrthoCameraDescription cameraDesc;
+    cameraDesc.position_ = Vector3(center.x_, center.y_, boundingBox.min_.z_);
+    cameraDesc.farClip_ = size.z_;
+    cameraDesc.size_ = Vector2(size.x_, size.y_);
+    cameraDesc.viewport_ = IntRect(0, 0, width, height);
+    cameras.Push(cameraDesc);
+
+    // #TODO Add geometry generation
+}
+
 void GenerateProxyFromXML(const BoundingBox& boundingBox, unsigned width, unsigned height, const XMLElement& node,
     Vector<OrthoCameraDescription>& cameras, Vector<FatVertex>& vertices, Vector<FatIndex>& indices)
 {
-    if (XMLElement cylinderProxyNode = node.GetChild("cylinderProxy"))
+    const String type = node.GetAttribute("type");
+    if (type.Compare("CylinderProxy", false) == 0)
     {
         CylinderProxyParameters params;
-        params.numSurfaces_ = 8;
-        params.numVertSegments_ = 2;
-        params.diagonalAngle_ = 45.0f;
-
-        LoadValue(cylinderProxyNode.GetChild("numSurfaces"), params.numSurfaces_);
-        LoadValue(cylinderProxyNode.GetChild("numVertSegments"), params.numVertSegments_);
-        LoadValue(cylinderProxyNode.GetChild("diagonalAngle"), params.diagonalAngle_);
-
+        params.numSurfaces_ = node.GetUInt("numSurfaces");
+        params.numVertSegments_ = node.GetUInt("numVertSegments");
+        params.diagonalAngle_ = node.GetFloat("diagonalAngle");
         GenerateCylinderProxy(boundingBox, params, width, height, cameras, vertices, indices);
+    }
+    else if (type.Compare("BoundingBox", false) == 0)
+    {
+        BoundingBox newBoundingBox = boundingBox;
+        if (node.HasAttribute("min"))
+        {
+            newBoundingBox.min_ = node.GetVector3("min");
+        }
+        if (node.HasAttribute("max"))
+        {
+            newBoundingBox.max_ = node.GetVector3("max");
+        }
+        GeneratePlainProxy(newBoundingBox, width, height, cameras, vertices, indices);
     }
     else
     {
-        URHO3D_LOGERROR("Proxy has unknown pattern");
+        URHO3D_LOGERRORF("Proxy has unknown pattern '%s'", type.CString());
     }
 }
 
