@@ -11,3 +11,9 @@ bin/
 Asset/Autoload/
 Asset/CoreData/
 Asset/Data/
+
+# Ignore shader caches
+Asset/*/Shaders/*/Cache/
+
+# Ignore asset caches
+Asset/Cache/
