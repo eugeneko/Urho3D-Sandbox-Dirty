@@ -83,4 +83,24 @@ T QLerp(const T& v0, const T& v1, const T& v2, const T& v3, const U factor1, con
     return Lerp(Lerp(v0, v1, factor1), Lerp(v2, v3, factor1), factor2);
 }
 
+/// %Range template class.
+template <class T> class Range : Pair<T, T>
+{
+public:
+    /// Construct default.
+    Range() : Pair<T, T>(T(), T()) { }
+
+    /// Construct with value.
+    Range(const T& value) : Pair<T, T>(value, value) { }
+
+    /// Construct with values.
+    Range(const T& first, const T& second) : Pair<T, T>(first, second) { }
+
+    /// Get interpolated value.
+    template <class U> T Get(U factor) const { return Lerp(first_, second_, factor); }
+};
+
+/// Range of floats.
+using FloatRange = Range<float>;
+
 }
