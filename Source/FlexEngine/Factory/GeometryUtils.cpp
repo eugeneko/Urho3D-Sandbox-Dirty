@@ -164,4 +164,16 @@ void AppendQuadGridToVertices(Vector<FatVertex>& vertices, Vector<FatIndex>& ind
     }
 }
 
+void AppendGeometryToVertices(Vector<FatVertex>& vertices, Vector<FatIndex>& indices, const Vector<FatVertex>& newVertices, const Vector<FatIndex>& newIndices)
+{
+    const unsigned baseVertex = vertices.Size();
+    const unsigned baseIndex = indices.Size();
+    vertices += newVertices;
+    indices += newIndices;
+    for (unsigned i = baseIndex; i < indices.Size(); ++i)
+    {
+        indices[i] += baseVertex;
+    }
+}
+
 }

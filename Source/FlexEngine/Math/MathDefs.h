@@ -35,8 +35,8 @@ T UnLerpClamped(const T& first, const T& second, const T& value)
 inline Vector3 ConstructOrthogonalVector(const Vector3& vec)
 {
     return Abs(vec.y_) < 1.0f - M_LARGE_EPSILON
-        ? Vector3(-vec.z_, 0.0f, vec.x_).Normalized()
-        : Vector3(-vec.y_, vec.x_, 0.0f).Normalized();
+        ? Vector3(-vec.z_,   0.0f, vec.x_).Normalized()
+        : Vector3(-vec.y_, vec.x_,   0.0f).Normalized();
 }
 
 /// Dot product of two vectors.
@@ -52,6 +52,30 @@ inline Vector3 CrossProduct(const Vector3& left, const Vector3& right)
     return left.CrossProduct(right);
 }
 
+/// Per-component max for 2D vector.
+inline Vector2 VectorMax(const Vector2& left, const Vector2& right)
+{
+    return Vector2(Max(left.x_, right.x_), Max(left.y_, right.y_));
+}
+
+/// Per-component max for 3D vector.
+inline Vector3 VectorMax(const Vector3& left, const Vector3& right)
+{
+    return Vector3(Max(left.x_, right.x_), Max(left.y_, right.y_), Max(left.z_, right.z_));
+}
+
+/// Per-component min for 2D vector.
+inline Vector2 VectorMin(const Vector2& left, const Vector2& right)
+{
+    return Vector2(Min(left.x_, right.x_), Min(left.y_, right.y_));
+}
+
+/// Per-component min for 3D vector.
+inline Vector3 VectorMin(const Vector3& left, const Vector3& right)
+{
+    return Vector3(Min(left.x_, right.x_), Min(left.y_, right.y_), Min(left.z_, right.z_));
+}
+
 /// Project vector onto axis
 template <class T>
 auto ProjectOntoAxis(const T& axis, const T& vector) -> decltype(axis.x_)
@@ -61,6 +85,18 @@ auto ProjectOntoAxis(const T& axis, const T& vector) -> decltype(axis.x_)
 
 /// Return X in power Y.
 template <class T> T Pow(T x, T y) { return pow(x, y); }
+
+/// Per-component power for 2D vector.
+inline Vector2 Pow(const Vector2& left, const Vector2& right)
+{
+    return Vector2(Pow(left.x_, right.x_), Pow(left.y_, right.y_));
+}
+
+/// Per-component power for 3D vector.
+inline Vector3 Pow(const Vector3& left, const Vector3& right)
+{
+    return Vector3(Pow(left.x_, right.x_), Pow(left.y_, right.y_), Pow(left.z_, right.z_));
+}
 
 /// Return fractional part of passed value.
 template <class T> T Fract(T value) { T intpart; return modf(value, &intpart); }

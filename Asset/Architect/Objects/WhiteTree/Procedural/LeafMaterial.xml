@@ -1,0 +1,5 @@
+<material>
+    <technique name="Techniques/DiffAlphaMask.xml" />
+    <texture unit="diffuse" name="Objects/WhiteTree/Procedural/LeafMask.png" />
+    <cull value="none" />
+</material>

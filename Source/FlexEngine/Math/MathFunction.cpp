@@ -15,39 +15,29 @@ namespace
 {
 
 /// Math function construct function.
-using MathFunctionConstructor = MathFunctionSPtr(*) (const MathFunctionInputVector& inputs, const MathFunctionParameterVector& parameters);
-
-/// Math function description.
-struct MathFunctionInfo
-{
-    int minInputs_;
-    int maxInputs_;
-    int minParams_;
-    int maxParams_;
-    MathFunctionConstructor construct_;
-};
+using MathFunctionConstructor = MathFunctionSPtr(*) (const MathFunctionVector& inputs);
 
 /// Math functions description map.
-static const HashMap<String, MathFunctionInfo> mathFunctions =
+static const HashMap<String, MathFunctionConstructor> mathFunctions =
 {
-    {"x",     { 0, 0, 0, 0,   &MathFunction::Construct              }},
-    {"const", { 0, 0, 1, 1,   &ConstantMathFunction::Construct      }},
-    {"poly",  { 1, 1, 1,-1,   &PolynomialMathFunction::Construct    }},
-    {"sin",   { 1, 1, 4, 4,   &HarmonicalMathFunction::Construct    }},
-    {"clamp", { 1, 1, 2, 4,   &ClampedMathFunction::Construct       }},
-    {"fit",   { 1, 1, 2, 4,   &ScaledMathFunction::Construct        }},
+    { InputMathFunction::GetName(),      &InputMathFunction::Construct      },
+    { TaylorMathFunction::GetName(),     &TaylorMathFunction::Construct     },
+    { HarmonicalMathFunction::GetName(), &HarmonicalMathFunction::Construct },
+    { ClampedMathFunction::GetName(),    &ClampedMathFunction::Construct    },
+    { ScaledMathFunction::GetName(),     &ScaledMathFunction::Construct     },
 };
 
 /// Math functions aliases
 static const HashMap<String, String> mathAliases =
 {
-    {"zero",    "const(0)"                          },
-    {"one",     "const(1)"                          },
-    {"linear",  "poly (x(), 0,1)"                   },
-    {"square",  "poly (x(), 0,0,1)"                 },
-    {"smright", "sin  (x(),  90,  0,   1,   0)"     },
-    {"smleft",  "sin  (x(), -90,  90, -1,   1)"     },
-    {"smboth",  "sin  (x(), -180, 90, -0.5, 0.5)"   },
+    { "zero",    "0"                            },
+    { "one",     "1"                            },
+    { "linear",  "tailor (x, 0, 1)"             },
+    { "square",  "tailor (x, 0, 0, 1)"          },
+    { "smright", "sin (x,  90,  0,   1,   0)"   },
+    { "smleft",  "sin (x, -90,  90, -1,   1)"   },
+    { "smboth",  "sin (x, -180, 90, -0.5, 0.5)" },
+    { "x",       "input(0)"                     },
 };
 
 /// Pre-process format of math function.
@@ -72,8 +62,7 @@ String SanitateMathFunctionCode(const String& str)
 }
 
 /// Constructs math function with name, inputs and parameters.
-MathFunctionSPtr ConstructMathFunction(const String& sourceString, const String& name,
-    const MathFunctionInputVector& inputs, const MathFunctionParameterVector& parameters)
+MathFunctionSPtr ConstructMathFunction(const String& sourceString, const String& name, const MathFunctionVector& inputs)
 {
     auto iter = mathFunctions.Find(name);
     if (iter == mathFunctions.End())
@@ -83,39 +72,10 @@ MathFunctionSPtr ConstructMathFunction(const String& sourceString, const String&
         return nullptr;
     }
 
-    const MathFunctionInfo& desc = iter->second_;
-
-    // Check inputs and parameters
-    if (desc.minInputs_ >= 0 && inputs.Size() < static_cast<unsigned>(desc.minInputs_))
-    {
-        URHO3D_LOGERRORF("Cannot parse input function '%s': function '%s' must have at least %d inputs",
-            sourceString.CString(), name.CString(), desc.minInputs_);
-        return nullptr;
-    }
-
-    if (desc.maxInputs_ >= 0 && inputs.Size() > static_cast<unsigned>(desc.maxInputs_))
-    {
-        URHO3D_LOGERRORF("Cannot parse input function '%s': function '%s' must have at most %d inputs",
-            sourceString.CString(), name.CString(), desc.maxInputs_);
-        return nullptr;
-    }
-
-    if (desc.minParams_ >= 0 && parameters.Size() < static_cast<unsigned>(desc.minParams_))
-    {
-        URHO3D_LOGERRORF("Cannot parse input function '%s': function '%s' must have at least %d parameters",
-            sourceString.CString(), name.CString(), desc.minParams_);
-        return nullptr;
-    }
-
-    if (desc.maxParams_ >= 0 && parameters.Size() > static_cast<unsigned>(desc.maxParams_))
-    {
-        URHO3D_LOGERRORF("Cannot parse input function '%s': function '%s' must have at most %d parameters",
-            sourceString.CString(), name.CString(), desc.maxParams_);
-        return nullptr;
-    }
+    const MathFunctionConstructor construct = iter->second_;
 
     // Construct function
-    return desc.construct_(inputs, parameters);
+    return construct(inputs);
 }
 
 /// Constructs math function from token sequence
@@ -128,8 +88,30 @@ MathFunctionSPtr ConstructMathFunction(const String& sourceString, Vector<String
         return nullptr;
     }
 
-    // Read function name
-    const String functionName = PopElement(tokens);
+    // Read the first token
+    const String firstToken = PopElement(tokens);
+
+    // Parse constant
+    if (!IsAlpha(firstToken[0]))
+    {
+        double value = 0.0;
+        if (firstToken.Compare("inf", false) == 0 || firstToken.Compare("+inf", false) == 0)
+        {
+            value = M_INFINITY;
+        }
+        else if (firstToken.Compare("-inf", false) == 0)
+        {
+            value = -M_INFINITY;
+        }
+        else
+        {
+            value = ToDouble(firstToken);
+        }
+        return CreateConstFunction(value);
+    }
+
+    // Parse function
+    const String functionName = firstToken;
     if (PopElement(tokens) != "(")
     {
         URHO3D_LOGERRORF("Cannot parse input function '%s': '(' is missing", sourceString.CString());
@@ -137,8 +119,7 @@ MathFunctionSPtr ConstructMathFunction(const String& sourceString, Vector<String
     }
 
     // Read inputs and parameters
-    MathFunctionInputVector inputs;
-    MathFunctionParameterVector parameters;
+    MathFunctionVector inputs;
     String token;
     while ((token = PopElement(tokens)) != ")")
     {
@@ -150,111 +131,124 @@ MathFunctionSPtr ConstructMathFunction(const String& sourceString, Vector<String
         }
         
         // Load new input
-        if (IsAlpha(token[0]))
+        tokens.Push(token);
+        const MathFunctionSPtr input = ConstructMathFunction(sourceString, tokens);
+        if (!input)
         {
-            tokens.Push(token);
-            const MathFunctionSPtr input = ConstructMathFunction(sourceString, tokens);
-            if (!input)
-            {
-                URHO3D_LOGERRORF("Cannot parse input function '%s': failed to parse nested function", sourceString.CString());
-                return nullptr;
-            }
-            inputs.Push(input);
+            URHO3D_LOGERRORF("Cannot parse input function '%s': failed to parse nested function", sourceString.CString());
+            return nullptr;
         }
-        // Load parameter
-        else
-        {
-            if (token.Compare("inf", false) == 0 || token.Compare("+inf", false) == 0)
-            {
-                parameters.Push(M_INFINITY);
-            }
-            else if (token.Compare("-inf", false) == 0)
-            {
-                parameters.Push(-M_INFINITY);
-            }
-            else
-            {
-                parameters.Push(ToDouble(token));
-            }
-        }
+
+        inputs.Push(input);
     }
 
     // Construct function
-    return ConstructMathFunction(sourceString, functionName, inputs, parameters);
+    return ConstructMathFunction(sourceString, functionName, inputs);
 }
 
 }
 
 //////////////////////////////////////////////////////////////////////////
-MathFunctionSPtr MathFunction::Construct(const MathFunctionInputVector& /*inputs*/, const MathFunctionParameterVector& /*parameters*/)
-{
-    return MakeShared<MathFunction>();
-}
-
 MathFunction::~MathFunction()
 {
 }
 
-double MathFunction::Compute(double value) const
-{
-    return value;
-}
-
 float MathFunction::Compute(float value) const
 {
-    return static_cast<float>(Compute(static_cast<double>(value)));
+    return static_cast<float>(Compute(DoubleVector{ static_cast<double>(value) }));
 }
 
 //////////////////////////////////////////////////////////////////////////
-
-MathFunctionSPtr ConstantMathFunction::Construct(const MathFunctionInputVector& inputs, const MathFunctionParameterVector& parameters)
+MathFunctionSPtr InputMathFunction::Construct(const MathFunctionVector& args)
 {
-    return MakeShared<ConstantMathFunction>(parameters[0]);
+    if (args.Size() > 1)
+    {
+        URHO3D_LOGERRORF(
+            "Cannot create function with %d arguments, required signature: %s([inputIndex])",
+            args.Size(), GetName().CString());
+        return nullptr;
+    }
+
+    const MathFunctionSPtr inputIndex = args.Size() > 0 ? args[0] : CreateConstFunction(0);
+    return MakeShared<InputMathFunction>(inputIndex);
 }
+
+InputMathFunction::InputMathFunction(MathFunctionSPtr inputIndex, double defaultValue /*= 0.0*/)
+    : inputIndex_(inputIndex)
+    , defaultValue_(defaultValue)
+{
+}
+
+double InputMathFunction::Compute(const DoubleVector& inputs) const
+{
+    const unsigned inputIndex = static_cast<unsigned>(inputIndex_->Compute(inputs));
+    return inputIndex < inputs.Size() ? inputs[inputIndex] : defaultValue_;
+}
+
+//////////////////////////////////////////////////////////////////////////
 
 ConstantMathFunction::ConstantMathFunction(double value)
     : value_(value)
 {
 }
 
-double ConstantMathFunction::Compute(double /*value*/) const
+double ConstantMathFunction::Compute(const DoubleVector& /*inputs*/) const
 {
     return value_;
 }
 
 //////////////////////////////////////////////////////////////////////////
-MathFunctionSPtr PolynomialMathFunction::Construct(const MathFunctionInputVector& inputs, const MathFunctionParameterVector& parameters)
+MathFunctionSPtr TaylorMathFunction::Construct(const MathFunctionVector& args)
 {
-    return MakeShared<PolynomialMathFunction>(inputs[0], parameters);
+    if (args.Size() < 1)
+    {
+        URHO3D_LOGERRORF(
+            "Cannot create function with %d arguments, required signature: %s(input, a0[, a1...])",
+            args.Size(), GetName().CString());
+        return nullptr;
+    }
+
+    MathFunctionVector parameters = args;
+    parameters.Erase(0, 1);
+    return MakeShared<TaylorMathFunction>(args[0], parameters);
 }
 
-PolynomialMathFunction::PolynomialMathFunction(MathFunctionSPtr fun, const Vector<double>& poly)
+TaylorMathFunction::TaylorMathFunction(MathFunctionSPtr fun, const MathFunctionVector& poly)
     : fun_(fun)
     , poly_(poly)
 {
 }
 
-double PolynomialMathFunction::Compute(double value) const
+double TaylorMathFunction::Compute(const DoubleVector& inputs) const
 {
-    value = fun_->Compute(value);
+    const double value = fun_->Compute(inputs);
 
     double result = 0.0;
     double valuePower = 1.0;
-    for (const double coef : poly_)
+    for (const MathFunctionSPtr& coef : poly_)
     {
-        result += valuePower * coef;
+        result += valuePower * coef->Compute(inputs);
         valuePower *= value;
     }
     return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
-MathFunctionSPtr HarmonicalMathFunction::Construct(const MathFunctionInputVector& inputs, const MathFunctionParameterVector& parameters)
+MathFunctionSPtr HarmonicalMathFunction::Construct(const MathFunctionVector& args)
 {
-    return MakeShared<HarmonicalMathFunction>(inputs[0], parameters[0], parameters[1], parameters[2], parameters[3]);
+    if (args.Size() != 5)
+    {
+        URHO3D_LOGERRORF(
+            "Cannot create function with %d arguments, required signature: %s(input, period, phase, scale, offset)",
+            args.Size(), GetName().CString());
+        return nullptr;
+    }
+
+    return MakeShared<HarmonicalMathFunction>(args[0], args[1], args[2], args[3], args[4]);
 }
 
-HarmonicalMathFunction::HarmonicalMathFunction(MathFunctionSPtr fun, double period, double phase, double scale, double offset)
+HarmonicalMathFunction::HarmonicalMathFunction(MathFunctionSPtr fun,
+    MathFunctionSPtr period, MathFunctionSPtr phase, MathFunctionSPtr scale, MathFunctionSPtr offset)
     : fun_(fun)
     , period_(period)
     , phase_(phase)
@@ -263,20 +257,30 @@ HarmonicalMathFunction::HarmonicalMathFunction(MathFunctionSPtr fun, double peri
 {
 }
 
-double HarmonicalMathFunction::Compute(double value) const
+double HarmonicalMathFunction::Compute(const DoubleVector& inputs) const
 {
-    return Sin(period_ * fun_->Compute(value) + phase_) * scale_ + offset_;
+    const double angle = period_->Compute(inputs) * fun_->Compute(inputs) + phase_->Compute(inputs);
+    return Sin(angle) * scale_->Compute(inputs) + offset_->Compute(inputs);
 }
 
 //////////////////////////////////////////////////////////////////////////
-MathFunctionSPtr ClampedMathFunction::Construct(const MathFunctionInputVector& inputs, const MathFunctionParameterVector& parameters)
+MathFunctionSPtr ClampedMathFunction::Construct(const MathFunctionVector& args)
 {
-    const double minInput = parameters.Size() > 2 ? parameters[2] : 0.0;
-    const double maxInput = parameters.Size() > 3 ? parameters[3] : 1.0;
-    return MakeShared<ClampedMathFunction>(inputs[0], parameters[0], parameters[1], minInput, maxInput);
+    if (args.Size() < 3 || args.Size() > 5)
+    {
+        URHO3D_LOGERRORF(
+            "Cannot create function with %d arguments, required signature: %s(input, minOutput, maxOutput[, minInput, maxInput])",
+            args.Size(), GetName().CString());
+        return nullptr;
+    }
+
+    const MathFunctionSPtr minInput = args.Size() > 3 ? args[3] : CreateConstFunction(0.0);
+    const MathFunctionSPtr maxInput = args.Size() > 4 ? args[4] : CreateConstFunction(1.0);
+    return MakeShared<ClampedMathFunction>(args[0], args[1], args[2], minInput, maxInput);
 }
 
-ClampedMathFunction::ClampedMathFunction(MathFunctionSPtr fun, double minOutput, double maxOutput, double minInput, double maxInput)
+ClampedMathFunction::ClampedMathFunction(MathFunctionSPtr fun,
+    MathFunctionSPtr minOutput, MathFunctionSPtr maxOutput, MathFunctionSPtr minInput, MathFunctionSPtr maxInput)
     : fun_(fun)
     , minOutput_(minOutput)
     , maxOutput_(maxOutput)
@@ -286,21 +290,30 @@ ClampedMathFunction::ClampedMathFunction(MathFunctionSPtr fun, double minOutput,
     assert(fun_);
 }
 
-double ClampedMathFunction::Compute(double value) const
+double ClampedMathFunction::Compute(const DoubleVector& inputs) const
 {
-    value = fun_ ? fun_->Compute(value) : value;
-    return Clamp(fun_->Compute(Clamp(value, minInput_, maxInput_)), minOutput_, maxOutput_);
+    const double value = Clamp(fun_->Compute(inputs), minInput_->Compute(inputs), maxInput_->Compute(inputs));
+    return Clamp(value, minOutput_->Compute(inputs), maxOutput_->Compute(inputs));
 }
 
 //////////////////////////////////////////////////////////////////////////
-MathFunctionSPtr ScaledMathFunction::Construct(const MathFunctionInputVector& inputs, const MathFunctionParameterVector& parameters)
+MathFunctionSPtr ScaledMathFunction::Construct(const MathFunctionVector& args)
 {
-    const double minInput = parameters.Size() > 2 ? parameters[2] : 0.0;
-    const double maxInput = parameters.Size() > 3 ? parameters[3] : 1.0;
-    return MakeShared<ScaledMathFunction>(inputs[0], parameters[0], parameters[1], minInput, maxInput);
+    if (args.Size() < 3 || args.Size() > 5)
+    {
+        URHO3D_LOGERRORF(
+            "Cannot create function with %d arguments, required signature: %s(input, minOutput, maxOutput[, minInput, maxInput])",
+            args.Size(), GetName().CString());
+        return nullptr;
+    }
+
+    const MathFunctionSPtr minInput = args.Size() > 3 ? args[3] : CreateConstFunction(0.0);
+    const MathFunctionSPtr maxInput = args.Size() > 4 ? args[4] : CreateConstFunction(1.0);
+    return MakeShared<ScaledMathFunction>(args[0], args[1], args[2], minInput, maxInput);
 }
 
-ScaledMathFunction::ScaledMathFunction(MathFunctionSPtr fun, double minOutput, double maxOutput, double minInput, double maxInput)
+ScaledMathFunction::ScaledMathFunction(MathFunctionSPtr fun,
+    MathFunctionSPtr minOutput, MathFunctionSPtr maxOutput, MathFunctionSPtr minInput, MathFunctionSPtr maxInput)
     : fun_(fun)
     , minOutput_(minOutput)
     , maxOutput_(maxOutput)
@@ -309,13 +322,18 @@ ScaledMathFunction::ScaledMathFunction(MathFunctionSPtr fun, double minOutput, d
 {
 }
 
-double ScaledMathFunction::Compute(double value) const
+double ScaledMathFunction::Compute(const DoubleVector& inputs) const
 {
-    value = fun_ ? fun_->Compute(value) : value;
-    return Lerp(minOutput_, maxOutput_, fun_->Compute(UnLerp(minInput_, maxInput_, value)));
+    const double value = UnLerp(minInput_->Compute(inputs), maxInput_->Compute(inputs), fun_->Compute(inputs));
+    return Lerp(minOutput_->Compute(inputs), maxOutput_->Compute(inputs), value);
 }
 
 //////////////////////////////////////////////////////////////////////////
+MathFunctionSPtr CreateConstFunction(double value)
+{
+    return MakeShared<ConstantMathFunction>(value);
+}
+
 MathFunctionSPtr CreateMathFunction(const String& str)
 {
     Vector<String> tokens = SanitateMathFunctionCode(str).Split(' ');
@@ -329,7 +347,7 @@ PODVector<double> ComputeMathFunction(const MathFunction& fun, const PODVector<d
     result.Reserve(values.Size());
     for (const double& value : values)
     {
-        result.Push(fun.Compute(value));
+        result.Push(fun.Compute(DoubleVector{ value }));
     }
     return result;
 }

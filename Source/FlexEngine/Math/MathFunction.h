@@ -9,115 +9,143 @@
 namespace FlexEngine
 {
 
-/// Math function input vector.
-using MathFunctionInputVector = Vector<MathFunctionSPtr>;
+/// Vector of doubles.
+using DoubleVector = PODVector<double>;
 
-/// Math function parameter vector.
-using MathFunctionParameterVector = Vector<double>;
+/// Math function vector.
+using MathFunctionVector = Vector<MathFunctionSPtr>;
 
 /// Interface of math function. Does nothing by default.
 class MathFunction : public RefCounted
 {
 public:
-    /// Construct.
-    static MathFunctionSPtr Construct(const MathFunctionInputVector& inputs, const MathFunctionParameterVector& parameters);
     /// Destruct.
     virtual ~MathFunction();
     /// Compute value.
-    virtual double Compute(double value) const;
+    virtual double Compute(const DoubleVector& inputs) const = 0;
     /// Compute value.
     float Compute(float value) const;
+};
+
+/// Input math function.
+class InputMathFunction : public MathFunction
+{
+public:
+    /// Get name.
+    static String GetName() { return "input"; }
+    /// Construct.
+    static MathFunctionSPtr Construct(const MathFunctionVector& args);
+    /// Construct by polynomial coefficients from x^0 to x^size.
+    InputMathFunction(MathFunctionSPtr inputIndex, double defaultValue = 0.0);
+    /// Compute value.
+    virtual double Compute(const DoubleVector& inputs) const override;
+
+private:
+    const MathFunctionSPtr inputIndex_;
+    const double defaultValue_;
 };
 
 /// Constant math function.
 class ConstantMathFunction : public MathFunction
 {
 public:
-    /// Construct.
-    static MathFunctionSPtr Construct(const MathFunctionInputVector& inputs, const MathFunctionParameterVector& parameters);
     /// Construct by polynomial coefficients from x^0 to x^size.
     ConstantMathFunction(double value);
     /// Compute value.
-    virtual double Compute(double value) const override;
+    virtual double Compute(const DoubleVector& inputs) const override;
 
 private:
     const double value_;
 };
 
-/// Polynomial math function.
-class PolynomialMathFunction : public MathFunction
+/// Taylor series math function.
+class TaylorMathFunction : public MathFunction
 {
 public:
+    /// Get name.
+    static String GetName() { return "tailor"; }
     /// Construct.
-    static MathFunctionSPtr Construct(const MathFunctionInputVector& inputs, const MathFunctionParameterVector& parameters);
+    static MathFunctionSPtr Construct(const MathFunctionVector& args);
     /// Construct by polynomial coefficients from x^0 to x^size.
-    PolynomialMathFunction(MathFunctionSPtr fun, const Vector<double>& poly);
+    TaylorMathFunction(MathFunctionSPtr fun, const MathFunctionVector& poly);
     /// Compute value.
-    virtual double Compute(double value) const override;
+    virtual double Compute(const DoubleVector& inputs) const override;
 
 private:
     const MathFunctionSPtr fun_;
     /// Polynomial coefficients.
-    const Vector<double> poly_;
+    const MathFunctionVector poly_;
 };
 
 /// Harmonical math function.
 class HarmonicalMathFunction : public MathFunction
 {
 public:
+    /// Get name.
+    static String GetName() { return "sin"; }
     /// Construct.
-    static MathFunctionSPtr Construct(const MathFunctionInputVector& inputs, const MathFunctionParameterVector& parameters);
+    static MathFunctionSPtr Construct(const MathFunctionVector& args);
     /// Construct by coefficients <code>sin(period*value + phase) * scale + offset</code>.
     /// @note Degrees are used for sin computation.
-    HarmonicalMathFunction(MathFunctionSPtr fun, double period, double phase, double scale, double offset);
+    HarmonicalMathFunction(MathFunctionSPtr fun,
+        MathFunctionSPtr period, MathFunctionSPtr phase, MathFunctionSPtr scale, MathFunctionSPtr offset);
     /// Compute value.
-    virtual double Compute(double value) const override;
+    virtual double Compute(const DoubleVector& inputs) const override;
 
 private:
     const MathFunctionSPtr fun_;
-    const double period_;
-    const double phase_;
-    const double scale_;
-    const double offset_;
+    const MathFunctionSPtr period_;
+    const MathFunctionSPtr phase_;
+    const MathFunctionSPtr scale_;
+    const MathFunctionSPtr offset_;
 };
 
 /// Clamped math function.
 class ClampedMathFunction : public MathFunction
 {
 public:
+    /// Get name.
+    static String GetName() { return "clamp"; }
     /// Construct.
-    static MathFunctionSPtr Construct(const MathFunctionInputVector& inputs, const MathFunctionParameterVector& parameters);
+    static MathFunctionSPtr Construct(const MathFunctionVector& args);
     /// Construct with base function and clamp edges for input and output.
-    ClampedMathFunction(MathFunctionSPtr fun, double minOutput, double maxOutput, double minInput, double maxInput);
+    ClampedMathFunction(MathFunctionSPtr fun,
+        MathFunctionSPtr minOutput, MathFunctionSPtr maxOutput, MathFunctionSPtr minInput, MathFunctionSPtr maxInput);
     /// Compute value.
-    virtual double Compute(double value) const override;
+    virtual double Compute(const DoubleVector& inputs) const override;
 
 private:
     const MathFunctionSPtr fun_;
-    const double minOutput_;
-    const double maxOutput_;
-    const double minInput_;
-    const double maxInput_;
+    const MathFunctionSPtr minOutput_;
+    const MathFunctionSPtr maxOutput_;
+    const MathFunctionSPtr minInput_;
+    const MathFunctionSPtr maxInput_;
 };
 
 /// Scaled math function. Input is transformed from [min, max] to [0, 1]. Output is transformed from [0, 1] to [min, max].
 class ScaledMathFunction : public MathFunction
 {
 public:
+    /// Get name.
+    static String GetName() { return "fit"; }
     /// Construct.
-    static MathFunctionSPtr Construct(const MathFunctionInputVector& inputs, const MathFunctionParameterVector& parameters);
+    static MathFunctionSPtr Construct(const MathFunctionVector& args);
     /// Construct with input and output ranges.
-    ScaledMathFunction(MathFunctionSPtr fun, double minOutput, double maxOutput, double minInput, double maxInput);
+    ScaledMathFunction(MathFunctionSPtr fun,
+        MathFunctionSPtr minOutput, MathFunctionSPtr maxOutput, MathFunctionSPtr minInput, MathFunctionSPtr maxInput);
     /// Compute value.
-    virtual double Compute(double value) const override;
+    virtual double Compute(const DoubleVector& inputs) const override;
 
 private:
-    MathFunctionSPtr fun_;
-    const double minOutput_;
-    const double maxOutput_;
-    const double minInput_;
-    const double maxInput_;
+    const MathFunctionSPtr fun_;
+    const MathFunctionSPtr minOutput_;
+    const MathFunctionSPtr maxOutput_;
+    const MathFunctionSPtr minInput_;
+    const MathFunctionSPtr maxInput_;
 };
+
+/// Construct const math function.
+MathFunctionSPtr CreateConstFunction(double value);
 
 /// Construct function from string.
 MathFunctionSPtr CreateMathFunction(const String& str);

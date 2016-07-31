@@ -4,6 +4,7 @@
 #include <FlexEngine/Factory/GeometryFactory.h>
 #include <FlexEngine/Factory/MaterialFactory.h>
 #include <FlexEngine/Factory/TextureFactory.h>
+#include <FlexEngine/Factory/TreeFactory.h>
 #include <FlexEngine/Resource/ResourceCacheHelpers.h>
 #include <FlexEngine/Resource/XMLHelpers.h>
 
@@ -49,6 +50,7 @@ static const HashMap<String, FactoryFunction> factories =
     { "geometry",   &GenerateTempGeometryFromXML    },
     { "material",   &GenerateMaterialsFromXML       },
     { "texture",    &GenerateTexturesFromXML        },
+    { "tree",       &GenerateTreeFromXML            },
 };
 
 }

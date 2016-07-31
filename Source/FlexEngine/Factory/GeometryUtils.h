@@ -48,4 +48,8 @@ void AppendQuadGridToVertices(Vector<FatVertex>& vertices, Vector<FatIndex>& ind
     const FatVertex& v0, const FatVertex& v1, const FatVertex& v2, const FatVertex& v3,
     const unsigned numX, const unsigned numZ, bool flipped = false);
 
+/// Append geometry to index and vertex data. Indexes are adjusted.
+void AppendGeometryToVertices(Vector<FatVertex>& vertices, Vector<FatIndex>& indices,
+    const Vector<FatVertex>& newVertices, const Vector<FatIndex>& newIndices);
+
 }
