@@ -1,0 +1,3 @@
+<technique vs="Procedural" ps="Procedural" psdefines="SUPERMASK ADDITIVE">
+    <pass name="alpha" depthwrite="false" blend="alpha" />
+</technique>

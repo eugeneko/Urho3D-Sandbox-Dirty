@@ -1,0 +1,3 @@
+<procedural>
+    <geometry force="true" script="@/Scripts/QuadGeometry.as" entry="Main" dest="@/Models/Quad.mdl"/>
+</procedural>

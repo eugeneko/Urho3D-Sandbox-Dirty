@@ -1,0 +1,5 @@
+<renderpath>
+    <command type="clear" color="0 0 0 1" depth="1.0" stencil="0" />
+    <command type="scenepass" pass="base" vertexlights="true" metadata="base" />
+    <command type="scenepass" pass="alpha" vertexlights="true" sort="backtofront" metadata="alpha" />
+</renderpath>
