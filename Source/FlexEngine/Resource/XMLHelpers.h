@@ -2,6 +2,7 @@
 
 #include <FlexEngine/Common.h>
 #include <FlexEngine/Core/StringUtils.h>
+#include <FlexEngine/Math/MathDefs.h>
 
 #include <Urho3D/Resource/XMLElement.h>
 
@@ -42,6 +43,30 @@ T GetAttribute(const XMLElement& elem, const String& attributeName, const T& def
 {
     T result = defaultValue;
     LoadAttribute(elem, attributeName, result);
+    return result;
+}
+
+/// Load float range from XML attribute into variable if element is not empty.
+inline void LoadFloatRange(const XMLElement& elem, const String& attributeName, FloatRange& variable)
+{
+    const Variant value = GetAttribute<Variant>(elem, attributeName, Variant::EMPTY);
+    const VariantType type = value.GetType();
+    if (type == VAR_FLOAT)
+    {
+        variable = value.GetFloat();
+    }
+    else if (type == VAR_VECTOR2)
+    {
+        const Vector2 vec = value.GetVector2();
+        variable = FloatRange(vec.x_, vec.y_);
+    }
+}
+
+/// Get float range from XML attribute or default if attribute does not exist.
+inline FloatRange GetFloatRange(const XMLElement& elem, const String& attributeName, const FloatRange& defaultValue)
+{
+    FloatRange result = defaultValue;
+    LoadFloatRange(elem, attributeName, result);
     return result;
 }
 
