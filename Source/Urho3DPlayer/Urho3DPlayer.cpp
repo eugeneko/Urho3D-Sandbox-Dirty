@@ -230,7 +230,7 @@ void Urho3DPlayer::Stop()
 #endif
 }
 
-void Urho3DPlayer::HandleScriptReloadStarted(StringHash eventType, VariantMap& eventData)
+void Urho3DPlayer::HandleScriptReloadStarted(StringHash /*eventType*/, VariantMap& /*eventData*/)
 {
 #ifdef URHO3D_ANGELSCRIPT
     if (scriptFile_->GetFunction("void Stop()"))
@@ -238,7 +238,7 @@ void Urho3DPlayer::HandleScriptReloadStarted(StringHash eventType, VariantMap& e
 #endif
 }
 
-void Urho3DPlayer::HandleScriptReloadFinished(StringHash eventType, VariantMap& eventData)
+void Urho3DPlayer::HandleScriptReloadFinished(StringHash /*eventType*/, VariantMap& /*eventData*/)
 {
 #ifdef URHO3D_ANGELSCRIPT
     // Restart the script application after reload
@@ -250,7 +250,7 @@ void Urho3DPlayer::HandleScriptReloadFinished(StringHash eventType, VariantMap& 
 #endif
 }
 
-void Urho3DPlayer::HandleScriptReloadFailed(StringHash eventType, VariantMap& eventData)
+void Urho3DPlayer::HandleScriptReloadFailed(StringHash /*eventType*/, VariantMap& /*eventData*/)
 {
 #ifdef URHO3D_ANGELSCRIPT
     scriptFile_.Reset();

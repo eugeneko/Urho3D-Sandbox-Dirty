@@ -14,8 +14,8 @@ class XMLElement;
 namespace FlexEngine
 {
 
+struct DefaultVertex;
 struct FactoryContext;
-struct FatVertex;
 
 /// Synthetic vertex type for helper geometry.
 struct SyntheticVertex
@@ -32,7 +32,7 @@ struct SyntheticVertex
     Vector4 color_;
 
     /// Construct from fat vertex.
-    static SyntheticVertex Construct(const FatVertex& vertex);
+    static SyntheticVertex Construct(const DefaultVertex& vertex);
     /// Returns vertex format.
     static PODVector<VertexElement> Format();
 

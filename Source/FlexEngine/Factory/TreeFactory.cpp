@@ -3,11 +3,14 @@
 #include <FlexEngine/Container/Utility.h>
 #include <FlexEngine/Factory/FactoryContext.h>
 #include <FlexEngine/Factory/GeometryUtils.h>
+#include <FlexEngine/Factory/ModelFactory.h>
+#include <FlexEngine/Math/BezierCurve.h>
 #include <FlexEngine/Math/MathDefs.h>
 #include <FlexEngine/Math/StandardRandom.h>
 #include <FlexEngine/Resource/ResourceCacheHelpers.h>
 #include <FlexEngine/Resource/XMLHelpers.h>
 
+#include <Urho3D/Container/Pair.h>
 #include <Urho3D/Core/StringUtils.h>
 #include <Urho3D/Core/Variant.h>
 #include <Urho3D/Graphics/IndexBuffer.h>
@@ -22,7 +25,82 @@
 namespace FlexEngine
 {
 
-VegetationVertex VegetationVertex::Construct(const FatVertex& vertex)
+namespace
+{
+
+/// Get orientation by direction.
+Quaternion MakeBasisFromDirection(const Vector3& zAxis)
+{
+    Vector3 xAxis = ConstructOrthogonalVector(zAxis).Normalized();
+    Vector3 yAxis = CrossProduct(zAxis, xAxis).Normalized();
+
+    // Flip
+    if (yAxis.y_ < 0.0f)
+    {
+        yAxis = -yAxis;
+        xAxis = CrossProduct(yAxis, zAxis).Normalized();
+    }
+
+    return Quaternion(xAxis, yAxis, zAxis).Normalized();
+}
+
+/// Compute location and angle of child branch with specified distribution.
+PODVector<float> ComputeChildLocations(const TreeElementDistribution& distribution, StandardRandom& random, unsigned count)
+{
+    PODVector<float> result;
+    switch (distribution.distributionType_)
+    {
+    case TreeElementDistributionType::Alternate:
+    {
+        const PODVector<float> locations = IntegrateDensityFunction(distribution.density_, count);
+        for (unsigned i = 0; i < count; ++i)
+        {
+            result.Push(distribution.location_.Get(locations[i]));
+        }
+        break;
+    }
+    default:
+        break;
+    }
+    return result;
+}
+
+/// Compute location and angle of child branch with specified distribution.
+PODVector<float> ComputeChildAngles(const TreeElementDistribution& distribution, StandardRandom& random, unsigned count, unsigned idx)
+{
+    PODVector<float> result;
+    switch (distribution.distributionType_)
+    {
+    case TreeElementDistributionType::Alternate:
+    {
+        // This hack is used to make alternate distribution symmetric
+        const float baseAngle = idx % 2 ? 180.0f : 0.0f;
+        for (unsigned i = 0; i < count; ++i)
+        {
+            const float randomPad = random.FloatFrom01() * distribution.twirlNoise_;
+            result.Push(distribution.twirlStep_ * i + distribution.twirlBase_ + randomPad + baseAngle);
+        }
+        break;
+    }
+    default:
+        break;
+    }
+    return result;
+}
+
+/// Get material index.
+int GetMaterialIndex(const Vector<String>& materials, const String& name)
+{
+    const Vector<String>::ConstIterator iter = materials.Find(name);
+    return iter == materials.End()
+        ? -1
+        : iter - materials.Begin();
+}
+
+}
+
+//////////////////////////////////////////////////////////////////////////
+VegetationVertex VegetationVertex::Construct(const DefaultVertex& vertex)
 {
     VegetationVertex result;
     result.position_ = vertex.position_;
@@ -32,10 +110,10 @@ VegetationVertex VegetationVertex::Construct(const FatVertex& vertex)
     result.geometryNormal_ = vertex.geometryNormal_;
     result.uv_.x_ = vertex.uv_[0].x_;
     result.uv_.y_ = vertex.uv_[0].y_;
-    result.param_.x_ = vertex.mainAdherence_;
-    result.param_.y_ = vertex.branchAdherence_;
-    result.param_.z_ = vertex.phase_;
-    result.param_.w_ = vertex.edgeOscillation_;
+    result.param_.x_ = vertex.uv_[1].x_;
+    result.param_.y_ = vertex.uv_[1].y_;
+    result.param_.z_ = vertex.uv_[1].z_;
+    result.param_.w_ = vertex.uv_[1].w_;
     return result;
 }
 
@@ -52,6 +130,639 @@ PODVector<VertexElement> VegetationVertex::Format()
         VertexElement(TYPE_VECTOR4, SEM_TEXCOORD, 1),
     };
     return format;
+}
+
+//////////////////////////////////////////////////////////////////////////
+BranchDescription GenerateBranch(const Vector3& initialPosition, const Vector3& initialDirection, float length, float baseRadius,
+    const BranchShapeSettings& shape, const BranchMaterialSettings& material, unsigned minNumKnots)
+{
+    // Compute parameters
+    const unsigned numKnots = minNumKnots;
+    const float step = length / (numKnots - 1);
+
+    // Generate knots
+    BranchDescription result;
+
+    Vector3 position = initialPosition;
+    Vector3 direction = initialDirection;
+    for (unsigned i = 0; i < numKnots; ++i)
+    {
+        result.positions_.Push(position);
+        result.radiuses_.Push(shape.radius_.Compute(i / (numKnots - 1.0f)) * baseRadius);
+
+        direction = direction.Normalized();
+        position += direction * step;
+    }
+
+    // Apply gravity and restore shape
+    for (unsigned i = 0; i < numKnots; ++i)
+    {
+        const float factor = static_cast<float>(i) / (numKnots + 1);
+        const float len = (result.positions_[i] - initialPosition).Length();
+        result.positions_[i].y_ -= shape.gravityIntensity_ * Pow(factor, 1.0f / shape.gravityResistance_);
+        result.positions_[i] = (result.positions_[i] - initialPosition).Normalized() * len + initialPosition;
+    }
+
+    result.length_ = length;
+    result.radiusesCurve_ = CreateBezierCurve(result.radiuses_);
+    result.positionsCurve_ = CreateBezierCurve(result.positions_);
+    return result;
+}
+
+TessellatedBranchPoints TessellateBranch(const BezierCurve3D& positions, const BezierCurve1D& radiuses,
+    const BranchTessellationQualityParameters& quality)
+{
+    TessellatedBranchPoints result;
+    if (quality.maxNumSegments_ < 5)
+    {
+        URHO3D_LOGERROR("Maximum number of segments must be greater or equal than 5");
+        return result;
+    }
+
+    if (quality.minNumSegments_ < 1)
+    {
+        URHO3D_LOGERROR("Minimum number of segments must be greater or equal than 1");
+        return result;
+    }
+
+    if (quality.minNumSegments_ > quality.maxNumSegments_)
+    {
+        URHO3D_LOGERROR("Minimum number of segments must be less or equal to maximum number of segments");
+        return result;
+    }
+
+    const unsigned numSegments = positions.xcoef_.Size();
+    // Point is forcedly committed after specified number of skipped points
+    const unsigned maxNumSkipped = (quality.maxNumSegments_ + quality.minNumSegments_ - 1) / quality.minNumSegments_ - 1;
+
+    Vector3 prevDirection;
+    unsigned prevIndex = 0;
+    for (unsigned i = 0; i <= quality.maxNumSegments_; ++i)
+    {
+        const float t = static_cast<float>(i) / quality.maxNumSegments_;
+        const Vector3 curDirection = SampleBezierCurveDerivative(positions, t);
+        if (i == 0 || i == quality.maxNumSegments_ || i - prevIndex == maxNumSkipped
+            || AngleBetween(curDirection, prevDirection) >= quality.minAngle_)
+        {
+            prevIndex = i;
+            prevDirection = SampleBezierCurveDerivative(positions, t);
+            const float radius = SampleBezierCurve(radiuses, t);
+            const Vector3 position = SampleBezierCurve(positions, t);
+            result.Push({ t, radius, position });
+        }
+    }
+    return result;
+}
+
+PODVector<DefaultVertex> GenerateBranchVertices(const TessellatedBranchPoints& points,
+    const BranchShapeSettings& shape, const BranchMaterialSettings& material, unsigned numRadialSegments)
+{
+    PODVector<DefaultVertex> result;
+    if (points.Empty())
+    {
+        URHO3D_LOGERROR("Points array must not be empty");
+        return result;
+    }
+    if (numRadialSegments < 3)
+    {
+        URHO3D_LOGERROR("Number of segments must be greater or equal than 3");
+        return result;
+    }
+
+    // Emit vertices
+    float prevRadius = 0.0f;
+    Vector3 prevPosition = Vector3::ZERO;
+    float relativeDistance = 0.0f;
+
+    for (unsigned i = 0; i < points.Size(); ++i)
+    {
+        const float location = points[i].location_ / (points.Size() - 1);
+        const float radius = points[i].radius_;
+
+        // Compute point position and orientation
+        const Vector3 position = points[i].position_;
+        const Vector3 zAxis = (points[Min(i + 1, points.Size() - 1)].position_ - points[i == 0 ? 0 : i - 1].position_).Normalized();
+        const Quaternion basis = MakeBasisFromDirection(zAxis);
+        const Vector3 xAxis = GetBasisX(basis.RotationMatrix());
+        const Vector3 yAxis = GetBasisY(basis.RotationMatrix());
+
+        // Compute relative distance
+        if (i > 0)
+        {
+            ///                L        ln(r1/r0)
+            /// u1 = u0 + ----------- * ---------
+            ///           2 * pi * r0   r1/r0 - 1
+            const float L = (position - prevPosition).Length();
+            const float r0 = prevRadius;
+            const float r1 = radius;
+            const float rr = r1 / r0;
+            /// ln(x) / (x - 1) ~= 1 - (x - 1) / 2 + ...
+            const float k = 1 - (rr - 1) / 2;
+            relativeDistance += k * L / (2 * M_PI * r0);
+        }
+
+        for (unsigned j = 0; j <= numRadialSegments; ++j)
+        {
+            const float factor = static_cast<float>(j) / numRadialSegments;
+            const float angle = factor * 360;
+            const Vector3 normal = (xAxis * Cos(angle) + yAxis * Sin(angle)).Normalized();
+
+            DefaultVertex vertex;
+            vertex.position_ = position + radius * normal;
+            vertex.geometryNormal_ = normal;
+            vertex.normal_ = normal;
+            vertex.tangent_ = zAxis;
+            vertex.binormal_ = CrossProduct(vertex.normal_, vertex.tangent_);
+            vertex.uv_[0] = Vector4(factor / material.textureScale_.x_, relativeDistance / material.textureScale_.y_, 0, 0);
+//             vertex.branchAdherence_ = param.windAdherence_;
+//             vertex.phase_ = param.windPhase_;
+//             vertex.edgeOscillation_ = 0.0f;
+
+            result.Push(vertex);
+        }
+
+        // Update previous values
+        prevPosition = position;
+        prevRadius = radius;
+    }
+
+    return result;
+}
+
+PODVector<unsigned> GenerateBranchIndices(const PODVector<unsigned>& numRadialSegments, unsigned maxVertices)
+{
+    PODVector<unsigned> result;
+    if (numRadialSegments.Empty())
+    {
+        URHO3D_LOGERROR("Points array must not be empty");
+        return result;
+    }
+
+    // Compute indices
+    unsigned baseVertex = 0;
+    for (unsigned i = 0; i < numRadialSegments.Size() - 1; ++i)
+    {
+        const unsigned numA = numRadialSegments[i];
+        const unsigned numB = numRadialSegments[i + 1];
+        const unsigned baseVertexA = baseVertex;
+        const unsigned baseVertexB = baseVertex + numA + 1;
+        baseVertex = baseVertexB;
+
+        assert(baseVertexA + numA <= maxVertices);
+        assert(baseVertexB + numB <= maxVertices);
+
+        unsigned idxA = 0;
+        unsigned idxB = 0;
+        const unsigned numTriangles = numA + numB;
+        for (unsigned j = 0; j < numTriangles; ++j)
+        {
+            if (idxA * numB <= idxB * numA)
+            {
+                // A-based triangle
+                result.Push(baseVertexA + idxA % (numA + 1));
+                result.Push(baseVertexA + (idxA + 1) % (numA + 1));
+                result.Push(baseVertexB + idxB % (numB + 1));
+                ++idxA;
+            }
+            else
+            {
+                // B-based triangle
+                result.Push(baseVertexB + (idxB + 1) % (numB + 1));
+                result.Push(baseVertexB + idxB % (numB + 1));
+                result.Push(baseVertexA + idxA % (numA + 1));
+                ++idxB;
+            }
+        }
+    }
+
+    return result;
+}
+
+void GenerateBranchGeometry(ModelFactory& factory, const TessellatedBranchPoints& points,
+    const BranchShapeSettings& shape, const BranchMaterialSettings& material, unsigned numRadialSegments)
+{
+    const PODVector<DefaultVertex> tempVertices =
+        GenerateBranchVertices(points, shape, material, numRadialSegments);
+    const PODVector<unsigned> tempIndices =
+        GenerateBranchIndices(ConstructPODVector(points.Size(), numRadialSegments), tempVertices.Size());
+    factory.Push(tempVertices, tempIndices, true);
+}
+
+PODVector<TreeElementLocation> DistributeElementsOverParent(const BranchDescription& parent, const TreeElementDistribution& distrib)
+{
+    const unsigned seed = distrib.seed_ != 0
+        ? distrib.seed_
+        : MakeHash(distrib.position_);
+    StandardRandom random(seed);
+
+    PODVector<TreeElementLocation> result;
+    if (distrib.frequency_ == 0)
+    {
+        TreeElementLocation elem;
+        elem.seed_ = seed;
+        elem.location_ = 0.5f;
+        elem.position_ = distrib.position_;
+        elem.rotation_ = MakeBasisFromDirection(distrib.direction_);
+        elem.baseRadius_ = 1.0f;
+        elem.noise_ = random.Vector4From01();
+        result.Push(elem);
+    }
+    else
+    {
+        const PODVector<float> locations = ComputeChildLocations(distrib, random, distrib.frequency_);
+        const PODVector<float> twirlAngles = ComputeChildAngles(distrib, random, distrib.frequency_, parent.index_);
+        for (unsigned i = 0; i < distrib.frequency_; ++i)
+        {
+            // Find location
+            const float location = locations[i];
+            const float twirlAngle = twirlAngles[i];
+            const float leanAngle = distrib.growthAngle_.Compute(location);
+
+            // Compute position
+            const Vector3 position = SampleBezierCurve(parent.positionsCurve_, location);
+
+            // Compute basis for parent branch
+            const Vector3 zAxis = SampleBezierCurveDerivative(parent.positionsCurve_, location).Normalized();
+            const Quaternion basis = MakeBasisFromDirection(zAxis);
+            const Vector3 xAxis = GetBasisX(basis.RotationMatrix()).Normalized();
+            const Vector3 yAxis = GetBasisY(basis.RotationMatrix()).Normalized();
+
+            // Compute base direction
+            const Vector3 baseDirection = (xAxis * Cos(twirlAngle) + yAxis * Sin(twirlAngle)).Normalized();
+            const Vector3 direction = (Cos(90 - leanAngle) * zAxis + Sin(90 - leanAngle) * baseDirection).Normalized();
+
+            // Generate branch
+            TreeElementLocation elem;
+            elem.seed_ = random.Random();
+            elem.location_ = location;
+            elem.position_ = position;
+            elem.rotation_ = MakeBasisFromDirection(direction);
+            elem.baseRadius_ = SampleBezierCurve(parent.radiusesCurve_, location);
+            elem.noise_ = random.Vector4From01();
+            result.Push(elem);
+        }
+    }
+    return result;
+}
+
+//////////////////////////////////////////////////////////////////////////
+PODVector<float> IntegrateDensityFunction(const MathFunctionWrapped& density, unsigned count)
+{
+    PODVector<float> result;
+
+    // Integrate over density
+    float valueSum = 0.0f;
+    for (unsigned i = 0; i < count; ++i)
+    {
+        const float value = density.Compute((i + 0.5f) / count);
+        result.Push(valueSum + value / 2);
+        valueSum += value;
+    }
+
+    if (valueSum < M_LARGE_EPSILON && !result.Empty())
+    {
+        URHO3D_LOGWARNING("Density function mustn't be zero");
+        return result;
+    }
+
+    // Normalize values
+    for (float& value : result)
+    {
+        value /= valueSum;
+    }
+    return result;
+}
+
+Vector<BranchDescription> InstantiateBranchGroup(const BranchDescription& parent, const BranchGroupDescription& group)
+{
+    const PODVector<TreeElementLocation> elements = DistributeElementsOverParent(parent, group.distribution_);
+    const float parentLength = group.distribution_.frequency_ == 0 || !group.shape_.relativeLength_ ? 1.0f : parent.length_;
+
+    Vector<BranchDescription> result;
+    for (unsigned i = 0; i < elements.Size(); ++i)
+    {
+        const TreeElementLocation& element = elements[i];
+        const Vector3 position = element.position_;
+        const Vector3 direction = GetBasisZ(element.rotation_.RotationMatrix());
+        const float length = parentLength *
+            group.shape_.length_.Get(element.noise_.w_) * group.distribution_.growthScale_.Compute(element.location_);
+        BranchDescription branch = GenerateBranch(
+            position, direction, length, element.baseRadius_, group.shape_, group.material_, group.minNumKnots_);
+        branch.index_ = i;
+        result.Push(branch);
+    }
+
+
+    // Create fake ending branch
+    if (group.shape_.fakeEnding_ && group.distribution_.frequency_ != 0)
+    {
+        BranchDescription branch;
+
+        // Compute length of fake branch
+        const float location = elements.Empty() ? 0.0f : elements.Back().location_;
+        branch.index_ = elements.Size();
+        branch.length_ = parentLength * (1.0f - location);
+
+        // Compute number of knots
+        const unsigned numKnots = Max(group.minNumKnots_, static_cast<unsigned>((1.0f - location) * branch.positions_.Size()));
+
+        // Generate knots
+        for (unsigned i = 0; i < numKnots; ++i)
+        {
+            const float t = Lerp(location, 1.0f, i / (numKnots - 1.0f));
+            branch.positions_.Push(SampleBezierCurve(parent.positionsCurve_, t));
+            branch.radiuses_.Push(SampleBezierCurve(parent.radiusesCurve_, t));
+        }
+
+        branch.positionsCurve_ = CreateBezierCurve(branch.positions_);
+        branch.radiusesCurve_ = CreateBezierCurve(branch.radiuses_);
+
+        branch.fake_ = true;
+        result.Push(branch);
+    }
+
+    return result;
+}
+
+//////////////////////////////////////////////////////////////////////////
+PODVector<LeafDescription> InstantiateLeafGroup(const BranchDescription& parent, const LeafGroupDescription& group)
+{
+    const PODVector<TreeElementLocation> elements = DistributeElementsOverParent(parent, group.distribution_);
+
+    PODVector<LeafDescription> result;
+    for (const TreeElementLocation& element : elements)
+    {
+        LeafDescription leaf;
+        leaf.location_ = element;
+        leaf.shape_ = group.shape_;
+        result.Push(leaf);
+    }
+    return result;
+}
+
+void GenerateLeafGeometry(ModelFactory& factory, const LeafShapeSettings& shape, const TreeElementLocation& location)
+{
+    // Instantiate random values
+    const float adjustToGlobal = shape.adjustToGlobal_.Get(location.noise_.x_);
+    const float alignVerical = shape.alignVerical_.Get(location.noise_.y_);
+    const Vector3 position = location.position_;
+    const Quaternion localRotation = location.rotation_;
+
+    // Compute global axises
+    const Vector3 xAxisGlobal = CrossProduct(Vector3::UP, GetBasisZ(localRotation.RotationMatrix())).Normalized();
+    const Vector3 zAxisGlobal = CrossProduct(xAxisGlobal, Vector3::UP).Normalized();
+    const Vector3 yAxisGlobal = CrossProduct(zAxisGlobal, xAxisGlobal).Normalized();
+
+    // Skip such cases
+    if (Equals(xAxisGlobal.LengthSquared(), 0.0f)
+        || Equals(yAxisGlobal.LengthSquared(), 0.0f)
+        || Equals(zAxisGlobal.LengthSquared(), 0.0f))
+    {
+        return;
+    }
+
+    // Adjust to global space
+    const Quaternion globalRotation = Quaternion(xAxisGlobal, yAxisGlobal, zAxisGlobal).Normalized();
+    const Quaternion baseRotation = localRotation.Slerp(globalRotation, adjustToGlobal).Normalized();
+
+    const Quaternion verticalRotation = Quaternion(GetBasisZ(baseRotation.RotationMatrix()), Vector3::DOWN).Normalized();
+    const Quaternion alignVerticalRotation = Quaternion::IDENTITY.Slerp(verticalRotation, alignVerical).Normalized();
+
+    const Matrix3 rotationMatrix = (alignVerticalRotation * baseRotation).RotationMatrix();
+    const Vector3 xAxis = GetBasisX(rotationMatrix);
+    const Vector3 yAxis = GetBasisY(rotationMatrix);
+    const Vector3 zAxis = GetBasisZ(rotationMatrix);
+
+    // Compute normals
+    const float FACTOR = 0.5f;// #TODO move to settings and get name
+    const Vector3 baseNormal = (location.position_ * Vector3(1, 0, 1)).Normalized();
+    const Vector3 upNormal = Vector3::UP;
+    const Vector3 downNormal = (baseNormal + Vector3::DOWN).Normalized();
+
+    // #TODO Use custom geometry
+    DefaultVertex vers[4];
+
+    vers[0].position_ = Vector3(-0.5f, 0.0f, 0.0f);
+    vers[0].normal_ = upNormal;
+    vers[0].uv_[0] = Vector4(0, 0, 0, 0);
+
+    vers[1].position_ = Vector3(0.5f, 0.0f, 0.0f);
+    vers[0].normal_ = upNormal;
+    vers[1].uv_[0] = Vector4(1, 0, 0, 0);
+
+    vers[2].position_ = Vector3(-0.5f, 0.0f, 1.0f);
+    vers[2].normal_ = downNormal;
+    vers[2].uv_[0] = Vector4(0, 1, 0, 0);
+
+    vers[3].position_ = Vector3(0.5f, 0.0f, 1.0f);
+    vers[3].normal_ = downNormal;
+    vers[3].uv_[0] = Vector4(1, 1, 0, 0);
+
+    PODVector<DefaultVertex> newVertices;
+    PODVector<unsigned> newIndices;
+    AppendQuadGridToVertices(newVertices, newIndices, vers[0], vers[1], vers[2], vers[3], 2, 2);
+
+    // Compute max factor
+    const Vector3 junctionAdherenceFactor = Vector3(1.0f, 0.0f, 1.0f);
+    Vector3 maxFactor = Vector3::ONE * M_EPSILON;
+    for (DefaultVertex& vertex : newVertices)
+    {
+        maxFactor = VectorMax(maxFactor, vertex.position_.Abs());
+    }
+
+    // Finalize
+    const Vector3 geometryScale = shape.scale_ * shape.size_.Get(location.noise_.z_);
+    const Vector3 basePosition = position + rotationMatrix * shape.junctionOffset_;
+    for (DefaultVertex& vertex : newVertices)
+    {
+        // Compute factor of junction adherence
+        const Vector3 factor = vertex.position_.Abs() / maxFactor;
+
+        // Compute position in global space
+        vertex.position_ = basePosition + rotationMatrix * vertex.position_ * geometryScale;
+
+        // Compute distance to junction
+        const float len = (vertex.position_ - position).Length();
+
+        // Apply gravity
+        const Vector3 perComponentGravity = shape.gravityIntensity_ * Pow(factor, Vector3::ONE / shape.gravityResistance_);
+        vertex.position_.y_ -= perComponentGravity.DotProduct(Vector3::ONE);
+
+        // Restore shape
+        vertex.position_ = (vertex.position_ - position).Normalized() * len + position;
+
+        // Apply wind parameters
+//         vertex.edgeOscillation_ = 0;
+//         vertex.branchAdherence_ = location.branchAdherence;
+//         vertex.phase_ = location.phase;
+    }
+
+    factory.Push(newVertices, newIndices, true);
+}
+// 
+// //////////////////////////////////////////////////////////////////////////
+// SharedPtr<Model> TriangulateBranchesAndLeaves(Context* context, const Vector<TreeLodDescription>& lods,
+//     const Vector<BranchDescription>& branches, const PODVector<LeafDescription>& leaves, unsigned numMaterials)
+// {
+//     // Prepare buffers for accumulated geometry data
+//     SharedPtr<VertexBuffer> vertexBuffer = MakeShared<VertexBuffer>(context);
+//     vertexBuffer->SetShadowed(true);
+//     SharedPtr<IndexBuffer> indexBuffer = MakeShared<IndexBuffer>(context);
+//     indexBuffer->SetShadowed(true);
+//     SharedPtr<Model> model = MakeShared<Model>(context);
+//     model->SetVertexBuffers({ vertexBuffer }, { 0 }, { 0 });
+//     model->SetIndexBuffers({ indexBuffer });
+// 
+//     // Number of geometries is equal to number of materials
+//     model->SetNumGeometries(numMaterials);
+// 
+//     const unsigned numLods = lods.Size();
+//     for (unsigned materialIndex = 0; materialIndex < numMaterials; ++materialIndex)
+//     {
+//         model->SetNumGeometryLodLevels(materialIndex, numLods);
+//     }
+// 
+//     PODVector<VegetationVertex> vertexData;
+//     PODVector<unsigned short> indexData;
+//     PODVector<unsigned> groupOffsets;
+//     PODVector<unsigned> groupSizes;
+// 
+//     // Generate data for each material and LOD
+//     BoundingBox boundingBox;
+//     unsigned indexOffset = 0;
+//     for (unsigned materialIndex = 0; materialIndex < numMaterials; ++materialIndex)
+//     {
+//         for (unsigned lod = 0; lod < lods.Size(); ++lod)
+//         {
+//             const TreeLodDescription& lodInfo = lods[lod];
+// 
+//             PODVector<FatVertex> vertices;
+//             PODVector<FatIndex> indices;
+//             for (const BranchDescription& branch : branches)
+//             {
+//                 if (branch.material_.materialId_ != static_cast<int>(materialIndex))
+//                 {
+//                     continue;
+//                 }
+//                 const TessellatedBranchPoints tessellatedPoints =
+//                     TessellateBranch(branch.curve_, branch.radiuses_, lodInfo.branchTessellationQuality_);
+//                 const PODVector<FatVertex> tempVertices =
+//                     GenerateBranchVertices(tessellatedPoints, branch.shape_, branch.material_, 5);
+//                 const PODVector<FatIndex> tempIndices =
+//                     GenerateBranchIndices(ConstructPODVector(tessellatedPoints.Size(), 5u), tempVertices.Size());
+//                 AppendGeometryToVertices(vertices, indices, tempVertices, tempIndices);
+//             }
+// 
+//             for (const LeafDescription& leaf : leaves)
+//             {
+// //                 if (branch.material_.materialId_ != static_cast<int>(materialIndex))
+// //                 {
+// //                     continue;
+// //                 }
+//                 PODVector<FatVertex> tempVertices;
+//                 PODVector<FatIndex> tempIndices;
+//                 GenerateLeafGeometry(leaf.shape_, leaf.location_, tempVertices, tempIndices);
+//                 AppendGeometryToVertices(vertices, indices, tempVertices, tempIndices);
+//             }
+// 
+//             // Compute AABB and radius
+//             const BoundingBox aabb = CalculateBoundingBox(vertices.Buffer(), vertices.Size());
+//             const Vector3 aabbCenter = static_cast<Vector3>(aabb.Center());
+// //             modelRadius_ = 0.0f;
+// //             for (const FatVertex& vertex : vertices)
+// //             {
+// //                 const float dist = ((vertex.position_ - aabbCenter) * Vector3(1, 0, 1)).Length();
+// //                 modelRadius_ = Max(modelRadius_, dist);
+// //             }
+//             boundingBox.Merge(aabb);
+// 
+//             SharedPtr<Geometry> geometry = MakeShared<Geometry>(context);
+//             geometry->SetVertexBuffer(0, vertexBuffer);
+//             geometry->SetIndexBuffer(indexBuffer);
+//             model->SetGeometry(materialIndex, lod, geometry);
+//             groupOffsets.Push(indexOffset);
+//             groupSizes.Push(indices.Size());
+//             indexOffset += indices.Size();
+// 
+//             unsigned vertexOffset = vertexData.Size();
+//             for (unsigned i = 0; i < indices.Size(); ++i)
+//             {
+//                 indexData.Push(static_cast<unsigned short>(indices[i] + vertexOffset));
+//             }
+// 
+//             for (unsigned i = 0; i < vertices.Size(); ++i)
+//             {
+//                 vertexData.Push(VegetationVertex::Construct(vertices[i]));
+//             }
+//         }
+//     }
+// 
+//     // Flush data to buffers
+//     vertexBuffer->SetSize(vertexData.Size(), VegetationVertex::Format());
+//     vertexBuffer->SetData(vertexData.Buffer());
+//     indexBuffer->SetSize(indexData.Size(), false);
+//     indexBuffer->SetData(indexData.Buffer());
+// 
+//     // Setup ranges
+//     unsigned group = 0;
+//     for (unsigned materialIndex = 0; materialIndex < numMaterials; ++materialIndex)
+//     {
+//         for (unsigned lod = 0; lod < lods.Size(); ++lod)
+//         {
+//             model->GetGeometry(materialIndex, lod)->SetDrawRange(TRIANGLE_LIST, groupOffsets[group], groupSizes[group]);
+//             ++group;
+//         }
+//     }
+// 
+//     // Setup other things
+//     model->SetBoundingBox(boundingBox);
+// 
+//     return model;
+// }
+
+
+
+
+
+
+BranchGroupDescription ReadBranchGroupDescriptionFromXML(const XMLElement& element, const Vector<String>& materials)
+{
+    BranchGroupDescription result;
+
+    // Load distribution
+//     LoadAttributeOrChild(element, "seed", result.distribution_.seed_);
+//     LoadAttributeOrChild(element, "frequency", result.distribution_.frequency_);
+//     LoadAttributeOrChild(element, "quality", result.distribution_.quality_);
+// 
+//     LoadAttributeOrChild(element, "position", result.distribution_.position_);
+//     LoadAttributeOrChild(element, "direction", result.distribution_.direction_);
+// 
+//     LoadAttributeOrChild(element, "disributionType", result.distribution_.distributionType_);
+//     LoadAttributeOrChild(element, "location", result.distribution_.location_);
+//     LoadAttributeOrChild(element, "density", result.distribution_.density_);
+//     LoadAttributeOrChild(element, "alternateStep", result.distribution_.twirlStep_);
+//     LoadAttributeOrChild(element, "randomOffset", result.distribution_.twirlNoise_);
+//     LoadAttributeOrChild(element, "twirl", result.distribution_.twirlBase_);
+//     LoadAttributeOrChild(element, "growthScale", result.distribution_.growthScale_);
+//     LoadAttributeOrChild(element, "growthAngle", result.distribution_.growthAngle_);
+
+    // Load material
+//     result.material_.materialId_ = GetMaterialIndex(materials, GetAttributeOrChild(element, "material", String::EMPTY));
+    LoadAttributeOrChild(element, "scale", result.material_.textureScale_);
+
+    return result;
+}
+
+BranchGroup ReadBranchGroupFromXML(const XMLElement& element, const Vector<String>& materials)
+{
+    BranchGroup result;
+    result.fake_ = element.GetName().Compare("root", false) == 0;
+    result.desc_ = result.fake_ ? BranchGroupDescription() : ReadBranchGroupDescriptionFromXML(element, materials);
+    for (XMLElement child = element.GetChild("branch"); child; child = child.GetNext("branch"))
+    {
+        result.children_.Push(ReadBranchGroupFromXML(child, materials));
+    }
+    return result;
 }
 
 // Branch Group
@@ -408,348 +1119,364 @@ struct TreeFactory::InternalBranchTriangulator
             startVertex += points[idx].numVertices + 1;
         }
     }
-    void triangulateBranch(unsigned materialIndex, const Branch& branch, const LodInfo& lodInfo,
-                           Vector<FatVertex>& vertices, Vector<FatIndex>& indices)
-    {
-        Vector<PPPoint> points;
-        if (branch.groupInfo.p.material_.materialIndex_ == materialIndex)
-        {
-            preprocessPoints(branch, lodInfo, points);
-            generateBranchGeometry(branch, points, vertices, indices);
-        }
-
-        // Triangulate children
-        for (const Branch& child : branch.children)
-        {
-            triangulateBranch(materialIndex, child, lodInfo, vertices, indices);
-        }
-    }
-    void generateBranchGeometry(const Branch& branch, const Vector<PPPoint>& points,
-                                Vector<FatVertex>& vertices, Vector<FatIndex>& indices)
-    {
-        const Vector2 textureScale = branch.groupInfo.p.material_.textureScale_;
-        const unsigned baseVertex = vertices.Size();
-        for (const PPPoint& point : points)
-        {
-            // Add points
-            for (unsigned idx = 0; idx <= point.numVertices; ++idx)
-            {
-                const float factor = static_cast<float>(idx) / point.numVertices;
-                const float angle = factor * 360;
-                const Vector3 normal = (point.xAxis * Cos(angle) + point.yAxis * Sin(angle)).Normalized();
-
-                FatVertex vertex;
-                vertex.position_ = point.position + point.radius * normal;
-                vertex.geometryNormal_ = normal;
-                vertex.normal_ = normal;
-                vertex.tangent_ = point.zAxis;
-                vertex.binormal_ = CrossProduct(vertex.normal_, vertex.tangent_);
-                vertex.uv_[0] = Vector4(factor / textureScale.x_, point.relativeDistance / textureScale.y_, 0, 0);
-                vertex.branchAdherence_ = point.branchAdherence;
-                vertex.phase_ = point.phase;
-                vertex.edgeOscillation_ = 0.0f;
-
-                vertices.Push(vertex);
-            }
-        }
-
-        // Connect point circles
-        for (unsigned pointIndex = 0; pointIndex < points.Size() - 1; ++pointIndex)
-        {
-            const PPPoint& pointA = points[pointIndex];
-            const PPPoint& pointB = points[pointIndex + 1];
-            const unsigned numA = pointA.numVertices;
-            const unsigned numB = pointB.numVertices;
-            const unsigned baseVertexA = baseVertex + pointA.startVertex;
-            const unsigned baseVertexB = baseVertex + pointB.startVertex;
-
-            unsigned idxA = 0;
-            unsigned idxB = 0;
-            const unsigned numTriangles = pointA.numVertices + pointB.numVertices;
-            for (unsigned triangleIndex = 0; triangleIndex < numTriangles; ++triangleIndex)
-            {
-                if (idxA * numB <= idxB * numA)
-                {
-                    // A-based triangle
-                    indices.Push(baseVertexA + idxA % (numA + 1));
-                    indices.Push(baseVertexA + (idxA + 1) % (numA + 1));
-                    indices.Push(baseVertexB + idxB % (numB + 1));
-                    ++idxA;
-                }
-                else
-                {
-                    // B-based triangle
-                    indices.Push(baseVertexB + (idxB + 1) % (numB + 1));
-                    indices.Push(baseVertexB + idxB % (numB + 1));
-                    indices.Push(baseVertexA + idxA % (numA + 1));
-                    ++idxB;
-                }
-            }
-        }
-    }
+//     void triangulateBranch(unsigned materialIndex, const Branch& branch, const LodInfo& lodInfo,
+//                            PODVector<FatVertex>& vertices, PODVector<FatIndex>& indices)
+//     {
+//         Vector<PPPoint> points;
+//         if (branch.groupInfo.p.material_.materialIndex_ == materialIndex)
+//         {
+//             preprocessPoints(branch, lodInfo, points);
+//             generateBranchGeometry(branch, points, vertices, indices);
+//         }
+// 
+//         // Triangulate children
+//         for (const Branch& child : branch.children)
+//         {
+//             triangulateBranch(materialIndex, child, lodInfo, vertices, indices);
+//         }
+//     }
+//     void generateBranchGeometry(const Branch& branch, const Vector<PPPoint>& points,
+//                                 PODVector<FatVertex>& vertices, PODVector<FatIndex>& indices)
+//     {
+// //         BranchGeometryParameters branchGeometry;
+// //         branchGeometry.baseRadius_ = branch.points[0].radius;
+// //         branchGeometry.textureScale_ = Vector2(1, 4);
+// // 
+// //         BranchTessellationQualityParameters tessQuality;
+// //         tessQuality.minAngle_ = 10.0f;
+// //         tessQuality.minNumSegments_ = 3;
+// //         tessQuality.maxNumSegments_ = 100;
+// // 
+// //         const TessellatedBranchPoints tessellatedPoints = TessellateBranch(branch.curve_, tessQuality);
+// //         const PODVector<FatVertex> tempVertices = GenerateBranchVertices(tessellatedPoints, branchGeometry, 5);
+// //         const PODVector<FatIndex> tempIndices = GenerateBranchIndices(ConstructPODVector(tessellatedPoints.Size(), 5u), tempVertices.Size());
+// //         AppendGeometryToVertices(vertices, indices, tempVertices, tempIndices);
+// // 
+// //         return;
+// 
+//         const Vector2 textureScale = branch.groupInfo.p.material_.textureScale_;
+//         const unsigned baseVertex = vertices.Size();
+//         for (const PPPoint& point : points)
+//         {
+//             // Add points
+//             for (unsigned idx = 0; idx <= point.numVertices; ++idx)
+//             {
+//                 const float factor = static_cast<float>(idx) / point.numVertices;
+//                 const float angle = factor * 360;
+//                 const Vector3 normal = (point.xAxis * Cos(angle) + point.yAxis * Sin(angle)).Normalized();
+// 
+//                 FatVertex vertex;
+//                 vertex.position_ = point.position + point.radius * normal;
+//                 vertex.geometryNormal_ = normal;
+//                 vertex.normal_ = normal;
+//                 vertex.tangent_ = point.zAxis;
+//                 vertex.binormal_ = CrossProduct(vertex.normal_, vertex.tangent_);
+//                 vertex.uv_[0] = Vector4(factor / textureScale.x_, point.relativeDistance / textureScale.y_, 0, 0);
+//                 vertex.branchAdherence_ = point.branchAdherence;
+//                 vertex.phase_ = point.phase;
+//                 vertex.edgeOscillation_ = 0.0f;
+// 
+//                 vertices.Push(vertex);
+//             }
+//         }
+// 
+//         // Connect point circles
+//         for (unsigned pointIndex = 0; pointIndex < points.Size() - 1; ++pointIndex)
+//         {
+//             const PPPoint& pointA = points[pointIndex];
+//             const PPPoint& pointB = points[pointIndex + 1];
+//             const unsigned numA = pointA.numVertices;
+//             const unsigned numB = pointB.numVertices;
+//             const unsigned baseVertexA = baseVertex + pointA.startVertex;
+//             const unsigned baseVertexB = baseVertex + pointB.startVertex;
+// 
+//             unsigned idxA = 0;
+//             unsigned idxB = 0;
+//             const unsigned numTriangles = pointA.numVertices + pointB.numVertices;
+//             for (unsigned triangleIndex = 0; triangleIndex < numTriangles; ++triangleIndex)
+//             {
+//                 if (idxA * numB <= idxB * numA)
+//                 {
+//                     // A-based triangle
+//                     indices.Push(baseVertexA + idxA % (numA + 1));
+//                     indices.Push(baseVertexA + (idxA + 1) % (numA + 1));
+//                     indices.Push(baseVertexB + idxB % (numB + 1));
+//                     ++idxA;
+//                 }
+//                 else
+//                 {
+//                     // B-based triangle
+//                     indices.Push(baseVertexB + (idxB + 1) % (numB + 1));
+//                     indices.Push(baseVertexB + idxB % (numB + 1));
+//                     indices.Push(baseVertexA + idxA % (numA + 1));
+//                     ++idxB;
+//                 }
+//             }
+//         }
+//     }
 };
 struct TreeFactory::InternalFrondTriangulator
 {
-    void triangulateBranch(unsigned materialIndex, const Branch& branch, const LodInfo& lodInfo,
-                           Vector<FatVertex>& vertices, Vector<FatIndex>& indices)
-    {
-        // Triangulate frond groups
-        for (const FrondGroup& group : branch.groupInfo.fronds())
-        {
-            triangulateFrondGroup(materialIndex, branch, group, lodInfo, vertices, indices);
-        }
-
-        // Iterate over children
-        for (const Branch& child : branch.children)
-        {
-            triangulateBranch(materialIndex, child, lodInfo, vertices, indices);
-        }
-    }
-    void triangulateFrondGroup(unsigned materialIndex, const Branch& branch, const FrondGroup& frondGroup,
-                               const LodInfo& lodInfo,
-                               Vector<FatVertex>& vertices, Vector<FatIndex>& indices)
-    {
-        if (frondGroup.material_.materialIndex_ != materialIndex)
-        {
-            return;
-        }
-        const float size = frondGroup.size_->Compute(m_random.FloatFrom01());
-        switch (frondGroup.type_)
-        {
-        case FrondType::Simple:
-            TriangulateFrond(branch, frondGroup, size, lodInfo, vertices, indices);
-            break;
-        case TreeFactory::FrondType::RagEnding:
-            triangulateRagEndingFrondGroup(branch, frondGroup, size, lodInfo, vertices, indices);
-            break;
-        case TreeFactory::FrondType::BrushEnding:
-            triangulateBrushEndingFrondGroup(branch, frondGroup, size, lodInfo, vertices, indices);
-            break;
-        default:
-            break;
-        }
-    }
-    /// @name Ending
-    /// @{
-    void TriangulateFrond(const Branch& branch, const FrondGroup& frondGroup,
-        const float size, const LodInfo& lodInfo,
-        Vector<FatVertex>& vertices, Vector<FatIndex>& indices)
-    {
-        // Instantiate random values
-        const FrondParameters& param = frondGroup.param_;
-        const float adjustUpToGlobal = param.adjustUpToGlobal_;
-        const float yaw = param.yaw_;
-        const float pitch = param.pitch_;
-        const float roll = param.roll_;
-        const Point location = branch.getPoint(1.0f);
-
-        // Compute global axises
-        const Quaternion localRotation(location.xAxis, location.yAxis, location.zAxis);
-        const Vector3 xAxisGlobal = CrossProduct(Vector3::UP, location.zAxis).Normalized();
-        const Vector3 zAxisGlobal = CrossProduct(xAxisGlobal, Vector3::UP).Normalized();
-        const Vector3 yAxisGlobal = CrossProduct(zAxisGlobal, xAxisGlobal).Normalized();
-
-        // Skip such cases
-        if (Equals(xAxisGlobal.LengthSquared(), 0.0f)
-            || Equals(yAxisGlobal.LengthSquared(), 0.0f)
-            || Equals(zAxisGlobal.LengthSquared(), 0.0f))
-        {
-            return;
-        }
-
-        // Apply rotations
-        const Quaternion globalRotation(xAxisGlobal, yAxisGlobal, zAxisGlobal);
-        const Quaternion baseRotation = localRotation.Slerp(globalRotation, adjustUpToGlobal);
-        const Quaternion yprRotation = Quaternion(yaw, Vector3::UP)
-            * Quaternion(pitch, Vector3::RIGHT) * Quaternion(roll, Vector3::FORWARD);
-
-        const Matrix3 rotationMatrix = (baseRotation * yprRotation).RotationMatrix();
-        const Vector3 xAxis = Vector3(rotationMatrix.m00_, rotationMatrix.m10_, rotationMatrix.m20_);
-        const Vector3 yAxis = Vector3(rotationMatrix.m01_, rotationMatrix.m11_, rotationMatrix.m21_);
-        const Vector3 zAxis = Vector3(rotationMatrix.m02_, rotationMatrix.m12_, rotationMatrix.m22_);
-
-        // #TODO Use custom geometry
-        FatVertex vers[4];
-
-        vers[0].position_ = Vector3(-0.5f, 0.0f, 0.0f);
-        vers[0].uv_[0] = Vector4(0, 0, 0, 0);
-
-        vers[1].position_ = Vector3(0.5f, 0.0f, 0.0f);
-        vers[1].uv_[0] = Vector4(1, 0, 0, 0);
-
-        vers[2].position_ = Vector3(-0.5f, 0.0f, 1.0f);
-        vers[2].uv_[0] = Vector4(0, 1, 0, 0);
-
-        vers[3].position_ = Vector3(0.5f, 0.0f, 1.0f);
-        vers[3].uv_[0] = Vector4(1, 1, 0, 0);
-
-        Vector<FatVertex> newVertices;
-        Vector<FatIndex> newIndices;
-        AppendQuadGridToVertices(newVertices, newIndices, vers[0], vers[1], vers[2], vers[3], 2, 2);
-
-        // Compute max factor
-        const Vector3 junctionAdherenceFactor = Vector3(1.0f, 0.0f, 1.0f);
-        Vector3 maxFactor = Vector3::ONE * M_EPSILON;
-        for (FatVertex& vertex : newVertices)
-        {
-            maxFactor = VectorMax(maxFactor, vertex.position_.Abs());
-        }
-
-        // Finalize
-        const Vector3 geometryScale = Vector3(size, size, size);
-        const Vector3 basePosition = location.position + rotationMatrix * param.junctionOffset_;
-        for (FatVertex& vertex : newVertices)
-        {
-            // Compute factor of junction adherence
-            const Vector3 factor = vertex.position_.Abs() / maxFactor;
-
-            // Compute position in global space
-            vertex.position_ = basePosition + rotationMatrix * vertex.position_ * geometryScale;
-
-            // Compute distance to junction
-            const float len = (vertex.position_ - location.position).Length();
-
-            // Apply gravity
-            const Vector3 perComponentGravity = param.gravityIntensity_ * Pow(factor, Vector3::ONE / param.gravityResistance_);
-            vertex.position_.y_ -= perComponentGravity.DotProduct(Vector3::ONE);
-
-            // Restore shape
-            vertex.position_ = (vertex.position_ - location.position).Normalized() * len + location.position;
-
-            // Apply wind parameters
-            vertex.edgeOscillation_ = 0;
-            vertex.branchAdherence_ = location.branchAdherence;
-            vertex.phase_ = location.phase;
-        }
-
-        // Triangles
-        AppendGeometryToVertices(vertices, indices, newVertices, newIndices);
-    }
-    void triangulateRagEndingFrondGroup(const Branch& branch, const FrondGroup& frondGroup,
-                                        const float size, const LodInfo& lodInfo,
-                                        Vector<FatVertex>& vertices, Vector<FatIndex>& indices)
-    {
-        const RagEndingFrondParameters& param = frondGroup.ragEndingParam_;
-        const float halfSize = size / 2;
-        const float relativeOffset = param.locationOffset_ / branch.totalLength;
-        const Point location = branch.getPoint(1.0f - relativeOffset);
-        const Vector3 zyAxis = Lerp(location.zAxis, -location.yAxis, param.zBendingFactor_).Normalized();
-        FatVertex vers[9];
-
-        // Center
-        vers[4].position_ = location.position
-            + (location.zAxis + location.yAxis).Normalized() * param.centerOffset_;
-        vers[4].uv_[0] = Vector4(0.5f, 0.5f, 0, 0);
-        vers[4].edgeOscillation_ = param.junctionOscillation_;
-
-        // Center -+z
-        vers[3].position_ = vers[4].position_ - halfSize * location.zAxis;
-        vers[3].uv_[0] = Vector4(0.5f, 0.0f, 0, 0);
-        vers[3].edgeOscillation_ = param.edgeOscillation_;
-        vers[5].position_ = vers[4].position_ + halfSize * zyAxis;
-        vers[5].uv_[0] = Vector4(0.5f, 1.0f, 0, 0);
-        vers[5].edgeOscillation_ = param.edgeOscillation_;
-
-        // Center -+x
-        vers[1].position_ = vers[4].position_ - halfSize * Lerp(location.xAxis, location.yAxis, param.xBendingFactor_).Normalized();
-        vers[1].uv_[0] = Vector4(0.0f, 0.5f, 0, 0);
-        vers[1].edgeOscillation_ = param.edgeOscillation_;
-        vers[7].position_ = vers[4].position_ + halfSize * Lerp(location.xAxis, -location.yAxis, param.xBendingFactor_).Normalized();
-        vers[7].uv_[0] = Vector4(1.0f, 0.5f, 0, 0);
-        vers[7].edgeOscillation_ = param.edgeOscillation_;
-
-        // Center -x -+z
-        vers[0].position_ = vers[1].position_ - halfSize * location.zAxis;
-        vers[0].uv_[0] = Vector4(0.0f, 0.0f, 0, 0);
-        vers[0].edgeOscillation_ = param.edgeOscillation_;
-        vers[2].position_ = vers[1].position_ + halfSize * zyAxis;
-        vers[2].uv_[0] = Vector4(0.0f, 1.0f, 0, 0);
-        vers[2].edgeOscillation_ = param.edgeOscillation_;
-
-        // Center +x -+z
-        vers[6].position_ = vers[7].position_ - halfSize * location.zAxis;
-        vers[6].uv_[0] = Vector4(1.0f, 0.0f, 0, 0);
-        vers[6].edgeOscillation_ = param.edgeOscillation_;
-        vers[8].position_ = vers[7].position_ + halfSize * zyAxis;
-        vers[8].uv_[0] = Vector4(1.0f, 1.0f, 0, 0);
-        vers[8].edgeOscillation_ = param.edgeOscillation_;
-
-        // Set wind
-        for (FatVertex& vertex : vers)
-        {
-            vertex.branchAdherence_ = location.branchAdherence;
-            vertex.phase_ = location.phase;
-        }
-
-        // Triangles
-        const unsigned base = vertices.Size();
-        AppendQuadToIndices(indices, base, 0, 1, 3, 4, true);
-        AppendQuadToIndices(indices, base, 1, 2, 4, 5, true);
-        AppendQuadToIndices(indices, base, 3, 4, 6, 7, true);
-        AppendQuadToIndices(indices, base, 4, 5, 7, 8, true);
-        vertices.Insert(vertices.End(), vers, vers + 9);
-    }
-    void triangulateBrushEndingFrondGroup(const Branch& branch, const FrondGroup& frondGroup,
-                                          const float size, const LodInfo& lodInfo,
-                                          Vector<FatVertex>& vertices, Vector<FatIndex>& indices)
-    {
-        const BrushEndingFrondParameters& param = frondGroup.brushEndingParam_;
-        const float halfSize = size / 2;
-        const float relativeOffset = param.locationOffset_ / branch.totalLength;
-        const float xyAngle = param.spreadAngle_ / 2;
-        const Point location = branch.getPoint(1.0f - relativeOffset);
-
-        // Build volume geometry
-        static const unsigned NumQuads = 3;
-        for (unsigned idx = 0; idx < NumQuads; ++idx)
-        {
-            const float zAngle = 360.0f * idx / NumQuads;
-            const Vector3 position = location.position;
-            const Vector3 side = location.xAxis * Cos(zAngle) + location.yAxis * Sin(zAngle);
-            const Vector3 direction = Quaternion(xyAngle, side).RotationMatrix() * location.zAxis;
-            const Vector3 normal = CrossProduct(side, direction);
-
-            // triangulate
-            FatVertex vers[5];
-            vers[0].position_ = position - halfSize * side;
-            vers[0].uv_[0] = Vector4(0.0f, 0.0f, 0, 0);
-            vers[0].edgeOscillation_ = param.junctionOscillation_;
-            vers[1].position_ = position + halfSize * side;
-            vers[1].uv_[0] = Vector4(1.0f, 0.0f, 0, 0);
-            vers[1].edgeOscillation_ = param.junctionOscillation_;
-            vers[2].position_ = position - halfSize * side + size * direction;
-            vers[2].uv_[0] = Vector4(0.0f, 1.0f, 0, 0);
-            vers[2].edgeOscillation_ = param.edgeOscillation_;
-            vers[3].position_ = position + halfSize * side + size * direction;
-            vers[3].uv_[0] = Vector4(1.0f, 1.0f, 0, 0);
-            vers[3].edgeOscillation_ = param.edgeOscillation_;
-            vers[4] = Lerp(vers[0], vers[3], 0.5f);
-            vers[4].position_ += normal * size * param.centerOffset_;
-
-            // Set wind
-            for (FatVertex& vertex : vers)
-            {
-                vertex.branchAdherence_ = location.branchAdherence;
-                vertex.phase_ = location.phase;
-            }
-
-            // put data to buffers
-            const unsigned base = vertices.Size();
-            if (param.centerOffset_ == 0)
-            {
-                AppendQuadToIndices(indices, base, 0, 1, 2, 3, true);
-                vertices.Insert(vertices.End(), vers, vers + 4);
-            }
-            else
-            {
-                vertices.Insert(vertices.End(), vers, vers + 5);
-                indices.Push(base + 0); indices.Push(base + 1); indices.Push(base + 4);
-                indices.Push(base + 1); indices.Push(base + 3); indices.Push(base + 4);
-                indices.Push(base + 3); indices.Push(base + 2); indices.Push(base + 4);
-                indices.Push(base + 2); indices.Push(base + 0); indices.Push(base + 4);
-            }
-        }
-    }
+//     void triangulateBranch(unsigned materialIndex, const Branch& branch, const LodInfo& lodInfo,
+//                            PODVector<FatVertex>& vertices, PODVector<FatIndex>& indices)
+//     {
+//         // Triangulate frond groups
+//         for (const FrondGroup& group : branch.groupInfo.fronds())
+//         {
+//             triangulateFrondGroup(materialIndex, branch, group, lodInfo, vertices, indices);
+//         }
+// 
+//         // Iterate over children
+//         for (const Branch& child : branch.children)
+//         {
+//             triangulateBranch(materialIndex, child, lodInfo, vertices, indices);
+//         }
+//     }
+//     void triangulateFrondGroup(unsigned materialIndex, const Branch& branch, const FrondGroup& frondGroup,
+//                                const LodInfo& lodInfo,
+//                                PODVector<FatVertex>& vertices, PODVector<FatIndex>& indices)
+//     {
+//         if (frondGroup.material_.materialIndex_ != materialIndex)
+//         {
+//             return;
+//         }
+//         const float size = frondGroup.size_->Compute(m_random.FloatFrom01());
+//         switch (frondGroup.type_)
+//         {
+//         case FrondType::Simple:
+//             TriangulateFrond(branch, frondGroup, size, lodInfo, vertices, indices);
+//             break;
+//         case TreeFactory::FrondType::RagEnding:
+//             triangulateRagEndingFrondGroup(branch, frondGroup, size, lodInfo, vertices, indices);
+//             break;
+//         case TreeFactory::FrondType::BrushEnding:
+//             triangulateBrushEndingFrondGroup(branch, frondGroup, size, lodInfo, vertices, indices);
+//             break;
+//         default:
+//             break;
+//         }
+//     }
+//     /// @name Ending
+//     /// @{
+//     void TriangulateFrond(const Branch& branch, const FrondGroup& frondGroup,
+//         const float size, const LodInfo& lodInfo,
+//         PODVector<FatVertex>& vertices, PODVector<FatIndex>& indices)
+//     {
+//         // Instantiate random values
+//         const FrondParameters& param = frondGroup.param_;
+//         const float adjustToGlobal = param.adjustUpToGlobal_;
+//         const float yaw = param.yaw_;
+//         const float pitch = param.pitch_;
+//         const float roll = param.roll_;
+//         const Point location = branch.getPoint(1.0f);
+// 
+//         // Compute global axises
+//         const Quaternion localRotation(location.xAxis, location.yAxis, location.zAxis);
+//         const Vector3 xAxisGlobal = CrossProduct(Vector3::UP, location.zAxis).Normalized();
+//         const Vector3 zAxisGlobal = CrossProduct(xAxisGlobal, Vector3::UP).Normalized();
+//         const Vector3 yAxisGlobal = CrossProduct(zAxisGlobal, xAxisGlobal).Normalized();
+// 
+//         // Skip such cases
+//         if (Equals(xAxisGlobal.LengthSquared(), 0.0f)
+//             || Equals(yAxisGlobal.LengthSquared(), 0.0f)
+//             || Equals(zAxisGlobal.LengthSquared(), 0.0f))
+//         {
+//             return;
+//         }
+// 
+//         // Apply rotations
+//         const Quaternion globalRotation(xAxisGlobal, yAxisGlobal, zAxisGlobal);
+//         const Quaternion baseRotation = localRotation.Slerp(globalRotation, adjustToGlobal);
+//         const Quaternion yprRotation = Quaternion(yaw, Vector3::UP)
+//             * Quaternion(pitch, Vector3::RIGHT) * Quaternion(roll, Vector3::FORWARD);
+// 
+//         const Matrix3 rotationMatrix = (baseRotation * yprRotation).RotationMatrix();
+//         const Vector3 xAxis = Vector3(rotationMatrix.m00_, rotationMatrix.m10_, rotationMatrix.m20_);
+//         const Vector3 yAxis = Vector3(rotationMatrix.m01_, rotationMatrix.m11_, rotationMatrix.m21_);
+//         const Vector3 zAxis = Vector3(rotationMatrix.m02_, rotationMatrix.m12_, rotationMatrix.m22_);
+// 
+//         // #TODO Use custom geometry
+//         FatVertex vers[4];
+// 
+//         vers[0].position_ = Vector3(-0.5f, 0.0f, 0.0f);
+//         vers[0].uv_[0] = Vector4(0, 0, 0, 0);
+// 
+//         vers[1].position_ = Vector3(0.5f, 0.0f, 0.0f);
+//         vers[1].uv_[0] = Vector4(1, 0, 0, 0);
+// 
+//         vers[2].position_ = Vector3(-0.5f, 0.0f, 1.0f);
+//         vers[2].uv_[0] = Vector4(0, 1, 0, 0);
+// 
+//         vers[3].position_ = Vector3(0.5f, 0.0f, 1.0f);
+//         vers[3].uv_[0] = Vector4(1, 1, 0, 0);
+// 
+//         PODVector<FatVertex> newVertices;
+//         PODVector<FatIndex> newIndices;
+//         AppendQuadGridToVertices(newVertices, newIndices, vers[0], vers[1], vers[2], vers[3], 2, 2);
+// 
+//         // Compute max factor
+//         const Vector3 junctionAdherenceFactor = Vector3(1.0f, 0.0f, 1.0f);
+//         Vector3 maxFactor = Vector3::ONE * M_EPSILON;
+//         for (FatVertex& vertex : newVertices)
+//         {
+//             maxFactor = VectorMax(maxFactor, vertex.position_.Abs());
+//         }
+// 
+//         // Finalize
+//         const Vector3 geometryScale = Vector3(size, size, size);
+//         const Vector3 basePosition = location.position + rotationMatrix * param.junctionOffset_;
+//         for (FatVertex& vertex : newVertices)
+//         {
+//             // Compute factor of junction adherence
+//             const Vector3 factor = vertex.position_.Abs() / maxFactor;
+// 
+//             // Compute position in global space
+//             vertex.position_ = basePosition + rotationMatrix * vertex.position_ * geometryScale;
+// 
+//             // Compute distance to junction
+//             const float len = (vertex.position_ - location.position).Length();
+// 
+//             // Apply gravity
+//             const Vector3 perComponentGravity = param.gravityIntensity_ * Pow(factor, Vector3::ONE / param.gravityResistance_);
+//             vertex.position_.y_ -= perComponentGravity.DotProduct(Vector3::ONE);
+// 
+//             // Restore shape
+//             vertex.position_ = (vertex.position_ - location.position).Normalized() * len + location.position;
+// 
+//             // Apply wind parameters
+//             vertex.edgeOscillation_ = 0;
+//             vertex.branchAdherence_ = location.branchAdherence;
+//             vertex.phase_ = location.phase;
+//         }
+// 
+//         // Triangles
+//         AppendGeometryToVertices(vertices, indices, newVertices, newIndices);
+//     }
+//     void triangulateRagEndingFrondGroup(const Branch& branch, const FrondGroup& frondGroup,
+//                                         const float size, const LodInfo& lodInfo,
+//                                         PODVector<FatVertex>& vertices, PODVector<FatIndex>& indices)
+//     {
+//         const RagEndingFrondParameters& param = frondGroup.ragEndingParam_;
+//         const float halfSize = size / 2;
+//         const float relativeOffset = param.locationOffset_ / branch.totalLength;
+//         const Point location = branch.getPoint(1.0f - relativeOffset);
+//         const Vector3 zyAxis = Lerp(location.zAxis, -location.yAxis, param.zBendingFactor_).Normalized();
+//         FatVertex vers[9];
+// 
+//         // Center
+//         vers[4].position_ = location.position
+//             + (location.zAxis + location.yAxis).Normalized() * param.centerOffset_;
+//         vers[4].uv_[0] = Vector4(0.5f, 0.5f, 0, 0);
+//         vers[4].edgeOscillation_ = param.junctionOscillation_;
+// 
+//         // Center -+z
+//         vers[3].position_ = vers[4].position_ - halfSize * location.zAxis;
+//         vers[3].uv_[0] = Vector4(0.5f, 0.0f, 0, 0);
+//         vers[3].edgeOscillation_ = param.edgeOscillation_;
+//         vers[5].position_ = vers[4].position_ + halfSize * zyAxis;
+//         vers[5].uv_[0] = Vector4(0.5f, 1.0f, 0, 0);
+//         vers[5].edgeOscillation_ = param.edgeOscillation_;
+// 
+//         // Center -+x
+//         vers[1].position_ = vers[4].position_ - halfSize * Lerp(location.xAxis, location.yAxis, param.xBendingFactor_).Normalized();
+//         vers[1].uv_[0] = Vector4(0.0f, 0.5f, 0, 0);
+//         vers[1].edgeOscillation_ = param.edgeOscillation_;
+//         vers[7].position_ = vers[4].position_ + halfSize * Lerp(location.xAxis, -location.yAxis, param.xBendingFactor_).Normalized();
+//         vers[7].uv_[0] = Vector4(1.0f, 0.5f, 0, 0);
+//         vers[7].edgeOscillation_ = param.edgeOscillation_;
+// 
+//         // Center -x -+z
+//         vers[0].position_ = vers[1].position_ - halfSize * location.zAxis;
+//         vers[0].uv_[0] = Vector4(0.0f, 0.0f, 0, 0);
+//         vers[0].edgeOscillation_ = param.edgeOscillation_;
+//         vers[2].position_ = vers[1].position_ + halfSize * zyAxis;
+//         vers[2].uv_[0] = Vector4(0.0f, 1.0f, 0, 0);
+//         vers[2].edgeOscillation_ = param.edgeOscillation_;
+// 
+//         // Center +x -+z
+//         vers[6].position_ = vers[7].position_ - halfSize * location.zAxis;
+//         vers[6].uv_[0] = Vector4(1.0f, 0.0f, 0, 0);
+//         vers[6].edgeOscillation_ = param.edgeOscillation_;
+//         vers[8].position_ = vers[7].position_ + halfSize * zyAxis;
+//         vers[8].uv_[0] = Vector4(1.0f, 1.0f, 0, 0);
+//         vers[8].edgeOscillation_ = param.edgeOscillation_;
+// 
+//         // Set wind
+//         for (FatVertex& vertex : vers)
+//         {
+//             vertex.branchAdherence_ = location.branchAdherence;
+//             vertex.phase_ = location.phase;
+//         }
+// 
+//         // Triangles
+//         const unsigned base = vertices.Size();
+//         AppendQuadToIndices(indices, base, 0, 1, 3, 4, true);
+//         AppendQuadToIndices(indices, base, 1, 2, 4, 5, true);
+//         AppendQuadToIndices(indices, base, 3, 4, 6, 7, true);
+//         AppendQuadToIndices(indices, base, 4, 5, 7, 8, true);
+//         vertices.Insert(vertices.End(), vers, vers + 9);
+//     }
+//     void triangulateBrushEndingFrondGroup(const Branch& branch, const FrondGroup& frondGroup,
+//                                           const float size, const LodInfo& lodInfo,
+//                                           PODVector<FatVertex>& vertices, PODVector<FatIndex>& indices)
+//     {
+//         const BrushEndingFrondParameters& param = frondGroup.brushEndingParam_;
+//         const float halfSize = size / 2;
+//         const float relativeOffset = param.locationOffset_ / branch.totalLength;
+//         const float xyAngle = param.spreadAngle_ / 2;
+//         const Point location = branch.getPoint(1.0f - relativeOffset);
+// 
+//         // Build volume geometry
+//         static const unsigned NumQuads = 3;
+//         for (unsigned idx = 0; idx < NumQuads; ++idx)
+//         {
+//             const float zAngle = 360.0f * idx / NumQuads;
+//             const Vector3 position = location.position;
+//             const Vector3 side = location.xAxis * Cos(zAngle) + location.yAxis * Sin(zAngle);
+//             const Vector3 direction = Quaternion(xyAngle, side).RotationMatrix() * location.zAxis;
+//             const Vector3 normal = CrossProduct(side, direction);
+// 
+//             // triangulate
+//             FatVertex vers[5];
+//             vers[0].position_ = position - halfSize * side;
+//             vers[0].uv_[0] = Vector4(0.0f, 0.0f, 0, 0);
+//             vers[0].edgeOscillation_ = param.junctionOscillation_;
+//             vers[1].position_ = position + halfSize * side;
+//             vers[1].uv_[0] = Vector4(1.0f, 0.0f, 0, 0);
+//             vers[1].edgeOscillation_ = param.junctionOscillation_;
+//             vers[2].position_ = position - halfSize * side + size * direction;
+//             vers[2].uv_[0] = Vector4(0.0f, 1.0f, 0, 0);
+//             vers[2].edgeOscillation_ = param.edgeOscillation_;
+//             vers[3].position_ = position + halfSize * side + size * direction;
+//             vers[3].uv_[0] = Vector4(1.0f, 1.0f, 0, 0);
+//             vers[3].edgeOscillation_ = param.edgeOscillation_;
+//             vers[4] = Lerp(vers[0], vers[3], 0.5f);
+//             vers[4].position_ += normal * size * param.centerOffset_;
+// 
+//             // Set wind
+//             for (FatVertex& vertex : vers)
+//             {
+//                 vertex.branchAdherence_ = location.branchAdherence;
+//                 vertex.phase_ = location.phase;
+//             }
+// 
+//             // put data to buffers
+//             const unsigned base = vertices.Size();
+//             if (param.centerOffset_ == 0)
+//             {
+//                 AppendQuadToIndices(indices, base, 0, 1, 2, 3, true);
+//                 vertices.Insert(vertices.End(), vers, vers + 4);
+//             }
+//             else
+//             {
+//                 vertices.Insert(vertices.End(), vers, vers + 5);
+//                 indices.Push(base + 0); indices.Push(base + 1); indices.Push(base + 4);
+//                 indices.Push(base + 1); indices.Push(base + 3); indices.Push(base + 4);
+//                 indices.Push(base + 3); indices.Push(base + 2); indices.Push(base + 4);
+//                 indices.Push(base + 2); indices.Push(base + 0); indices.Push(base + 4);
+//             }
+//         }
+//     }
     /// @}
 
     StandardRandom m_random;
@@ -784,90 +1511,90 @@ void TreeFactory::generateSkeleton(const LodInfo& lodInfo, Vector<Branch>& trunk
 
 
 // Triangulate
-unsigned TreeFactory::triangulateBranches(unsigned materialIndex, const LodInfo& lodInfo,
-                                    const Vector<Branch>& trunksArray, 
-                                    Vector<FatVertex>& vertices, Vector<unsigned>& indices) const
-{
-    const unsigned startIndex = indices.Size();
-    InternalBranchTriangulator triangulator;
-    for (const Branch& branch : trunksArray)
-    {
-        triangulator.triangulateBranch(materialIndex, branch, lodInfo, vertices, indices);
-    }
-    const unsigned numTriangles = (indices.Size() - startIndex) / 3;
-    return numTriangles;
-}
-unsigned TreeFactory::triangulateFronds(unsigned materialIndex, const LodInfo& lodInfo,
-                                  const Vector<Branch>& trunksArray, 
-                                  Vector<FatVertex>& vertices, Vector<unsigned>& indices) const
-{
-    // Triangulate
-    const unsigned startIndex = indices.Size();
-    InternalFrondTriangulator triangulator;
-    for (const Branch& branch : trunksArray)
-    {
-        triangulator.triangulateBranch(materialIndex, branch, lodInfo, vertices, indices);
-    }
-
-    // Generate TBN
-    const unsigned numTriangles = (indices.Size() - startIndex) / 3;
-    CalculateNormals(vertices.Buffer(), vertices.Size(), 
-        indices.Buffer() + startIndex, numTriangles);
-    CalculateTangents(vertices.Buffer(), vertices.Size(),
-        indices.Buffer() + startIndex, numTriangles);
-
-    // Return number of triangles
-    return numTriangles;
-}
+// unsigned TreeFactory::triangulateBranches(unsigned materialIndex, const LodInfo& lodInfo,
+//                                     const Vector<Branch>& trunksArray, 
+//                                     PODVector<FatVertex>& vertices, PODVector<FatIndex>& indices) const
+// {
+//     const unsigned startIndex = indices.Size();
+//     InternalBranchTriangulator triangulator;
+//     for (const Branch& branch : trunksArray)
+//     {
+//         triangulator.triangulateBranch(materialIndex, branch, lodInfo, vertices, indices);
+//     }
+//     const unsigned numTriangles = (indices.Size() - startIndex) / 3;
+//     return numTriangles;
+// }
+// unsigned TreeFactory::triangulateFronds(unsigned materialIndex, const LodInfo& lodInfo,
+//                                   const Vector<Branch>& trunksArray, 
+//                                   PODVector<FatVertex>& vertices, PODVector<FatIndex>& indices) const
+// {
+//     // Triangulate
+//     const unsigned startIndex = indices.Size();
+//     InternalFrondTriangulator triangulator;
+//     for (const Branch& branch : trunksArray)
+//     {
+//         triangulator.triangulateBranch(materialIndex, branch, lodInfo, vertices, indices);
+//     }
+// 
+//     // Generate TBN
+//     const unsigned numTriangles = (indices.Size() - startIndex) / 3;
+//     CalculateNormals(vertices.Buffer(), vertices.Size(), 
+//         indices.Buffer() + startIndex, numTriangles);
+//     CalculateTangents(vertices.Buffer(), vertices.Size(),
+//         indices.Buffer() + startIndex, numTriangles);
+// 
+//     // Return number of triangles
+//     return numTriangles;
+// }
 
 
 // Wind stuff
-float TreeFactory::computeMainAdherence(const float relativeHeight, const float trunkStrength)
-{
-    return pow(Max(relativeHeight, 0.0f),
-               1 / (1 - trunkStrength));
-}
-void TreeFactory::computeMainAdherence(Vector<FatVertex>& vertices)
-{
-    // Compute max height
-    float maxHeight = 0.0f;
-    for (FatVertex& vertex : vertices)
-    {
-        maxHeight = Max(maxHeight, vertex.position_.y_);
-    }
-
-    // Compute wind
-    auto compute = [this](const float relativeHeight) -> float
-    {
-        return computeMainAdherence(relativeHeight, trunkStrength_);
-    };
-    for (FatVertex& vertex : vertices)
-    {
-        vertex.mainAdherence_ = compute(vertex.position_.y_ / maxHeight);
-    }
-}
-void TreeFactory::normalizeBranchesAdherence(Vector<FatVertex>& vertices)
-{
-    // Compute max adherence
-    float maxAdherence = M_LARGE_EPSILON;
-    for (FatVertex& vertex : vertices)
-    {
-        maxAdherence = Max(maxAdherence, vertex.branchAdherence_);
-    }
-
-    // Compute wind
-    for (FatVertex& vertex : vertices)
-    {
-        vertex.branchAdherence_ /= maxAdherence;
-    }
-}
-void TreeFactory::normalizePhases(Vector<FatVertex>& vertices)
-{
-    for (FatVertex& vertex : vertices)
-    {
-        vertex.phase_ = Fract(vertex.phase_);
-    }
-}
+// float TreeFactory::computeMainAdherence(const float relativeHeight, const float trunkStrength)
+// {
+//     return pow(Max(relativeHeight, 0.0f),
+//                1 / (1 - trunkStrength));
+// }
+// void TreeFactory::computeMainAdherence(PODVector<FatVertex>& vertices)
+// {
+//     // Compute max height
+//     float maxHeight = 0.0f;
+//     for (FatVertex& vertex : vertices)
+//     {
+//         maxHeight = Max(maxHeight, vertex.position_.y_);
+//     }
+// 
+//     // Compute wind
+//     auto compute = [this](const float relativeHeight) -> float
+//     {
+//         return computeMainAdherence(relativeHeight, trunkStrength_);
+//     };
+//     for (FatVertex& vertex : vertices)
+//     {
+//         vertex.mainAdherence_ = compute(vertex.position_.y_ / maxHeight);
+//     }
+// }
+// void TreeFactory::normalizeBranchesAdherence(PODVector<FatVertex>& vertices)
+// {
+//     // Compute max adherence
+//     float maxAdherence = M_LARGE_EPSILON;
+//     for (FatVertex& vertex : vertices)
+//     {
+//         maxAdherence = Max(maxAdherence, vertex.branchAdherence_);
+//     }
+// 
+//     // Compute wind
+//     for (FatVertex& vertex : vertices)
+//     {
+//         vertex.branchAdherence_ /= maxAdherence;
+//     }
+// }
+// void TreeFactory::normalizePhases(PODVector<FatVertex>& vertices)
+// {
+//     for (FatVertex& vertex : vertices)
+//     {
+//         vertex.phase_ = Fract(vertex.phase_);
+//     }
+// }
 
 
 // Main generator
@@ -906,51 +1633,51 @@ SharedPtr<Model> TreeFactory::GenerateModel(const PODVector<LodInfo>& lodInfos)
     {
         for (unsigned lod = 0; lod < lodInfos.Size(); ++lod)
         {
-            const LodInfo& lodInfo = lodInfos[lod];
-
-            // Generate branches
-            // #TODO It is possible to move branch generation out of the loop
-            Vector<TreeFactory::Branch> branches;
-            generateSkeleton(lodInfo, branches);
-
-            // Triangulate all
-            Vector<FatVertex> vertices;
-            Vector<FatIndex> indices;
-            triangulateBranches(materialIndex, lodInfo, branches, vertices, indices);
-            triangulateFronds(materialIndex, lodInfo, branches, vertices, indices);
-            computeMainAdherence(vertices);
-            normalizeBranchesAdherence(vertices);
-            normalizePhases(vertices);
-
-            // Compute AABB and radius
-            const BoundingBox aabb = CalculateBoundingBox(vertices.Buffer(), vertices.Size());
-            const Vector3 aabbCenter = static_cast<Vector3>(aabb.Center());
-            modelRadius_ = 0.0f;
-            for (const FatVertex& vertex : vertices)
-            {
-                const float dist = ((vertex.position_ - aabbCenter) * Vector3(1, 0, 1)).Length();
-                modelRadius_ = Max(modelRadius_, dist);
-            }
-            boundingBox.Merge(aabb);
-
-            SharedPtr<Geometry> geometry = MakeShared<Geometry>(context_);
-            geometry->SetVertexBuffer(0, vertexBuffer);
-            geometry->SetIndexBuffer(indexBuffer);
-            model->SetGeometry(materialIndex, lod, geometry);
-            groupOffsets.Push(indexOffset);
-            groupSizes.Push(indices.Size());
-            indexOffset += indices.Size();
-
-            unsigned vertexOffset = vertexData.Size();
-            for (unsigned i = 0; i < indices.Size(); ++i)
-            {
-                indexData.Push(static_cast<unsigned short>(indices[i] + vertexOffset));
-            }
-
-            for (unsigned i = 0; i < vertices.Size(); ++i)
-            {
-                vertexData.Push(VegetationVertex::Construct(vertices[i]));
-            }
+//             const LodInfo& lodInfo = lodInfos[lod];
+// 
+//             // Generate branches
+//             // #TODO It is possible to move branch generation out of the loop
+//             Vector<TreeFactory::Branch> branches;
+//             generateSkeleton(lodInfo, branches);
+// 
+//             // Triangulate all
+//             PODVector<FatVertex> vertices;
+//             PODVector<FatIndex> indices;
+//             triangulateBranches(materialIndex, lodInfo, branches, vertices, indices);
+//             triangulateFronds(materialIndex, lodInfo, branches, vertices, indices);
+//             computeMainAdherence(vertices);
+//             normalizeBranchesAdherence(vertices);
+//             normalizePhases(vertices);
+// 
+//             // Compute AABB and radius
+//             const BoundingBox aabb = CalculateBoundingBox(vertices.Buffer(), vertices.Size());
+//             const Vector3 aabbCenter = static_cast<Vector3>(aabb.Center());
+//             modelRadius_ = 0.0f;
+//             for (const FatVertex& vertex : vertices)
+//             {
+//                 const float dist = ((vertex.position_ - aabbCenter) * Vector3(1, 0, 1)).Length();
+//                 modelRadius_ = Max(modelRadius_, dist);
+//             }
+//             boundingBox.Merge(aabb);
+// 
+//             SharedPtr<Geometry> geometry = MakeShared<Geometry>(context_);
+//             geometry->SetVertexBuffer(0, vertexBuffer);
+//             geometry->SetIndexBuffer(indexBuffer);
+//             model->SetGeometry(materialIndex, lod, geometry);
+//             groupOffsets.Push(indexOffset);
+//             groupSizes.Push(indices.Size());
+//             indexOffset += indices.Size();
+// 
+//             unsigned vertexOffset = vertexData.Size();
+//             for (unsigned i = 0; i < indices.Size(); ++i)
+//             {
+//                 indexData.Push(static_cast<unsigned short>(indices[i] + vertexOffset));
+//             }
+// 
+//             for (unsigned i = 0; i < vertices.Size(); ++i)
+//             {
+//                 vertexData.Push(VegetationVertex::Construct(vertices[i]));
+//             }
         }
     }
 
@@ -1001,6 +1728,10 @@ unsigned TreeFactory::GetNumMaterials() const
     return materials_.Size();
 }
 
+void TreeFactory::SetRootBranchGroup(const FlexEngine::BranchGroup& root)
+{
+    REAL_ROOT = root;
+}
 //////////////////////////////////////////////////////////////////////////
 namespace
 {
@@ -1144,8 +1875,10 @@ void AddBranchGroup(TreeFactory& factory, XMLElement branchGroup, TreeFactory::B
 void InitializeTreeFactory(TreeFactory& factory, XMLElement& node)
 {
     // Read parameters
-    factory.SetMaterials(GetMaterials(node.GetChild("materials")));
+    const Vector<String>& materials = GetMaterials(node.GetChild("materials"));
+    factory.SetMaterials(materials);
     factory.SetTrunkStrength(GetValue(node.GetChild("trunkStrength"), 0.5f));
+    factory.SetRootBranchGroup(ReadBranchGroupFromXML(node.GetChild("root"), materials));
 
     // Read branches
     for (XMLElement child = node.GetChild("branches"); child; child = child.GetNext("branches"))
@@ -1252,6 +1985,16 @@ TreeFactory::DistributionType To<TreeFactory::DistributionType>(const String& st
     const static HashMap<String, TreeFactory::DistributionType> m =
     {
         MakePair(String("Alternate"), TreeFactory::DistributionType::Alternate),
+    };
+    return *m[str];
+}
+
+template <>
+TreeElementDistributionType To<TreeElementDistributionType>(const String& str)
+{
+    const static HashMap<String, TreeElementDistributionType> m =
+    {
+        MakePair(String("Alternate"), TreeElementDistributionType::Alternate),
     };
     return *m[str];
 }

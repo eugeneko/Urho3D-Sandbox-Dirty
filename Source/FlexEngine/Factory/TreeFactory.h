@@ -1,9 +1,10 @@
 #pragma once
 
 #include <FlexEngine/Common.h>
-#include <FlexEngine/Factory/FatVertex.h>
+#include <FlexEngine/Math/BezierCurve.h>
 #include <FlexEngine/Math/MathDefs.h>
 #include <FlexEngine/Math/MathFunction.h>
+#include <FlexEngine/Math/StandardRandom.h>
 
 #include <Urho3D/Core/Object.h>
 #include <Urho3D/Container/Ptr.h>
@@ -26,6 +27,9 @@ namespace FlexEngine
 {
 
 struct FactoryContext;
+struct BezierCurve3D;
+struct DefaultVertex;
+class ModelFactory;
 
 /// Vegetation Vertex.
 struct VegetationVertex 
@@ -39,10 +43,265 @@ struct VegetationVertex
     Vector4 param_;
 
     /// Construct from fat vertex.
-    static VegetationVertex Construct(const FatVertex& vertex);
+    static VegetationVertex Construct(const DefaultVertex& vertex);
     /// Returns vertex format.
     static PODVector<VertexElement> Format();
 };
+
+/// Tree element distribution type.
+enum class TreeElementDistributionType
+{
+    /// Child branch has random location on the parent branch.
+    //Random,
+    /// Child branch is rotated on specified angle relatively to previous child branch.
+    Alternate,
+};
+
+/// Branch material settings.
+struct BranchMaterialSettings
+{
+    /// Scale of texture.
+    Vector2 textureScale_ = Vector2::ONE;
+};
+
+/// Branch shape settings.
+struct BranchShapeSettings
+{
+    /// The length of the branch is randomly taken from this range.
+    FloatRange length_ = 1.0f;
+    /// Specifies whether the length of the branch depends on the length of the parent branch.
+    bool relativeLength_ = true;
+    /// Specifies whether the end of parent branch is also interpreted as child branch.
+    bool fakeEnding_ = false;
+    /// Radius of the branch.
+    MathFunctionWrapped radius_ = "one";
+
+    /// Intensity of deformation caused by gravity.
+    float gravityIntensity_ = 0.0f;
+    /// Measure of geometry bending caused by gravity. Should be in range (0, 1].
+    float gravityResistance_ = 0.5f;
+};
+
+/// Branch description.
+struct BranchDescription
+{
+    /// Fake branch provides no geometry but can be used for nesting.
+    bool fake_ = false;
+    /// Index of this branch on parent.
+    unsigned index_ = 0;
+    /// Positions of branch knots.
+    PODVector<Vector3> positions_;
+    /// Bezier curve for positions.
+    BezierCurve3D positionsCurve_;
+    /// Radiuses of branch knots.
+    PODVector<float> radiuses_;
+    /// Bezier curve for radiuses.
+    BezierCurve1D radiusesCurve_;
+    /// Branch length.
+    float length_ = 0.0f;
+};
+
+/// Generate branch using specified parameters. Return Bezier curve knots. Number of knots is computed automatically.
+BranchDescription GenerateBranch(const Vector3& initialPosition, const Vector3& initialDirection, float length, float baseRadius,
+    const BranchShapeSettings& shape, const BranchMaterialSettings& material, unsigned minNumKnots);
+
+/// Branch tessellation quality parameters.
+struct BranchTessellationQualityParameters 
+{
+    /// New point is emitted if Bezier curve direction change is at least minAngle_.
+    float minAngle_ = 0.0f;
+    /// Minimal number of segments. Minimal value is 1.
+    unsigned minNumSegments_ = 1;
+    /// Maximal number of segments. Minimal value is 5.
+    unsigned maxNumSegments_ = 5;
+};
+
+/// Tessellated branch point.
+struct TessellatedBranchPoint 
+{
+    /// Location on curve.
+    float location_;
+    /// Radius of point.
+    float radius_;
+    /// Position.
+    Vector3 position_;
+};
+
+/// Tessellated branch points.
+using TessellatedBranchPoints = PODVector<TessellatedBranchPoint>;
+
+/// Tessellate branch with specified quality. Return array of points with position on curve in w component.
+TessellatedBranchPoints TessellateBranch(const BezierCurve3D& positions, const BezierCurve1D& radiuses,
+    const BranchTessellationQualityParameters& quality);
+
+/// Generate branch geometry vertices.
+PODVector<DefaultVertex> GenerateBranchVertices(const TessellatedBranchPoints& points,
+    const BranchShapeSettings& shape, const BranchMaterialSettings& material, unsigned numRadialSegments);
+
+/// Generate branch geometry vertices.
+PODVector<unsigned> GenerateBranchIndices(const PODVector<unsigned>& numRadialSegments, unsigned maxVertices);
+
+/// Generate branch geometry.
+void GenerateBranchGeometry(ModelFactory& factory, const TessellatedBranchPoints& points,
+    const BranchShapeSettings& shape, const BranchMaterialSettings& material, unsigned numRadialSegments);
+
+/// Tree element distribution settings.
+struct TreeElementDistribution
+{
+    /// Seed of random generator. Re-initializes main generator if non-zero.
+    unsigned seed_ = 0;
+    /// Number of branches. Set zero to use explicit position and direction.
+    unsigned frequency_ = 0;
+    /// Multiplier for quality settings.
+    float quality_ = 1.0f;
+
+    /// Branch position (if explicit).
+    Vector3 position_ = Vector3::ZERO;
+    /// Branch direction (if explicit).
+    Vector3 direction_ = Vector3::UP;
+
+    /// Distribution type.
+    TreeElementDistributionType distributionType_ = TreeElementDistributionType::Alternate;
+    /// Location on parent branch.
+    FloatRange location_ = FloatRange(0.0f, 1.0f);
+    /// Child density function.
+    MathFunctionWrapped density_ = "one";
+    /// Step of branch twirl (alternate distribution).
+    float twirlStep_ = 180.0f;
+    /// Random angle added to branch twirl.
+    float twirlNoise_ = 0.0f;
+    /// Base rotation angle of all children branches.
+    float twirlBase_ = 0.0f;
+
+    /// Scale of child elements size or length.
+    MathFunctionWrapped growthScale_ = "one";
+    /// Angle between children and parent branch.
+    MathFunctionWrapped growthAngle_ = "zero";
+};
+
+/// Location of tree element.
+struct TreeElementLocation
+{
+    /// Seed of random parameters of element shape.
+    unsigned seed_;
+    /// Location on parent.
+    float location_;
+    /// Position.
+    Vector3 position_;
+    /// Rotation.
+    Quaternion rotation_;
+    /// Parent (base) radius.
+    float baseRadius_;
+    /// Just random noise in range [0, 1] that could be used for further generation.
+    Vector4 noise_;
+};
+
+/// Distribute children over parent branch.
+PODVector<TreeElementLocation> DistributeElementsOverParent(const BranchDescription& parent, const TreeElementDistribution& distrib);
+
+/// Branch group description.
+struct BranchGroupDescription
+{
+    /// Distribution settings.
+    TreeElementDistribution distribution_;
+    /// Shape settings.
+    BranchShapeSettings shape_;
+    /// Material settings.
+    BranchMaterialSettings material_;
+    /// Min number of knots for branch curves. Default value is 5.
+    unsigned minNumKnots_ = 5;
+};
+
+/// Integrate density function and generate points in range [0, 1] distributed with specified density.
+PODVector<float> IntegrateDensityFunction(const MathFunctionWrapped& density, unsigned count);
+
+/// Instantiate branch group.
+Vector<BranchDescription> InstantiateBranchGroup(const BranchDescription& parent, const BranchGroupDescription& group);
+
+/// Leaf shape settings.
+struct LeafShapeSettings
+{
+    /// Leaf size range.
+    FloatRange size_ = 1.0f;
+    /// Leaf scale.
+    Vector3 scale_ = Vector3::ONE;
+    /// Adjusts whether the leaves are orientated in world space instead of local space of parent branch. Should be in range [0, 1].
+    FloatRange adjustToGlobal_ = 0.0f;
+    /// Adjusts whether the leaves are orientated vertically.
+    FloatRange alignVerical_ = 0.0f;
+    /// Junction offset.
+    Vector3 junctionOffset_ = Vector3::ZERO;
+    /// Intensity of deformation caused by gravity along specified dimensions.
+    Vector3 gravityIntensity_ = Vector3::ZERO;
+    /// Measure of frond geometry bending along specified dimensions. Should be in range (0, 1].
+    Vector3 gravityResistance_ = Vector3::ONE;
+};
+
+/// Leaf group description
+struct LeafGroupDescription
+{
+    /// Distribution settings.
+    TreeElementDistribution distribution_;
+    /// Leaf shape settings.
+    LeafShapeSettings shape_;
+};
+
+/// Leaf description.
+struct LeafDescription
+{
+    /// Location of leaf.
+    TreeElementLocation location_;
+    /// Leaf shape settings.
+    LeafShapeSettings shape_;
+};
+
+/// Instantiate leafs.
+PODVector<LeafDescription> InstantiateLeafGroup(const BranchDescription& parent, const LeafGroupDescription& group);
+
+/// Generate leaf geometry vertices and indices.
+void GenerateLeafGeometry(ModelFactory& factory, const LeafShapeSettings& shape, const TreeElementLocation& location);
+
+
+
+
+/// Tree level of detail description.
+struct TreeLodDescription
+{
+    BranchTessellationQualityParameters branchTessellationQuality_;
+};
+
+/// Triangulate branches and fronds.
+void TriangulateBranchesAndLeaves(Context* context, const Vector<TreeLodDescription>& lods,
+    const Vector<BranchDescription>& branches, const PODVector<LeafDescription>& leaves, unsigned numMaterials);
+
+
+
+
+
+
+/// Read branch group description from XML.
+BranchGroupDescription ReadBranchGroupDescriptionFromXML(const XMLElement& element, const Vector<String>& materials);
+
+/// Branch Group.
+struct BranchGroup
+{
+    /// Fake groups are not generated and must have only explicit children.
+    bool fake_ = false;
+    /// Description of branch group.
+    BranchGroupDescription desc_;
+    /// Children branch groups.
+    Vector<BranchGroup> children_;
+};
+
+/// Read branch group from XML.
+BranchGroup ReadBranchGroupFromXML(const XMLElement& element, const Vector<String>& materials);
+
+
+
+
+
+
+
 
 /// Procedural Tree Factory.
 // #TODO Add branch levels
@@ -146,7 +405,7 @@ public:
         float yaw_ = 0.0f;
         /// Junction offset.
         Vector3 junctionOffset_ = Vector3::ZERO;
-        /// Degree of deformation caused by gravity along specified dimensions.
+        /// Intensity of deformation caused by gravity along specified dimensions.
         Vector3 gravityIntensity_ = Vector3::ZERO;
         /// Measure of frond geometry bending along specified dimensions. Should be in range (0, 1].
         Vector3 gravityResistance_ = Vector3::ONE;
@@ -284,6 +543,8 @@ public:
     int GetMaterialIndex(const String& name) const;
     /// Get number of materials.
     unsigned GetNumMaterials() const;
+    /// Set root branch group.
+    void SetRootBranchGroup(const FlexEngine::BranchGroup& root);
     /// Get root branch group.
     BranchGroup& GetRoot();
 
@@ -347,20 +608,22 @@ private:
     /// @throw ArgumentException if branch group has no parent
     /// @throw ArgumentException if empty branch group has child group
     void generateSkeleton(const LodInfo& lodInfo, Vector<Branch>& trunksArray) const;
-    /// @brief Triangulate branches
-    unsigned triangulateBranches(unsigned materialIndex, const LodInfo& lodInfo, const Vector<Branch>& trunksArray,
-                                Vector<FatVertex>& vertices, Vector<unsigned>& indices) const;
-    /// @brief Triangulate fronds
-    unsigned triangulateFronds(unsigned materialIndex, const LodInfo& lodInfo, const Vector<Branch>& trunksArray,
-        Vector<FatVertex>& vertices, Vector<unsigned>& indices) const;
-    /// @brief Compute main adherence
-    void computeMainAdherence(Vector<FatVertex>& vertices);
-    /// @brief Normalize branch adherence
-    void normalizeBranchesAdherence(Vector<FatVertex>& vertices);
-    /// @brief Normalize phases
-    void normalizePhases(Vector<FatVertex>& vertices);
+//     /// @brief Triangulate branches
+//     unsigned triangulateBranches(unsigned materialIndex, const LodInfo& lodInfo, const Vector<Branch>& trunksArray,
+//                                 PODVector<FatVertex>& vertices, PODVector<FatIndex>& indices) const;
+//     /// @brief Triangulate fronds
+//     unsigned triangulateFronds(unsigned materialIndex, const LodInfo& lodInfo, const Vector<Branch>& trunksArray,
+//         PODVector<FatVertex>& vertices, PODVector<FatIndex>& indices) const;
+//     /// @brief Compute main adherence
+//     void computeMainAdherence(PODVector<FatVertex>& vertices);
+//     /// @brief Normalize branch adherence
+//     void normalizeBranchesAdherence(PODVector<FatVertex>& vertices);
+//     /// @brief Normalize phases
+//     void normalizePhases(PODVector<FatVertex>& vertices);
     /// @}
 private:
+    /// Root of group hierarchy.
+    FlexEngine::BranchGroup REAL_ROOT;
     /// Root of group hierarchy.
     BranchGroup root_;
     /// List of materials.

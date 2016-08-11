@@ -2,8 +2,8 @@
 
 #include <FlexEngine/Container/Ptr.h>
 #include <FlexEngine/Factory/FactoryContext.h>
-#include <FlexEngine/Factory/FatVertex.h>
 #include <FlexEngine/Factory/GeometryUtils.h>
+#include <FlexEngine/Factory/ModelFactory.h>
 #include <FlexEngine/Resource/ResourceCacheHelpers.h>
 
 #include <Urho3D/IO/Log.h>
@@ -39,7 +39,7 @@ SharedPtr<XMLFile> ConstructGeometryFromScript(ScriptFile& scriptFile, const Str
 
 }
 
-SyntheticVertex SyntheticVertex::Construct(const FatVertex& vertex)
+SyntheticVertex SyntheticVertex::Construct(const DefaultVertex& vertex)
 {
     SyntheticVertex result;
     result.position_ = vertex.position_;
@@ -111,12 +111,12 @@ void GenerateTempGeometryFromXML(XMLElement& node, ResourceCache& resourceCache,
     const XMLElement verticesNode = buffer->GetRoot().GetChild("vertices");
     for (XMLElement vertexNode = verticesNode.GetChild("vertex"); vertexNode; vertexNode = vertexNode.GetNext("vertex"))
     {
-        const SyntheticVertex vertex = SyntheticVertex::Construct(FatVertex::ConstructFromXML(vertexNode));
+        const SyntheticVertex vertex = SyntheticVertex::Construct(DefaultVertex::ConstructFromXML(vertexNode));
         boundingBox.Merge(Vector3(vertex.position_.x_, vertex.position_.y_, vertex.position_.z_));
         vertices.Push(vertex);
     }
 
-    Vector<FatIndex> indices;
+    PODVector<unsigned> indices;
     const XMLElement indicesNode = buffer->GetRoot().GetChild("indices");
     for (XMLElement triangleNode = indicesNode.GetChild("triangle"); triangleNode; triangleNode = triangleNode.GetNext("triangle"))
     {

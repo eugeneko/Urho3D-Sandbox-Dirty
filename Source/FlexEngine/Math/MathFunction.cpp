@@ -78,13 +78,23 @@ MathFunctionSPtr ConstructMathFunction(const String& sourceString, const String&
     return construct(inputs);
 }
 
+/// Checks that token list is not empty and log error if check fails.
+bool CheckTokens(const String& sourceString, Vector<String>& tokens)
+{
+    if (tokens.Empty())
+    {
+        URHO3D_LOGERRORF("Cannot parse input function '%s': unexpected end of function", sourceString.CString());
+        return false;
+    }
+    return true;
+}
+
 /// Constructs math function from token sequence
 MathFunctionSPtr ConstructMathFunction(const String& sourceString, Vector<String>& tokens)
 {
     // Empty token list is not allowed
-    if (tokens.Empty())
+    if (!CheckTokens(sourceString, tokens))
     {
-        URHO3D_LOGERRORF("Cannot parse input function '%s': it is empty", sourceString.CString());
         return nullptr;
     }
 
@@ -112,9 +122,17 @@ MathFunctionSPtr ConstructMathFunction(const String& sourceString, Vector<String
 
     // Parse function
     const String functionName = firstToken;
+    if (!CheckTokens(sourceString, tokens))
+    {
+        return nullptr;
+    }
     if (PopElement(tokens) != "(")
     {
         URHO3D_LOGERRORF("Cannot parse input function '%s': '(' is missing", sourceString.CString());
+        return nullptr;
+    }
+    if (!CheckTokens(sourceString, tokens))
+    {
         return nullptr;
     }
 
@@ -341,21 +359,36 @@ MathFunctionSPtr CreateMathFunction(const String& str)
     return ConstructMathFunction(str, tokens);
 }
 
-PODVector<double> ComputeMathFunction(const MathFunction& fun, const PODVector<double>& values)
-{
-    PODVector<double> result;
-    result.Reserve(values.Size());
-    for (const double& value : values)
-    {
-        result.Push(fun.Compute(DoubleVector{ value }));
-    }
-    return result;
-}
-
 template <>
 MathFunctionSPtr To<MathFunctionSPtr>(const String& str)
 {
     return CreateMathFunction(str);
+}
+
+//////////////////////////////////////////////////////////////////////////
+MathFunctionWrapped::MathFunctionWrapped(const String& text /*= String::EMPTY*/)
+    : text_(text)
+{
+    Initialize();
+}
+
+void MathFunctionWrapped::Initialize()
+{
+    if (currentText_ != text_)
+    {
+        function_ = CreateMathFunction(text_);
+        currentText_ = text_;
+    }
+}
+
+double MathFunctionWrapped::Compute(const DoubleVector& inputs) const
+{
+    return function_ ? function_->Compute(inputs) : strtod("NAN", nullptr);
+}
+
+float MathFunctionWrapped::Compute(float value) const
+{
+    return static_cast<float>(Compute(DoubleVector{ static_cast<double>(value) }));
 }
 
 }

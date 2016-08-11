@@ -11,12 +11,14 @@ namespace FlexEngine
 
 /// Load XML element value into variable if element is not empty.
 template <class T>
-void LoadValue(const XMLElement& elem, T& variable)
+bool LoadValue(const XMLElement& elem, T& variable)
 {
     if (elem)
     {
         variable = To<T>(elem.GetValue());
+        return true;
     }
+    return false;
 }
 
 /// Get XML value from element or default if element is empty.
@@ -28,13 +30,15 @@ T GetValue(const XMLElement& elem, const T& defaultValue)
 
 /// Load XML attribute value into variable if element is not empty.
 template <class T>
-void LoadAttribute(const XMLElement& elem, const String& attributeName, T& variable)
+bool LoadAttribute(const XMLElement& elem, const String& attributeName, T& variable)
 {
     const String& value = elem.GetAttribute(attributeName);
     if (!value.Empty())
     {
         variable = To<T>(value);
+        return true;
     }
+    return false;
 }
 
 /// Get XML attribute value from element or default if attribute does not exist.
@@ -46,27 +50,19 @@ T GetAttribute(const XMLElement& elem, const String& attributeName, const T& def
     return result;
 }
 
-/// Load float range from XML attribute into variable if element is not empty.
-inline void LoadFloatRange(const XMLElement& elem, const String& attributeName, FloatRange& variable)
+/// Load XML attribute or child node value into variable if not empty.
+template <class T>
+bool LoadAttributeOrChild(const XMLElement& elem, const String& name, T& variable)
 {
-    const Variant value = GetAttribute<Variant>(elem, attributeName, Variant::EMPTY);
-    const VariantType type = value.GetType();
-    if (type == VAR_FLOAT)
-    {
-        variable = value.GetFloat();
-    }
-    else if (type == VAR_VECTOR2)
-    {
-        const Vector2 vec = value.GetVector2();
-        variable = FloatRange(vec.x_, vec.y_);
-    }
+    return LoadAttribute(elem, name, variable) || LoadValue(elem.GetChild(name), variable);
 }
 
-/// Get float range from XML attribute or default if attribute does not exist.
-inline FloatRange GetFloatRange(const XMLElement& elem, const String& attributeName, const FloatRange& defaultValue)
+/// Get XML attribute or child node value from element or default if not exist.
+template <class T>
+T GetAttributeOrChild(const XMLElement& elem, const String& name, const T& defaultValue)
 {
-    FloatRange result = defaultValue;
-    LoadFloatRange(elem, attributeName, result);
+    T result = defaultValue;
+    LoadAttributeOrChild(elem, name, result);
     return result;
 }
 

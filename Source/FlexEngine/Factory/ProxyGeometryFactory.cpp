@@ -1,6 +1,7 @@
 #include <FlexEngine/Factory/ProxyGeometryFactory.h>
 
 #include <FlexEngine/Factory/GeometryUtils.h>
+#include <FlexEngine/Factory/ModelFactory.h>
 #include <FlexEngine/Factory/TextureFactory.h>
 #include <FlexEngine/Math/MathDefs.h>
 #include <FlexEngine/Resource/XMLHelpers.h>
@@ -48,7 +49,7 @@ IntVector2 ConvertTexCoordToViewport(const Vector2& uv, const IntVector2& size)
 }
 
 void GenerateCylinderProxy(const BoundingBox& boundingBox, const CylinderProxyParameters& param, unsigned width, unsigned height,
-    Vector<OrthoCameraDescription>& cameras, Vector<FatVertex>& vertices, Vector<FatIndex>& indices)
+    Vector<OrthoCameraDescription>& cameras, PODVector<DefaultVertex>& vertices, PODVector<unsigned>& indices)
 {
     // Compute extents of bounding box
     const Vector3 boxSize = boundingBox.Size();
@@ -106,7 +107,7 @@ void GenerateCylinderProxy(const BoundingBox& boundingBox, const CylinderProxyPa
             const Vector3 normal = cameraDesc.rotation_.Inverse().RotationMatrix() * Vector3(0.0f, 0.0f, -1.0f);
 
             // Generate geometry data
-            FatVertex verts[4];
+            DefaultVertex verts[4];
 
             verts[0].position_ = boundingBox.Center() - axisX * boxHalfWidth - axisY * boxHalfHeight;
             verts[1].position_ = boundingBox.Center() + axisX * boxHalfWidth - axisY * boxHalfHeight;
@@ -118,12 +119,12 @@ void GenerateCylinderProxy(const BoundingBox& boundingBox, const CylinderProxyPa
             verts[2].uv_[0] = Vector4(textureBegin.x_, textureBegin.y_, 0, 0);
             verts[3].uv_[0] = Vector4(textureEnd.x_,   textureBegin.y_, 0, 0);
 
-            for (FatVertex& v : verts)
+            for (DefaultVertex& v : verts)
             {
-                v.mainAdherence_ = UnLerpClamped(boundingBox.min_.y_, boundingBox.max_.y_, v.position_.y_);
-                v.branchAdherence_ = 0.0f;
-                v.phase_ = 0.0f;
-                v.edgeOscillation_ = 0.0f;
+//                 v.mainAdherence_ = UnLerpClamped(boundingBox.min_.y_, boundingBox.max_.y_, v.position_.y_);
+//                 v.branchAdherence_ = 0.0f;
+//                 v.phase_ = 0.0f;
+//                 v.edgeOscillation_ = 0.0f;
 
                 v.normal_ = normal;
                 v.geometryNormal_ = normal;
@@ -136,7 +137,7 @@ void GenerateCylinderProxy(const BoundingBox& boundingBox, const CylinderProxyPa
 }
 
 void GeneratePlainProxy(const BoundingBox& boundingBox, unsigned width, unsigned height,
-    Vector<OrthoCameraDescription>& cameras, Vector<FatVertex>& vertices, Vector<FatIndex>& indices)
+    Vector<OrthoCameraDescription>& cameras, PODVector<DefaultVertex>& vertices, PODVector<unsigned>& indices)
 {
     const Vector3 center = boundingBox.Center();
     const Vector3 size = boundingBox.Size();
@@ -152,7 +153,7 @@ void GeneratePlainProxy(const BoundingBox& boundingBox, unsigned width, unsigned
 }
 
 void GenerateProxyFromXML(const BoundingBox& boundingBox, unsigned width, unsigned height, const XMLElement& node,
-    Vector<OrthoCameraDescription>& cameras, Vector<FatVertex>& vertices, Vector<FatIndex>& indices)
+    Vector<OrthoCameraDescription>& cameras, PODVector<DefaultVertex>& vertices, PODVector<unsigned>& indices)
 {
     const String type = node.GetAttribute("type");
     if (type.Compare("CylinderProxy", false) == 0)
@@ -186,8 +187,8 @@ Vector<OrthoCameraDescription> GenerateProxyCamerasFromXML(
     const BoundingBox& boundingBox, unsigned width, unsigned height, const XMLElement& node)
 {
     Vector<OrthoCameraDescription> cameras;
-    Vector<FatVertex> vertices;
-    Vector<FatIndex> indices;
+    PODVector<DefaultVertex> vertices;
+    PODVector<unsigned> indices;
     GenerateProxyFromXML(boundingBox, width, height, node, cameras, vertices, indices);
     return cameras;
 }

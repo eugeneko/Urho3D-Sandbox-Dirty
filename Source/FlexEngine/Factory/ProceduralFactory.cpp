@@ -55,7 +55,7 @@ static const HashMap<String, FactoryFunction> factories =
 
 }
 
-void GenerateResourcesFromXML(XMLElement& node, ResourceCache& resourceCache, const FactoryContext& factoryContext)
+void GenerateResourcesFromXML(const XMLElement& node, ResourceCache& resourceCache, const FactoryContext& factoryContext)
 {
     // Iterate over elements
     for (XMLElement resourceNode = node.GetChild(); resourceNode; resourceNode = resourceNode.GetNext())

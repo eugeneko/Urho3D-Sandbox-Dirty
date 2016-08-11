@@ -1,0 +1,140 @@
+<?xml version="1.0"?>
+<scene id="1">
+	<attribute name="Name" value="" />
+	<attribute name="Time Scale" value="1" />
+	<attribute name="Smoothing Constant" value="50" />
+	<attribute name="Snap Threshold" value="5" />
+	<attribute name="Elapsed Time" value="2527.5" />
+	<attribute name="Next Replicated Node ID" value="10" />
+	<attribute name="Next Replicated Component ID" value="25" />
+	<attribute name="Next Local Node ID" value="16777248" />
+	<attribute name="Next Local Component ID" value="16777600" />
+	<attribute name="Variables" />
+	<attribute name="Variable Names" value="" />
+	<component type="Octree" id="1" />
+	<component type="DebugRenderer" id="2" />
+	<node id="2">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Tree" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="0 0 0" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="TreeEditor" id="15" />
+		<component type="StaticModel" id="16">
+			<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml" />
+		</component>
+		<node id="3">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="Trunk" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="0 0 0" />
+			<attribute name="Rotation" value="1 0 0 0" />
+			<attribute name="Scale" value="1 1 1" />
+			<attribute name="Variables" />
+			<component type="BranchGroupEditor" id="14">
+				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml" />
+				<attribute name="UV Scale" value="1 4" />
+				<attribute name="Length" value="29 29" />
+				<attribute name="Relative Length" value="false" />
+				<attribute name="Radius" value="fit(linear, 0.25, 0.05)" />
+			</component>
+			<node id="4">
+				<attribute name="Is Enabled" value="true" />
+				<attribute name="Name" value="Branches" />
+				<attribute name="Tags" />
+				<attribute name="Position" value="0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
+				<attribute name="Scale" value="1 1 1" />
+				<attribute name="Variables" />
+				<component type="BranchGroupEditor" id="17">
+					<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml" />
+					<attribute name="UV Scale" value="1 4" />
+					<attribute name="Frequency" value="14" />
+					<attribute name="Growth Location" value="0.1 0.85" />
+					<attribute name="Growth Density" value="fit(smleft, 0.8, 1.0)" />
+					<attribute name="Twirl angle step" value="105" />
+					<attribute name="Twirl angle random" value="25" />
+					<attribute name="Growth Scale" value="fit(smleft, 0.3, 0.2)" />
+					<attribute name="Growth Angle" value="fit(linear, 50.0, 60.0)" />
+					<attribute name="Fake ending" value="true" />
+					<attribute name="Radius" value="fit(linear, 0.5, 0.15)" />
+					<attribute name="Gravity Intensity" value="6.58" />
+				</component>
+				<node id="5">
+					<attribute name="Is Enabled" value="true" />
+					<attribute name="Name" value="Nested branches" />
+					<attribute name="Tags" />
+					<attribute name="Position" value="0 0 0" />
+					<attribute name="Rotation" value="1 0 0 0" />
+					<attribute name="Scale" value="1 1 1" />
+					<attribute name="Variables" />
+					<component type="BranchGroupEditor" id="18">
+						<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml" />
+						<attribute name="UV Scale" value="1 4" />
+						<attribute name="Frequency" value="2" />
+						<attribute name="Growth Location" value="0 0.4" />
+						<attribute name="Growth Scale" value="fit(linear, 0.7, 0.4, 0.1, 0.7)" />
+						<attribute name="Growth Angle" value="fit(linear, 60, 60)" />
+						<attribute name="Fake ending" value="true" />
+						<attribute name="Radius" value="fit(linear, 0.6, 0.2)" />
+						<attribute name="Gravity Intensity" value="5.16" />
+					</component>
+					<node id="8">
+						<attribute name="Is Enabled" value="true" />
+						<attribute name="Name" value="Super-nested branches" />
+						<attribute name="Tags" />
+						<attribute name="Position" value="0 0 0" />
+						<attribute name="Rotation" value="1 0 0 0" />
+						<attribute name="Scale" value="1 1 1" />
+						<attribute name="Variables" />
+						<component type="BranchGroupEditor" id="24">
+							<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml" />
+							<attribute name="UV Scale" value="1 4" />
+							<attribute name="Frequency" value="2" />
+							<attribute name="Growth Location" value="0 0.62" />
+							<attribute name="Growth Scale" value="fit(linear, 0.7, 0.4, 0.1, 0.7)" />
+							<attribute name="Growth Angle" value="fit(linear, 60, 60)" />
+							<attribute name="Fake ending" value="true" />
+							<attribute name="Radius" value="fit(linear, 0.6, 0.2)" />
+							<attribute name="Gravity Intensity" value="5.24" />
+						</component>
+						<node id="6">
+							<attribute name="Is Enabled" value="true" />
+							<attribute name="Name" value="Leafs" />
+							<attribute name="Tags" />
+							<attribute name="Position" value="0 0 0" />
+							<attribute name="Rotation" value="1 0 0 0" />
+							<attribute name="Scale" value="1 1 1" />
+							<attribute name="Variables" />
+							<component type="LeafGroupEditor" id="19">
+								<attribute name="Material" value="Material;Objects/WhiteTree/LargeFoliageMaterial.xml" />
+								<attribute name="Frequency" value="1" />
+								<attribute name="Growth Location" value="0.2 1" />
+								<attribute name="Size" value="4 4" />
+								<attribute name="Adjust to Global" value="1 1" />
+								<attribute name="Align Vertical" value="0.3 0.3" />
+								<attribute name="Junction Offset" value="0 0 -1" />
+								<attribute name="Gravity Intensity" value="1 0 3" />
+								<attribute name="Gravity Resistance" value="0.1 0 0.1" />
+							</component>
+						</node>
+					</node>
+				</node>
+			</node>
+		</node>
+	</node>
+	<node id="7">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Sun" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="1.64717 28.3105 -18.5525" />
+		<attribute name="Rotation" value="0.953718 0.300706 -8.57996e-08 -4.72022e-09" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="Light" id="20">
+			<attribute name="Light Type" value="Directional" />
+		</component>
+	</node>
+</scene>

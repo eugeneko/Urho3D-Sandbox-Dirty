@@ -49,7 +49,7 @@
         <Loop>
           <Break Condition="pBucket == tail_" />
           <Item Name="{(*(Urho3D::HashMap&lt;$T1,$T2&gt;::Node*)pBucket).pair_.first_}">
-            (*(Urho3D::HashMap&lt;$T1,$T2&gt;::Node*)pBucket).pair_.second_
+            (*(Urho3D::HashMap&lt;$T1,$T2&gt;::Node*)pBucket).pair_
           </Item>
           <Exec>pBucket = pBucket->next_</Exec>
         </Loop>
@@ -63,6 +63,15 @@
     <DisplayString>{((Urho3D::HashMap&lt;$T1,$T2&gt;::Node*)(ptr_))->pair_}</DisplayString>
     <Expand>
       <ExpandedItem>((Urho3D::HashMap&lt;$T1,$T2&gt;::Node*)(ptr_))->pair_</ExpandedItem>
+    </Expand>
+  </Type>
+
+  <!-- Urho3D::HashMap<>::KeyValue -->
+  <Type Name="Urho3D::HashMap&lt;*,*&gt;::KeyValue">
+    <DisplayString>{second_}</DisplayString>
+    <Expand>
+      <Item Name="[key]">first_</Item>
+      <Item Name="[value]">second_</Item>
     </Expand>
   </Type>
 

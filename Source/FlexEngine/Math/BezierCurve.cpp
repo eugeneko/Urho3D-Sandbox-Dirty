@@ -7,7 +7,7 @@
 namespace FlexEngine
 {
 
-
+//////////////////////////////////////////////////////////////////////////
 PODVector<Vector4> CreateBezierCurve(const PODVector<float>& knots)
 {
     assert(!knots.Empty());
@@ -74,12 +74,12 @@ PODVector<Vector4> CreateBezierCurve(const PODVector<float>& knots)
     return result;
 }
 
-float SampleBezierCurve(const BezierCurve1D& curve, float location)
+float SampleBezierCurveAbs(const BezierCurve1D& curve, float location)
 {
     assert(!curve.Empty());
 
     const unsigned numKnots = curve.Size() + 1;
-    const unsigned basePoint = Clamp(static_cast<unsigned>(location), 0u, numKnots - 1);
+    const unsigned basePoint = Clamp(static_cast<unsigned>(location), 0u, numKnots - 2);
 
     const float t = Clamp(location - static_cast<float>(basePoint), 0.0f, 1.0f);
     const float q = 1.0f - t;
@@ -87,23 +87,50 @@ float SampleBezierCurve(const BezierCurve1D& curve, float location)
     return q*q*q*p.x_ + 3 * q*q*t*p.y_ + 3 * q*t*t*p.z_ + t*t*t*p.w_;
 }
 
-float SampleBezierCurveDerivative(const BezierCurve1D& curve, float location)
+float SampleBezierCurveDerivativeAbs(const BezierCurve1D& curve, float location)
 {
     assert(!curve.Empty());
 
     const unsigned numKnots = curve.Size() + 1;
-    const unsigned basePoint = Clamp(static_cast<unsigned>(location), 0u, numKnots - 1);
+    const unsigned basePoint = Clamp(static_cast<unsigned>(location), 0u, numKnots - 2);
 
     const float t = Clamp(location - static_cast<float>(basePoint), 0.0f, 1.0f);
     const Vector4& p = curve[basePoint];
     return -3*(1 - t)*(1 - t)*p.x_ + 3 * (1 - 4*t + 3*t*t)*p.y_ + 3 * (2*t - 3*t*t)*p.z_ + 3*t*t*p.w_;
 }
 
+float SampleBezierCurve(const BezierCurve1D& curve, float location)
+{
+    return SampleBezierCurveAbs(curve, location * curve.Size());
+}
+
+float SampleBezierCurveDerivative(const BezierCurve1D& curve, float location)
+{
+    return SampleBezierCurveDerivativeAbs(curve, location * curve.Size());
+}
+
+//////////////////////////////////////////////////////////////////////////
 BezierCurve2D CreateBezierCurve(const PODVector<Vector2>& values)
 {
     BezierCurve2D result;
     result.xcoef_ = CreateBezierCurve(SpliceVectorArray(values, 0));
     result.ycoef_ = CreateBezierCurve(SpliceVectorArray(values, 1));
+    return result;
+}
+
+Vector2 SampleBezierCurveAbs(const BezierCurve2D& curve, float location)
+{
+    Vector2 result;
+    result.x_ = SampleBezierCurveAbs(curve.xcoef_, location);
+    result.y_ = SampleBezierCurveAbs(curve.ycoef_, location);
+    return result;
+}
+
+Vector2 SampleBezierCurveDerivativeAbs(const BezierCurve2D& curve, float location)
+{
+    Vector2 result;
+    result.x_ = SampleBezierCurveDerivativeAbs(curve.xcoef_, location);
+    result.y_ = SampleBezierCurveDerivativeAbs(curve.ycoef_, location);
     return result;
 }
 
@@ -123,12 +150,31 @@ Vector2 SampleBezierCurveDerivative(const BezierCurve2D& curve, float location)
     return result;
 }
 
+//////////////////////////////////////////////////////////////////////////
 BezierCurve3D CreateBezierCurve(const PODVector<Vector3>& values)
 {
     BezierCurve3D result;
     result.xcoef_ = CreateBezierCurve(SpliceVectorArray(values, 0));
     result.ycoef_ = CreateBezierCurve(SpliceVectorArray(values, 1));
     result.zcoef_ = CreateBezierCurve(SpliceVectorArray(values, 2));
+    return result;
+}
+
+Vector3 SampleBezierCurveAbs(const BezierCurve3D& curve, float location)
+{
+    Vector3 result;
+    result.x_ = SampleBezierCurveAbs(curve.xcoef_, location);
+    result.y_ = SampleBezierCurveAbs(curve.ycoef_, location);
+    result.z_ = SampleBezierCurveAbs(curve.zcoef_, location);
+    return result;
+}
+
+Vector3 SampleBezierCurveDerivativeAbs(const BezierCurve3D& curve, float location)
+{
+    Vector3 result;
+    result.x_ = SampleBezierCurveDerivativeAbs(curve.xcoef_, location);
+    result.y_ = SampleBezierCurveDerivativeAbs(curve.ycoef_, location);
+    result.z_ = SampleBezierCurveDerivativeAbs(curve.zcoef_, location);
     return result;
 }
 

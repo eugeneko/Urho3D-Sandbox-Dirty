@@ -1,4 +1,5 @@
 #include <FlexEngine/Core/StringUtils.h>
+#include <FlexEngine/Math/MathDefs.h>
 
 namespace FlexEngine
 {
@@ -109,6 +110,26 @@ template <>
 Matrix4 To<Matrix4>(const String& str)
 {
     return ToMatrix4(str);
+}
+
+template <>
+FloatRange To<FloatRange>(const String& str)
+{
+    const Variant value = To<Variant>(str);
+    const VariantType type = value.GetType();
+    if (type == VAR_FLOAT)
+    {
+        return value.GetFloat();
+    }
+    else if (type == VAR_VECTOR2)
+    {
+        const Vector2 vec = value.GetVector2();
+        return FloatRange(vec.x_, vec.y_);
+    }
+    else
+    {
+        return 0.0f;
+    }
 }
 
 }

@@ -15,7 +15,7 @@ namespace FlexEngine
 struct FactoryContext;
 
 /// Generate procedural resources using XML description.
-void GenerateResourcesFromXML(XMLElement& node, ResourceCache& resourceCache, const FactoryContext& factoryContext);
+void GenerateResourcesFromXML(const XMLElement& node, ResourceCache& resourceCache, const FactoryContext& factoryContext);
 
 /// Generate procedural resources from XML file.
 void GenerateResourcesFromXML(XMLFile& xmlFile, bool forceGeneration, unsigned seed_);

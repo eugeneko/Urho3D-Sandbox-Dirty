@@ -7,7 +7,7 @@ namespace FlexEngine
 {
 
 /// Procedural resource generation component.
-class Procedural : Component
+class Procedural : public Component
 {
     URHO3D_OBJECT(Procedural, Component);
 

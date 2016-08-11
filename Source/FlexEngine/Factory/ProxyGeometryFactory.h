@@ -1,6 +1,5 @@
 #include <FlexEngine/Common.h>
 #include <FlexEngine/Container/Ptr.h>
-#include <FlexEngine/Factory/FatVertex.h>
 
 namespace Urho3D
 {
@@ -13,6 +12,7 @@ class XMLElement;
 namespace FlexEngine
 {
 
+struct DefaultVertex;
 struct OrthoCameraDescription;
 
 /// Parameters of cylinder proxy geometry.
@@ -28,15 +28,15 @@ struct CylinderProxyParameters
 
 /// Generate cylinder proxy geometry and cameras.
 void GenerateCylinderProxy(const BoundingBox& boundingBox, const CylinderProxyParameters& param, unsigned width, unsigned height,
-    Vector<OrthoCameraDescription>& cameras, Vector<FatVertex>& vertices, Vector<FatIndex>& indices);
+    Vector<OrthoCameraDescription>& cameras, PODVector<DefaultVertex>& vertices, PODVector<unsigned>& indices);
 
 /// Generate plain proxy geometry and cameras.
 void GeneratePlainProxy(const BoundingBox& boundingBox, unsigned width, unsigned height,
-    Vector<OrthoCameraDescription>& cameras, Vector<FatVertex>& vertices, Vector<FatIndex>& indices);
+    Vector<OrthoCameraDescription>& cameras, PODVector<DefaultVertex>& vertices, PODVector<unsigned>& indices);
 
 /// Generate proxy geometry and cameras from XML.
 void GenerateProxyFromXML(const BoundingBox& boundingBox, unsigned width, unsigned height, const XMLElement& node,
-    Vector<OrthoCameraDescription>& cameras, Vector<FatVertex>& vertices, Vector<FatIndex>& indices);
+    Vector<OrthoCameraDescription>& cameras, PODVector<DefaultVertex>& vertices, PODVector<unsigned>& indices);
 
 /// Generate proxy cameras from XML.
 Vector<OrthoCameraDescription> GenerateProxyCamerasFromXML(

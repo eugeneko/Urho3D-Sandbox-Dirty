@@ -13,9 +13,15 @@ using BezierCurve1D = PODVector<Vector4>;
 BezierCurve1D CreateBezierCurve(const PODVector<float>& values);
 
 /// Sample point on Bezier curve and return value. Location must be in range [0, numKnots].
-float SampleBezierCurve(const BezierCurve1D& curve, float location);
+float SampleBezierCurveAbs(const BezierCurve1D& curve, float location);
 
 /// Sample derivative of point on Bezier curve and return value. Location must be in range [0, numKnots].
+float SampleBezierCurveDerivativeAbs(const BezierCurve1D& curve, float location);
+
+/// Sample point on Bezier curve and return value. Location must be in range [0, 1].
+float SampleBezierCurve(const BezierCurve1D& curve, float location);
+
+/// Sample derivative of point on Bezier curve and return value. Location must be in range [0, 1].
 float SampleBezierCurveDerivative(const BezierCurve1D& curve, float location);
 
 /// Splice vector array and return array of specified component.
@@ -40,13 +46,19 @@ struct BezierCurve2D
     BezierCurve1D ycoef_;
 };
 
-/// Compute coefficients of Bezier curve by knots.
+/// Compute coefficients of 2D Bezier curve by knots.
 BezierCurve2D CreateBezierCurve(const PODVector<Vector2>& values);
 
-/// Sample point on Bezier curve and return value. Location must be in range [0, numKnots].
+/// Sample point on 2D Bezier curve and return value. Location must be in range [0, numKnots].
+Vector2 SampleBezierCurveAbs(const BezierCurve2D& curve, float location);
+
+/// Sample derivative of point on 2D Bezier curve and return value. Location must be in range [0, numKnots].
+Vector2 SampleBezierCurveDerivativeAbs(const BezierCurve2D& curve, float location);
+
+/// Sample point on 2D Bezier curve and return value. Location must be in range [0, 1].
 Vector2 SampleBezierCurve(const BezierCurve2D& curve, float location);
 
-/// Sample derivative of point on Bezier curve and return value. Location must be in range [0, numKnots].
+/// Sample derivative of point on 2D Bezier curve and return value. Location must be in range [0, 1].
 Vector2 SampleBezierCurveDerivative(const BezierCurve2D& curve, float location);
 
 /// 3D Bezier curve.
@@ -57,26 +69,20 @@ struct BezierCurve3D
     BezierCurve1D zcoef_;
 };
 
-/// Compute coefficients of Bezier curve by knots.
+/// Compute coefficients of 3D Bezier curve by knots.
 BezierCurve3D CreateBezierCurve(const PODVector<Vector3>& values);
 
-/// Sample point on Bezier curve and return value. Location must be in range [0, numKnots].
+/// Sample point on 3D Bezier curve and return value. Location must be in range [0, numKnots].
+Vector3 SampleBezierCurveAbs(const BezierCurve3D& curve, float location);
+
+/// Sample derivative of point on 3D Bezier curve and return value. Location must be in range [0, numKnots].
+Vector3 SampleBezierCurveDerivativeAbs(const BezierCurve3D& curve, float location);
+
+/// Sample point on 3D Bezier curve and return value. Location must be in range [0, 1].
 Vector3 SampleBezierCurve(const BezierCurve3D& curve, float location);
 
-/// Sample derivative of point on Bezier curve and return value. Location must be in range [0, numKnots].
+/// Sample derivative of point on Bezier 3D curve and return value. Location must be in range [0, 1].
 Vector3 SampleBezierCurveDerivative(const BezierCurve3D& curve, float location);
-
-/// Sample multiple points on Bezier curve.
-template <class T, class U>
-PODVector<T> SampleBezierCurve(const U& curve, const PODVector<float>& locations)
-{
-    PODVector<T> result;
-    for (const float location : locations)
-    {
-        result.Push(SampleBezierCurve(curve, location));
-    }
-    return result;
-}
 
 }
 

@@ -47,6 +47,30 @@ T PopElement(PODVector<T>& vec)
     return element;
 }
 
+/// Construct vector of elements.
+template <class T>
+Vector<T> ConstructVector(unsigned size, const T& value)
+{
+    Vector<T> result(size);
+    for (T& elem : result)
+    {
+        elem = value;
+    }
+    return result;
+}
+
+/// Construct POD vector of elements.
+template <class T>
+PODVector<T> ConstructPODVector(unsigned size, const T& value)
+{
+    PODVector<T> result(size);
+    for (T& elem : result)
+    {
+        elem = value;
+    }
+    return result;
+}
+
 /// Push elements to vector.
 template <class T, class U>
 void PushElements(Vector<T>& vec, const U& container)

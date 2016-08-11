@@ -52,6 +52,13 @@ inline Vector3 CrossProduct(const Vector3& left, const Vector3& right)
     return left.CrossProduct(right);
 }
 
+/// Angle between two vectors.
+template <class T>
+auto AngleBetween(const T& left, const T& right) -> decltype(left.x_)
+{
+    return left.Angle(right);
+}
+
 /// Per-component max for 2D vector.
 inline Vector2 VectorMax(const Vector2& left, const Vector2& right)
 {
@@ -109,6 +116,51 @@ template <class T> T Round(T x) { return floor(x + 0.5f); }
 
 /// Round value up.
 template <class T> T Ceil(T x) { return ceil(x); }
+
+/// Return hash of 2D vector.
+inline unsigned MakeHash(const Vector2& v)
+{
+    const unsigned& x = *reinterpret_cast<const unsigned*>(&v.x_);
+    const unsigned& y = *reinterpret_cast<const unsigned*>(&v.y_);
+    return x ^ (y * 3);
+}
+
+/// Return hash of 3D vector.
+inline unsigned MakeHash(const Vector3& v)
+{
+    const unsigned& x = *reinterpret_cast<const unsigned*>(&v.x_);
+    const unsigned& y = *reinterpret_cast<const unsigned*>(&v.y_);
+    const unsigned& z = *reinterpret_cast<const unsigned*>(&v.z_);
+    return x ^ (y * 3) ^ (z * 11);
+}
+
+/// Return hash of 4D vector.
+inline unsigned MakeHash(const Vector4& v)
+{
+    const unsigned& x = *reinterpret_cast<const unsigned*>(&v.x_);
+    const unsigned& y = *reinterpret_cast<const unsigned*>(&v.y_);
+    const unsigned& z = *reinterpret_cast<const unsigned*>(&v.z_);
+    const unsigned& w = *reinterpret_cast<const unsigned*>(&v.w_);
+    return x ^ (y * 3) ^ (z * 11) * (w * 29);
+}
+
+/// Get X axis of basis from rotation matrix.
+inline Vector3 GetBasisX(const Matrix3& mat)
+{
+    return Vector3(mat.m00_, mat.m10_, mat.m20_);
+}
+
+/// Get Y axis of basis from rotation matrix.
+inline Vector3 GetBasisY(const Matrix3& mat)
+{
+    return Vector3(mat.m01_, mat.m11_, mat.m21_);
+}
+
+/// Get Z axis of basis from rotation matrix.
+inline Vector3 GetBasisZ(const Matrix3& mat)
+{
+    return Vector3(mat.m02_, mat.m12_, mat.m22_);
+}
 
 /// Quad interpolation among four values.
 /// @param factor1 Controls interpolation from v0 to v1 and from v2 to v3

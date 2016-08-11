@@ -150,7 +150,26 @@ MathFunctionSPtr CreateConstFunction(double value);
 /// Construct function from string.
 MathFunctionSPtr CreateMathFunction(const String& str);
 
-/// Compute math function for each element.
-PODVector<double> ComputeMathFunction(const MathFunction& fun, const PODVector<double>& values);
+/// Math function in string representation. Could be serialized as String.
+class MathFunctionWrapped
+{
+public:
+    /// Construct.
+    MathFunctionWrapped(const String& text = String::EMPTY);
+    /// Compile function tree if not compiled yet or out-of-dated.
+    void Initialize();
+    /// Compute. Returns NaN in case of malformed function.
+    double Compute(const DoubleVector& inputs) const;
+    /// Compute. Returns NaN in case of malformed function.
+    float Compute(float value) const;
+public:
+    /// String representation.
+    String text_;
+private:
+    /// Current string representation.
+    String currentText_;
+    /// Function.
+    MathFunctionSPtr function_;
+};
 
 }

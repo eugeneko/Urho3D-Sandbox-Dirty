@@ -45,7 +45,7 @@
         <material uniforms="main" source="@/BlackBarkMaterial.xml"    dest="@/LargeBushyTreeBark.xml"/>
         <material uniforms="main" source="@/LargeFoliageMaterial.xml" dest="@/LargeBushyTreeFoliage.xml"/>
     </material>
-    <tree force="true">
+    <tree1 force="true">
         <output>
             <model>@/LargeBushyTree.mdl</model>
             <lod numLengthSegments="5" numRadialSegments="5"/>
@@ -128,7 +128,7 @@
                 <spread_angle>45.0</spread_angle>
             </fronds-->
         </branches>
-    </tree>
+    </tree1>
     <texture>
         <texture width="2048" height="1024">
             <variation name="ProxyDiffuse" renderpath="Procedural/RenderPaths/BakeDiffuse.xml"/>

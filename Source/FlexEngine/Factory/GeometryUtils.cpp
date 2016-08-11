@@ -1,11 +1,12 @@
 #include <FlexEngine/Factory/GeometryUtils.h>
 
+#include <FlexEngine/Factory/ModelFactory.h>
 #include <FlexEngine/Math/MathDefs.h>
 
 namespace FlexEngine
 {
 
-BoundingBox CalculateBoundingBox(FatVertex vertices[], unsigned numVertices)
+BoundingBox CalculateBoundingBox(DefaultVertex vertices[], unsigned numVertices)
 {
     assert(numVertices > 0);
     BoundingBox box;
@@ -16,14 +17,14 @@ BoundingBox CalculateBoundingBox(FatVertex vertices[], unsigned numVertices)
     return box;
 }
 
-void CalculateNormals(FatVertex vertices[], unsigned numVertices, const FatIndex indices[], unsigned numTriangles)
+void CalculateNormals(DefaultVertex vertices[], unsigned numVertices, const unsigned indices[], unsigned numTriangles)
 {
     // Compute normals
     for (unsigned i = 0; i < numTriangles; ++i)
     {
-        const FatIndex a1 = indices[3 * i + 0];
-        const FatIndex a2 = indices[3 * i + 1];
-        const FatIndex a3 = indices[3 * i + 2];
+        const unsigned a1 = indices[3 * i + 0];
+        const unsigned a2 = indices[3 * i + 1];
+        const unsigned a3 = indices[3 * i + 2];
 
         const Vector3 pos1 = vertices[a1].position_;
         const Vector3 pos2 = vertices[a2].position_;
@@ -42,7 +43,7 @@ void CalculateNormals(FatVertex vertices[], unsigned numVertices, const FatIndex
     }
 }
 
-void CalculateTangent(const FatVertex& v0, const FatVertex& v1, const FatVertex& v2, Vector3& tangent, Vector3& binormal)
+void CalculateTangent(const DefaultVertex& v0, const DefaultVertex& v1, const DefaultVertex& v2, Vector3& tangent, Vector3& binormal)
 {
     const Vector3 vector1 = v1.position_ - v0.position_;
     const Vector3 vector2 = v2.position_ - v0.position_;
@@ -68,14 +69,14 @@ void CalculateTangent(const FatVertex& v0, const FatVertex& v1, const FatVertex&
     binormal.z_ = (uv1.x_ * vector2.z_ - uv2.x_ * vector1.z_) * den;
 }
 
-void CalculateTangents(FatVertex vertices[], unsigned numVertices, const FatIndex indices[], unsigned numTriangles)
+void CalculateTangents(DefaultVertex vertices[], unsigned numVertices, const unsigned indices[], unsigned numTriangles)
 {
     // Compute
     for (unsigned i = 0; i < numTriangles; ++i)
     {
-        const FatIndex a1 = indices[3 * i + 0];
-        const FatIndex a2 = indices[3 * i + 1];
-        const FatIndex a3 = indices[3 * i + 2];
+        const unsigned a1 = indices[3 * i + 0];
+        const unsigned a2 = indices[3 * i + 1];
+        const unsigned a3 = indices[3 * i + 2];
         Vector3 tangent, binormal;
         CalculateTangent(vertices[a1], vertices[a2], vertices[a3],
             tangent, binormal);
@@ -97,7 +98,7 @@ void CalculateTangents(FatVertex vertices[], unsigned numVertices, const FatInde
 }
 
 void AppendQuadToIndices(
-    Vector<FatIndex>& indices, const FatIndex base, FatIndex v0, FatIndex v1, FatIndex v2, FatIndex v3, bool flipped /*= false*/)
+    PODVector<unsigned>& indices, const unsigned base, unsigned v0, unsigned v1, unsigned v2, unsigned v3, bool flipped /*= false*/)
 {
     if (!flipped)
     {
@@ -119,8 +120,8 @@ void AppendQuadToIndices(
     }
 }
 
-void AppendQuadToVertices(Vector<FatVertex>& vertices, Vector<FatIndex>& indices,
-    const FatVertex& v0, const FatVertex& v1, const FatVertex& v2, const FatVertex& v3, bool flipped /*= false*/)
+void AppendQuadToVertices(PODVector<DefaultVertex>& vertices, PODVector<unsigned>& indices,
+    const DefaultVertex& v0, const DefaultVertex& v1, const DefaultVertex& v2, const DefaultVertex& v3, bool flipped /*= false*/)
 {
     const unsigned base = vertices.Size();
 
@@ -134,8 +135,8 @@ void AppendQuadToVertices(Vector<FatVertex>& vertices, Vector<FatIndex>& indices
     AppendQuadToIndices(indices, base, 0, 1, 2, 3, flipped);
 }
 
-void AppendQuadGridToVertices(Vector<FatVertex>& vertices, Vector<FatIndex>& indices,
-    const FatVertex& v0, const FatVertex& v1, const FatVertex& v2, const FatVertex& v3,
+void AppendQuadGridToVertices(PODVector<DefaultVertex>& vertices, PODVector<unsigned>& indices,
+    const DefaultVertex& v0, const DefaultVertex& v1, const DefaultVertex& v2, const DefaultVertex& v3,
     const unsigned numX, const unsigned numZ, bool flipped /*= false*/)
 {
     const unsigned base = vertices.Size();
@@ -145,7 +146,7 @@ void AppendQuadGridToVertices(Vector<FatVertex>& vertices, Vector<FatIndex>& ind
     {
         for (float i = 0; i <= numX; ++i)
         {
-            vertices.Push(QLerp(v0, v1, v2, v3, i / numX, j / numZ));
+            vertices.Push(QLerpVertices(v0, v1, v2, v3, i / numX, j / numZ));
         }
     }
 
@@ -164,7 +165,8 @@ void AppendQuadGridToVertices(Vector<FatVertex>& vertices, Vector<FatIndex>& ind
     }
 }
 
-void AppendGeometryToVertices(Vector<FatVertex>& vertices, Vector<FatIndex>& indices, const Vector<FatVertex>& newVertices, const Vector<FatIndex>& newIndices)
+void AppendGeometryToVertices(PODVector<DefaultVertex>& vertices, PODVector<unsigned>& indices,
+    const PODVector<DefaultVertex>& newVertices, const PODVector<unsigned>& newIndices)
 {
     const unsigned baseVertex = vertices.Size();
     const unsigned baseIndex = indices.Size();
