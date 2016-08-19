@@ -1,3 +1,5 @@
+#pragma once
+
 #include <FlexEngine/Common.h>
 
 #include <Urho3D/Resource/XMLFile.h>

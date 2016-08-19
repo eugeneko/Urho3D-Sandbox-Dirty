@@ -1,3 +1,5 @@
+#pragma once
+
 #include <FlexEngine/Common.h>
 
 namespace Urho3D

@@ -1,3 +1,5 @@
+#pragma once
+
 #include <FlexEngine/Common.h>
 #include <FlexEngine/Container/Ptr.h>
 

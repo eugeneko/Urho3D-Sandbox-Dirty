@@ -1,8 +1,10 @@
 #include "FlexEnginePlayer.h"
 
 #include <FlexEngine/Component/Procedural.h>
-#include <FlexEngine/Component/TreeEditor.h>
+#include <FlexEngine/Factory/ProceduralComponent.h>
 #include <FlexEngine/Factory/ProceduralFactory.h>
+#include <FlexEngine/Factory/TreeHost.h>
+#include <FlexEngine/Scene/DynamicComponent.h>
 
 #include <Urho3D/DebugNew.h>
 #include <Urho3D/IO/FileSystem.h>
@@ -20,9 +22,14 @@ void FlexEnginePlayer::Start()
     ResourceCache* resourceCache = GetSubsystem<ResourceCache>();
 
     Procedural::RegisterObject(context_);
-    TreeEditor::RegisterObject(context_);
-    BranchGroupEditor::RegisterObject(context_);
-    LeafGroupEditor::RegisterObject(context_);
+
+    DynamicComponent::RegisterObject(context_);
+    ProceduralComponent::RegisterObject(context_);
+    ProceduralComponentAgent::RegisterObject(context_);
+    TreeHost::RegisterObject(context_);
+    TreeElement::RegisterObject(context_);
+    BranchGroup::RegisterObject(context_);
+    LeafGroup::RegisterObject(context_);
 
     Urho3DPlayer::Start();
 

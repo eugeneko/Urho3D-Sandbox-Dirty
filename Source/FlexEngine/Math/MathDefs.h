@@ -171,24 +171,28 @@ T QLerp(const T& v0, const T& v1, const T& v2, const T& v3, const U factor1, con
     return Lerp(Lerp(v0, v1, factor1), Lerp(v2, v3, factor1), factor2);
 }
 
-/// %Range template class.
-template <class T> class Range : Pair<T, T>
+/// Float range.
+class FloatRange : public Vector2
 {
 public:
     /// Construct default.
-    Range() : Pair<T, T>(T(), T()) { }
+    FloatRange() : Vector2() { }
 
     /// Construct with value.
-    Range(const T& value) : Pair<T, T>(value, value) { }
+    FloatRange(float value) : Vector2(value, value) { }
 
     /// Construct with values.
-    Range(const T& first, const T& second) : Pair<T, T>(first, second) { }
+    FloatRange(float first, float second) : Vector2(first, second) { }
 
     /// Get interpolated value.
-    template <class U> T Get(U factor) const { return Lerp(first_, second_, factor); }
-};
+    float Get(float factor) const { return Urho3D::Lerp(x_, y_, factor); }
 
-/// Range of floats.
-using FloatRange = Range<float>;
+    /// Set vector.
+    void Set(const Vector2& vec)
+    {
+        x_ = vec.x_;
+        y_ = vec.y_;
+    }
+};
 
 }

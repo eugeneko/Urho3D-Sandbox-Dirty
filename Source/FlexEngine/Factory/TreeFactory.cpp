@@ -134,7 +134,7 @@ PODVector<VertexElement> VegetationVertex::Format()
 
 //////////////////////////////////////////////////////////////////////////
 BranchDescription GenerateBranch(const Vector3& initialPosition, const Vector3& initialDirection, float length, float baseRadius,
-    const BranchShapeSettings& shape, const BranchMaterialSettings& material, unsigned minNumKnots)
+    const BranchShapeSettings& shape, unsigned minNumKnots)
 {
     // Compute parameters
     const unsigned numKnots = minNumKnots;
@@ -148,7 +148,7 @@ BranchDescription GenerateBranch(const Vector3& initialPosition, const Vector3& 
     for (unsigned i = 0; i < numKnots; ++i)
     {
         result.positions_.Push(position);
-        result.radiuses_.Push(shape.radius_.Compute(i / (numKnots - 1.0f)) * baseRadius);
+        result.radiuses_.Push(shape.radius_.ComputeValue(i / (numKnots - 1.0f)) * baseRadius);
 
         direction = direction.Normalized();
         position += direction * step;
@@ -215,7 +215,7 @@ TessellatedBranchPoints TessellateBranch(const BezierCurve3D& positions, const B
 }
 
 PODVector<DefaultVertex> GenerateBranchVertices(const TessellatedBranchPoints& points,
-    const BranchShapeSettings& shape, const BranchMaterialSettings& material, unsigned numRadialSegments)
+    const BranchShapeSettings& shape, unsigned numRadialSegments)
 {
     PODVector<DefaultVertex> result;
     if (points.Empty())
@@ -273,7 +273,7 @@ PODVector<DefaultVertex> GenerateBranchVertices(const TessellatedBranchPoints& p
             vertex.normal_ = normal;
             vertex.tangent_ = zAxis;
             vertex.binormal_ = CrossProduct(vertex.normal_, vertex.tangent_);
-            vertex.uv_[0] = Vector4(factor / material.textureScale_.x_, relativeDistance / material.textureScale_.y_, 0, 0);
+            vertex.uv_[0] = Vector4(factor / shape.textureScale_.x_, relativeDistance / shape.textureScale_.y_, 0, 0);
 //             vertex.branchAdherence_ = param.windAdherence_;
 //             vertex.phase_ = param.windPhase_;
 //             vertex.edgeOscillation_ = 0.0f;
@@ -339,10 +339,11 @@ PODVector<unsigned> GenerateBranchIndices(const PODVector<unsigned>& numRadialSe
 }
 
 void GenerateBranchGeometry(ModelFactory& factory, const TessellatedBranchPoints& points,
-    const BranchShapeSettings& shape, const BranchMaterialSettings& material, unsigned numRadialSegments)
+    const BranchShapeSettings& shape, unsigned numRadialSegments)
 {
+    numRadialSegments = Max(3u, static_cast<unsigned>(numRadialSegments * shape.quality_));
     const PODVector<DefaultVertex> tempVertices =
-        GenerateBranchVertices(points, shape, material, numRadialSegments);
+        GenerateBranchVertices(points, shape, numRadialSegments);
     const PODVector<unsigned> tempIndices =
         GenerateBranchIndices(ConstructPODVector(points.Size(), numRadialSegments), tempVertices.Size());
     factory.Push(tempVertices, tempIndices, true);
@@ -376,7 +377,7 @@ PODVector<TreeElementLocation> DistributeElementsOverParent(const BranchDescript
             // Find location
             const float location = locations[i];
             const float twirlAngle = twirlAngles[i];
-            const float leanAngle = distrib.growthAngle_.Compute(location);
+            const float leanAngle = distrib.growthAngle_.ComputeValue(location);
 
             // Compute position
             const Vector3 position = SampleBezierCurve(parent.positionsCurve_, location);
@@ -406,7 +407,7 @@ PODVector<TreeElementLocation> DistributeElementsOverParent(const BranchDescript
 }
 
 //////////////////////////////////////////////////////////////////////////
-PODVector<float> IntegrateDensityFunction(const MathFunctionWrapped& density, unsigned count)
+PODVector<float> IntegrateDensityFunction(const CubicCurveWrapper& density, unsigned count)
 {
     PODVector<float> result;
 
@@ -414,7 +415,7 @@ PODVector<float> IntegrateDensityFunction(const MathFunctionWrapped& density, un
     float valueSum = 0.0f;
     for (unsigned i = 0; i < count; ++i)
     {
-        const float value = density.Compute((i + 0.5f) / count);
+        const float value = density.ComputeValue((i + 0.5f) / count);
         result.Push(valueSum + value / 2);
         valueSum += value;
     }
@@ -433,10 +434,12 @@ PODVector<float> IntegrateDensityFunction(const MathFunctionWrapped& density, un
     return result;
 }
 
-Vector<BranchDescription> InstantiateBranchGroup(const BranchDescription& parent, const BranchGroupDescription& group)
+Vector<BranchDescription> InstantiateBranchGroup(const BranchDescription& parent,
+    const TreeElementDistribution& distribution, const BranchShapeSettings& shape, unsigned minNumKnots)
 {
-    const PODVector<TreeElementLocation> elements = DistributeElementsOverParent(parent, group.distribution_);
-    const float parentLength = group.distribution_.frequency_ == 0 || !group.shape_.relativeLength_ ? 1.0f : parent.length_;
+    const PODVector<TreeElementLocation> elements = DistributeElementsOverParent(parent, distribution);
+    const FloatRange lengthRange(shape.length_.x_, Max(shape.length_.x_, shape.length_.y_));
+    const float parentLength = distribution.frequency_ == 0 || !shape.relativeLength_ ? 1.0f : parent.length_;
 
     Vector<BranchDescription> result;
     for (unsigned i = 0; i < elements.Size(); ++i)
@@ -444,17 +447,17 @@ Vector<BranchDescription> InstantiateBranchGroup(const BranchDescription& parent
         const TreeElementLocation& element = elements[i];
         const Vector3 position = element.position_;
         const Vector3 direction = GetBasisZ(element.rotation_.RotationMatrix());
-        const float length = parentLength *
-            group.shape_.length_.Get(element.noise_.w_) * group.distribution_.growthScale_.Compute(element.location_);
+        const float length = parentLength * // #TODO Move this code to DistributeElementsOverParent
+            lengthRange.Get(element.noise_.w_) * distribution.growthScale_.ComputeValue(element.location_);
         BranchDescription branch = GenerateBranch(
-            position, direction, length, element.baseRadius_, group.shape_, group.material_, group.minNumKnots_);
+            position, direction, length, element.baseRadius_, shape, minNumKnots);
         branch.index_ = i;
         result.Push(branch);
     }
 
 
     // Create fake ending branch
-    if (group.shape_.fakeEnding_ && group.distribution_.frequency_ != 0)
+    if (shape.fakeEnding_ && distribution.frequency_ != 0)
     {
         BranchDescription branch;
 
@@ -464,7 +467,7 @@ Vector<BranchDescription> InstantiateBranchGroup(const BranchDescription& parent
         branch.length_ = parentLength * (1.0f - location);
 
         // Compute number of knots
-        const unsigned numKnots = Max(group.minNumKnots_, static_cast<unsigned>((1.0f - location) * branch.positions_.Size()));
+        const unsigned numKnots = Max(minNumKnots, static_cast<unsigned>((1.0f - location) * branch.positions_.Size()));
 
         // Generate knots
         for (unsigned i = 0; i < numKnots; ++i)
@@ -485,26 +488,27 @@ Vector<BranchDescription> InstantiateBranchGroup(const BranchDescription& parent
 }
 
 //////////////////////////////////////////////////////////////////////////
-PODVector<LeafDescription> InstantiateLeafGroup(const BranchDescription& parent, const LeafGroupDescription& group)
+PODVector<LeafDescription> InstantiateLeafGroup(const BranchDescription& parent,
+    const TreeElementDistribution& distribution, const LeafShapeSettings& shape)
 {
-    const PODVector<TreeElementLocation> elements = DistributeElementsOverParent(parent, group.distribution_);
+    const PODVector<TreeElementLocation> elements = DistributeElementsOverParent(parent, distribution);
 
     PODVector<LeafDescription> result;
     for (const TreeElementLocation& element : elements)
     {
         LeafDescription leaf;
         leaf.location_ = element;
-        leaf.shape_ = group.shape_;
         result.Push(leaf);
     }
     return result;
 }
 
-void GenerateLeafGeometry(ModelFactory& factory, const LeafShapeSettings& shape, const TreeElementLocation& location)
+void GenerateLeafGeometry(ModelFactory& factory,
+    const LeafShapeSettings& shape, const TreeElementLocation& location, const Vector3& foliageCenter)
 {
     // Instantiate random values
     const float adjustToGlobal = shape.adjustToGlobal_.Get(location.noise_.x_);
-    const float alignVerical = shape.alignVerical_.Get(location.noise_.y_);
+    const float alignVerical = shape.alignVertical_.Get(location.noise_.y_);
     const Vector3 position = location.position_;
     const Quaternion localRotation = location.rotation_;
 
@@ -534,43 +538,45 @@ void GenerateLeafGeometry(ModelFactory& factory, const LeafShapeSettings& shape,
     const Vector3 zAxis = GetBasisZ(rotationMatrix);
 
     // Compute normals
-    const float FACTOR = 0.5f;// #TODO move to settings and get name
-    const Vector3 baseNormal = (location.position_ * Vector3(1, 0, 1)).Normalized();
-    const Vector3 upNormal = Vector3::UP;
-    const Vector3 downNormal = (baseNormal + Vector3::DOWN).Normalized();
+//     const float FACTOR = 0.5f;// #TODO move to settings and get name
+//     const Vector3 baseNormal = (location.position_ * Vector3(1, 0, 1)).Normalized();
+//     const Vector3 baseSide = ConstructOrthogonalVector(baseNormal).Normalized();
+//     const Vector3 leftNormal = Lerp(baseNormal, baseSide)
+//     const Vector3 upNormal = Vector3::UP;
+//     const Vector3 downNormal = (baseNormal + Vector3::DOWN).Normalized();
 
     // #TODO Use custom geometry
     DefaultVertex vers[4];
 
     vers[0].position_ = Vector3(-0.5f, 0.0f, 0.0f);
-    vers[0].normal_ = upNormal;
+//     vers[0].normal_ = upNormal;
     vers[0].uv_[0] = Vector4(0, 0, 0, 0);
 
     vers[1].position_ = Vector3(0.5f, 0.0f, 0.0f);
-    vers[0].normal_ = upNormal;
+//     vers[0].normal_ = upNormal;
     vers[1].uv_[0] = Vector4(1, 0, 0, 0);
 
     vers[2].position_ = Vector3(-0.5f, 0.0f, 1.0f);
-    vers[2].normal_ = downNormal;
+//     vers[2].normal_ = downNormal;
     vers[2].uv_[0] = Vector4(0, 1, 0, 0);
 
     vers[3].position_ = Vector3(0.5f, 0.0f, 1.0f);
-    vers[3].normal_ = downNormal;
+//     vers[3].normal_ = downNormal;
     vers[3].uv_[0] = Vector4(1, 1, 0, 0);
 
     PODVector<DefaultVertex> newVertices;
     PODVector<unsigned> newIndices;
     AppendQuadGridToVertices(newVertices, newIndices, vers[0], vers[1], vers[2], vers[3], 2, 2);
 
-    // Compute max factor
+    // Compute max gravity factor
     const Vector3 junctionAdherenceFactor = Vector3(1.0f, 0.0f, 1.0f);
     Vector3 maxFactor = Vector3::ONE * M_EPSILON;
-    for (DefaultVertex& vertex : newVertices)
+    for (const DefaultVertex& vertex : newVertices)
     {
         maxFactor = VectorMax(maxFactor, vertex.position_.Abs());
     }
 
-    // Finalize
+    // Apply gravity factor to position
     const Vector3 geometryScale = shape.scale_ * shape.size_.Get(location.noise_.z_);
     const Vector3 basePosition = position + rotationMatrix * shape.junctionOffset_;
     for (DefaultVertex& vertex : newVertices)
@@ -595,6 +601,12 @@ void GenerateLeafGeometry(ModelFactory& factory, const LeafShapeSettings& shape,
 //         vertex.edgeOscillation_ = 0;
 //         vertex.branchAdherence_ = location.branchAdherence;
 //         vertex.phase_ = location.phase;
+    }
+
+    // Compute normals
+    for (DefaultVertex& vertex : newVertices)
+    {
+        vertex.normal_ = (vertex.position_ - Lerp(foliageCenter, basePosition, shape.bumpNormals_)).Normalized();
     }
 
     factory.Push(newVertices, newIndices, true);
@@ -723,48 +735,48 @@ void GenerateLeafGeometry(ModelFactory& factory, const LeafShapeSettings& shape,
 
 
 
-
-
-BranchGroupDescription ReadBranchGroupDescriptionFromXML(const XMLElement& element, const Vector<String>& materials)
-{
-    BranchGroupDescription result;
-
-    // Load distribution
-//     LoadAttributeOrChild(element, "seed", result.distribution_.seed_);
-//     LoadAttributeOrChild(element, "frequency", result.distribution_.frequency_);
-//     LoadAttributeOrChild(element, "quality", result.distribution_.quality_);
 // 
-//     LoadAttributeOrChild(element, "position", result.distribution_.position_);
-//     LoadAttributeOrChild(element, "direction", result.distribution_.direction_);
 // 
-//     LoadAttributeOrChild(element, "disributionType", result.distribution_.distributionType_);
-//     LoadAttributeOrChild(element, "location", result.distribution_.location_);
-//     LoadAttributeOrChild(element, "density", result.distribution_.density_);
-//     LoadAttributeOrChild(element, "alternateStep", result.distribution_.twirlStep_);
-//     LoadAttributeOrChild(element, "randomOffset", result.distribution_.twirlNoise_);
-//     LoadAttributeOrChild(element, "twirl", result.distribution_.twirlBase_);
-//     LoadAttributeOrChild(element, "growthScale", result.distribution_.growthScale_);
-//     LoadAttributeOrChild(element, "growthAngle", result.distribution_.growthAngle_);
-
-    // Load material
-//     result.material_.materialId_ = GetMaterialIndex(materials, GetAttributeOrChild(element, "material", String::EMPTY));
-    LoadAttributeOrChild(element, "scale", result.material_.textureScale_);
-
-    return result;
-}
-
-BranchGroup ReadBranchGroupFromXML(const XMLElement& element, const Vector<String>& materials)
-{
-    BranchGroup result;
-    result.fake_ = element.GetName().Compare("root", false) == 0;
-    result.desc_ = result.fake_ ? BranchGroupDescription() : ReadBranchGroupDescriptionFromXML(element, materials);
-    for (XMLElement child = element.GetChild("branch"); child; child = child.GetNext("branch"))
-    {
-        result.children_.Push(ReadBranchGroupFromXML(child, materials));
-    }
-    return result;
-}
-
+// BranchGroupDescription ReadBranchGroupDescriptionFromXML(const XMLElement& element, const Vector<String>& materials)
+// {
+//     BranchGroupDescription result;
+// 
+//     // Load distribution
+// //     LoadAttributeOrChild(element, "seed", result.distribution_.seed_);
+// //     LoadAttributeOrChild(element, "frequency", result.distribution_.frequency_);
+// //     LoadAttributeOrChild(element, "quality", result.distribution_.quality_);
+// // 
+// //     LoadAttributeOrChild(element, "position", result.distribution_.position_);
+// //     LoadAttributeOrChild(element, "direction", result.distribution_.direction_);
+// // 
+// //     LoadAttributeOrChild(element, "disributionType", result.distribution_.distributionType_);
+// //     LoadAttributeOrChild(element, "location", result.distribution_.location_);
+// //     LoadAttributeOrChild(element, "density", result.distribution_.density_);
+// //     LoadAttributeOrChild(element, "alternateStep", result.distribution_.twirlStep_);
+// //     LoadAttributeOrChild(element, "randomOffset", result.distribution_.twirlNoise_);
+// //     LoadAttributeOrChild(element, "twirl", result.distribution_.twirlBase_);
+// //     LoadAttributeOrChild(element, "growthScale", result.distribution_.growthScale_);
+// //     LoadAttributeOrChild(element, "growthAngle", result.distribution_.growthAngle_);
+// 
+//     // Load material
+// //     result.material_.materialId_ = GetMaterialIndex(materials, GetAttributeOrChild(element, "material", String::EMPTY));
+//     LoadAttributeOrChild(element, "scale", result.material_.textureScale_);
+// 
+//     return result;
+// }
+// 
+// BranchGroup ReadBranchGroupFromXML(const XMLElement& element, const Vector<String>& materials)
+// {
+//     BranchGroup result;
+//     result.fake_ = element.GetName().Compare("root", false) == 0;
+//     result.desc_ = result.fake_ ? BranchGroupDescription() : ReadBranchGroupDescriptionFromXML(element, materials);
+//     for (XMLElement child = element.GetChild("branch"); child; child = child.GetNext("branch"))
+//     {
+//         result.children_.Push(ReadBranchGroupFromXML(child, materials));
+//     }
+//     return result;
+// }
+// 
 // Branch Group
 TreeFactory::BranchGroup& TreeFactory::BranchGroup::addBranchGroup()
 {
@@ -1727,11 +1739,11 @@ unsigned TreeFactory::GetNumMaterials() const
 {
     return materials_.Size();
 }
-
-void TreeFactory::SetRootBranchGroup(const FlexEngine::BranchGroup& root)
-{
-    REAL_ROOT = root;
-}
+// 
+// void TreeFactory::SetRootBranchGroup(const FlexEngine::BranchGroup& root)
+// {
+//     REAL_ROOT = root;
+// }
 //////////////////////////////////////////////////////////////////////////
 namespace
 {
@@ -1878,7 +1890,7 @@ void InitializeTreeFactory(TreeFactory& factory, XMLElement& node)
     const Vector<String>& materials = GetMaterials(node.GetChild("materials"));
     factory.SetMaterials(materials);
     factory.SetTrunkStrength(GetValue(node.GetChild("trunkStrength"), 0.5f));
-    factory.SetRootBranchGroup(ReadBranchGroupFromXML(node.GetChild("root"), materials));
+//     factory.SetRootBranchGroup(ReadBranchGroupFromXML(node.GetChild("root"), materials));
 
     // Read branches
     for (XMLElement child = node.GetChild("branches"); child; child = child.GetNext("branches"))
