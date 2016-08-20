@@ -1,5 +1,6 @@
 #include "FlexEnginePlayer.h"
 
+#include <FlexEngine/AngelScript/ScriptAPI.h>
 #include <FlexEngine/Component/Procedural.h>
 #include <FlexEngine/Factory/ProceduralComponent.h>
 #include <FlexEngine/Factory/ProceduralFactory.h>
@@ -7,6 +8,7 @@
 #include <FlexEngine/Scene/DynamicComponent.h>
 
 #include <Urho3D/DebugNew.h>
+#include <Urho3D/AngelScript/Script.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/Resource/ResourceCache.h>
 
@@ -32,6 +34,10 @@ void FlexEnginePlayer::Start()
     LeafGroup::RegisterObject(context_);
 
     Urho3DPlayer::Start();
+
+    Script* scriptSubsystem = GetSubsystem<Script>();
+    asIScriptEngine* scriptEngine = scriptSubsystem->GetScriptEngine();
+    RegisterAPI(scriptEngine);
 
     SharedPtr<XMLFile> xmlFile(resourceCache->GetResource<XMLFile>("Procedural.xml"));
     GenerateResourcesFromXML(*xmlFile, false, 0);

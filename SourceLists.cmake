@@ -4,6 +4,8 @@ set (SOURCE_FILES
     "${SOURCE_FOLDER}Urho3DPlayer/Urho3DPlayer.h"
     "${SOURCE_FOLDER}FlexEngine/Common.cpp"
     "${SOURCE_FOLDER}FlexEngine/Common.h"
+    "${SOURCE_FOLDER}FlexEngine/AngelScript/ScriptAPI.cpp"
+    "${SOURCE_FOLDER}FlexEngine/AngelScript/ScriptAPI.h"
     "${SOURCE_FOLDER}FlexEngine/Component/Procedural.cpp"
     "${SOURCE_FOLDER}FlexEngine/Component/Procedural.h"
     "${SOURCE_FOLDER}FlexEngine/Container/Ptr.h"

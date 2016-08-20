@@ -23,18 +23,18 @@ namespace
 {
 
 /// Load geometry from script.
-SharedPtr<XMLFile> ConstructGeometryFromScript(ScriptFile& scriptFile, const String& entryPoint)
+SharedPtr<ModelFactory> ConstructGeometryFromScript(ScriptFile& scriptFile, const String& entryPoint)
 {
-    SharedPtr<XMLFile> geometry = MakeShared<XMLFile>(scriptFile.GetContext());
-    geometry->CreateRoot("geometry");
+    SharedPtr<ModelFactory> factory = MakeShared<ModelFactory>(scriptFile.GetContext());
+    factory->Initialize(DefaultVertex::GetVertexElements(), true);
 
-    const VariantVector param = { Variant(geometry) };
-    if (!scriptFile.Execute(ToString("void %s(XMLFile@ dest)", entryPoint.CString()), param))
+    const VariantVector param = { Variant(factory) };
+    if (!scriptFile.Execute(ToString("void %s(ModelFactory@ dest)", entryPoint.CString()), param))
     {
         return nullptr;
     }
 
-    return geometry;
+    return factory;
 }
 
 }
@@ -98,64 +98,15 @@ void GenerateTempGeometryFromXML(XMLElement& node, ResourceCache& resourceCache,
     }
 
     // Run script
-    SharedPtr<XMLFile> buffer = ConstructGeometryFromScript(*script, entryPoint);
-    if (!buffer)
+    SharedPtr<ModelFactory> factory = ConstructGeometryFromScript(*script, entryPoint);
+    if (!factory)
     {
         URHO3D_LOGERRORF("Failed to call entry point of procedural geometry script '%s'", scriptName.CString());
         return;
     }
 
-    // Load geometry
-    BoundingBox boundingBox;
-    Vector<SyntheticVertex> vertices;
-    const XMLElement verticesNode = buffer->GetRoot().GetChild("vertices");
-    for (XMLElement vertexNode = verticesNode.GetChild("vertex"); vertexNode; vertexNode = vertexNode.GetNext("vertex"))
-    {
-        const SyntheticVertex vertex = SyntheticVertex::Construct(DefaultVertex::ConstructFromXML(vertexNode));
-        boundingBox.Merge(Vector3(vertex.position_.x_, vertex.position_.y_, vertex.position_.z_));
-        vertices.Push(vertex);
-    }
-
-    PODVector<unsigned> indices;
-    const XMLElement indicesNode = buffer->GetRoot().GetChild("indices");
-    for (XMLElement triangleNode = indicesNode.GetChild("triangle"); triangleNode; triangleNode = triangleNode.GetNext("triangle"))
-    {
-        indices.Push(triangleNode.GetUInt("i0"));
-        indices.Push(triangleNode.GetUInt("i1"));
-        indices.Push(triangleNode.GetUInt("i2"));
-    }
-
-    // Create model
-    SharedPtr<VertexBuffer> vertexBuffer = MakeShared<VertexBuffer>(resourceCache.GetContext());
-    vertexBuffer->SetShadowed(true);
-    vertexBuffer->SetSize(vertices.Size(), SyntheticVertex::Format());
-    if (!vertices.Empty())
-    {
-        vertexBuffer->SetData(vertices.Buffer());
-    }
-
-    SharedPtr<IndexBuffer> indexBuffer = MakeShared<IndexBuffer>(resourceCache.GetContext());
-    indexBuffer->SetShadowed(true);
-    indexBuffer->SetSize(indices.Size(), true);
-    if (!indices.Empty())
-    {
-        indexBuffer->SetData(indices.Buffer());
-    }
-
-    SharedPtr<Model> model = MakeShared<Model>(resourceCache.GetContext());
-    model->SetVertexBuffers({ vertexBuffer }, { 0 }, { 0 });
-    model->SetIndexBuffers({ indexBuffer });
-
-    SharedPtr<Geometry> geometry = MakeShared<Geometry>(resourceCache.GetContext());
-    geometry->SetVertexBuffer(0, vertexBuffer);
-    geometry->SetIndexBuffer(indexBuffer);
-    geometry->SetDrawRange(TRIANGLE_LIST, 0, indices.Size());
-
-    model->SetNumGeometries(1);
-    model->SetNumGeometryLodLevels(0, 1);
-    model->SetGeometry(0, 0, geometry);
-
-    model->SetBoundingBox(boundingBox);
+    // Build model
+    SharedPtr<Model> model = factory->BuildModel(factory->GetMaterials());
 
     // Save model
     // #TODO Add some checks

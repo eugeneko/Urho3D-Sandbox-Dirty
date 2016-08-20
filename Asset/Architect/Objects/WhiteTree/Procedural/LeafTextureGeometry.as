@@ -1,4 +1,4 @@
-#include "Procedural/Scripts/XMLModel.as"
+#include "Procedural/Scripts/ModelFactoryWrapper.as"
 
 class LeafDesc
 {
@@ -19,7 +19,7 @@ class LeafDesc
     Vector4 segmentMaskInfo_;
 }
 
-void GenerateLeaf(XMLModel& model, LeafDesc desc)
+void GenerateLeaf(ModelFactoryWrapper& model, LeafDesc desc)
 {
     float shapePowerPos = desc.shapePower_.x;
     float shapePowerNeg = desc.shapePower_.y;
@@ -42,9 +42,9 @@ void GenerateLeaf(XMLModel& model, LeafDesc desc)
     model.AddRect2D(Vector3(0.0, desc.positionRange_.x, 0.0), 0.0, trunkScale, Vector2(-0.5, 0.0), Vector2(0.5, 1.0), Vector2(0, 1), desc.segmentMaskInfo_);
 }
 
-void Main(XMLFile@ dest)
+void Main(ModelFactory@ dest)
 {
-    XMLModel model(dest.GetRoot());
+    ModelFactoryWrapper model(dest);
 
     LeafDesc desc;
     desc.numSegments_ = 30;

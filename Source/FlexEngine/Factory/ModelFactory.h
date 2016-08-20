@@ -140,6 +140,12 @@ public:
 
         Push(vertices, N, indices, M, adjustIndices);
     }
+    /// Push vertex.
+    void PushVertex(const DefaultVertex& vertex) { Push(&vertex, 1, nullptr, 0, false); }
+    /// Push index.
+    void PushIndex(unsigned index) { Push(nullptr, 0, &index, 1, false); };
+    /// Get number of vertices for current level and material.
+    unsigned GetNumVerticesInBucket() const;
 
     /// Build model from stored data.
     SharedPtr<Model> BuildModel(const Vector<SharedPtr<Material>>& materials) const;

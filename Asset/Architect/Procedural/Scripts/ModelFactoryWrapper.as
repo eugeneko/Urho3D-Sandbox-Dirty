@@ -1,31 +1,28 @@
-/// Model data in XML format.
-class XMLModel
+/// Model factory wrapper.
+class ModelFactoryWrapper
 {
-    /// Construct by passed root XML node.
-    XMLModel(XMLElement root)
+    /// Construct by factory.
+    ModelFactoryWrapper(ModelFactory@ factory)
     {
-        vertices_ = root.CreateChild("vertices");
-        indices_ = root.CreateChild("indices");
-        numVertices_ = 0;
+        factory_ = factory;
     }
     
     /// Add vertex.
     void AddVertex(Vector3 position, Vector4 uv0, Vector4 uv1)
     {
-        XMLElement vertex = vertices_.CreateChild("vertex");
-        vertex.SetVector3("position", position);
-        vertex.SetVector4("uv0", uv0);
-        vertex.SetVector4("uv1", uv1);
-        ++numVertices_;
+        DefaultVertex vertex;
+        vertex.position = position;
+        vertex.uv[0] = uv0;
+        vertex.uv[1] = uv1;
+        factory_.PushVertex(vertex);
     }
 
     /// Add triangle.
     void AddTriangle(uint base, uint i0, uint i1, uint i2)
     {
-        XMLElement triangle = indices_.CreateChild("triangle");
-        triangle.SetUInt("i0", base + i0);
-        triangle.SetUInt("i1", base + i1);
-        triangle.SetUInt("i2", base + i2);
+        factory_.PushIndex(base + i0);
+        factory_.PushIndex(base + i1);
+        factory_.PushIndex(base + i2);
     }
 
     /// Add rectangle.
@@ -34,7 +31,7 @@ class XMLModel
         Vector4 texNN, Vector4 texNP, Vector4 texPN, Vector4 texPP,
         Vector4 param = Vector4())
     {
-        uint baseVertex = numVertices_;
+        uint baseVertex = factory_.GetNumVerticesInBucket();
         AddVertex(posNN, texNN, param);
         AddVertex(posNP, texNP, param);
         AddVertex(posPN, texPN, param);
@@ -63,7 +60,5 @@ class XMLModel
         AddRect(posN0, posP0, posN1, posP1, texNN, texNP, texPN, texPP, param1);
     }
 
-    private XMLElement vertices_;
-    private XMLElement indices_;
-    private uint numVertices_;
+    private ModelFactory@ factory_;
 }

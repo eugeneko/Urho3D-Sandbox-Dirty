@@ -3,11 +3,8 @@
 #include <FlexEngine/Common.h>
 #include <FlexEngine/Factory/TreeFactory.h>
 #include <FlexEngine/Factory/ProceduralComponent.h>
-#include <FlexEngine/Scene/TriggerAttribute.h>
 
 #include <Urho3D/Graphics/Model.h>
-#include <Urho3D/Scene/Component.h>
-#include <Urho3D/Scene/LogicComponent.h>
 
 namespace Urho3D
 {

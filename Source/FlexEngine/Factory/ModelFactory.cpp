@@ -182,6 +182,24 @@ void ModelFactory::Push(const void* vertexData, unsigned numVertices, const void
     }
 }
 
+unsigned ModelFactory::GetNumVerticesInBucket() const
+{
+    // Get destination buffers
+    Vector<ModelGeometryBuffer>* perLevelGeometry = geometry_[currentMaterial_];
+    if (!perLevelGeometry)
+    {
+        return 0;
+    }
+
+    if (currentLevel_ >= perLevelGeometry->Size())
+    {
+        return 0;
+    }
+
+    ModelGeometryBuffer& geometryBuffer = perLevelGeometry->At(currentLevel_);
+    return geometryBuffer.vertexData.Size() / vertexSize_;
+}
+
 SharedPtr<Model> ModelFactory::BuildModel(const Vector<SharedPtr<Material>>& materials) const
 {
     // Prepare buffers for accumulated geometry data

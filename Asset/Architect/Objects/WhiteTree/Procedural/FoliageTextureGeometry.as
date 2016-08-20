@@ -1,4 +1,4 @@
-#include "Procedural/Scripts/XMLModel.as"
+#include "Procedural/Scripts/ModelFactoryWrapper.as"
 
 class FoliageDesc
 {
@@ -42,7 +42,7 @@ Vector2 PseudoRandom2(Vector2 uv)
     return Vector2(PseudoRandom(uv), PseudoRandom(uv + Vector2(1, 3)));
 }
 
-void GenerateFoliage(XMLModel& model, FoliageDesc desc)
+void GenerateFoliage(ModelFactoryWrapper& model, FoliageDesc desc)
 {
     for (float x = -desc.branchSize_/2; x <= desc.branchSize_/2; x += desc.trailStride_)
     {
@@ -64,9 +64,9 @@ void GenerateFoliage(XMLModel& model, FoliageDesc desc)
     }
 }
 
-void Main(XMLFile@ dest)
+void Main(ModelFactory@ dest)
 {
-    XMLModel model(dest.GetRoot());
+    ModelFactoryWrapper model(dest);
     
     FoliageDesc desc;
     desc.leafSize_ = Vector2(1, 1) * 0.05;
