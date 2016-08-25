@@ -21,9 +21,6 @@ public:
     /// Register object factory.
     static void RegisterObject(Context* context);
 
-    /// Apply attribute changes that can not be applied immediately. Called after scene load or a network update.
-    virtual void ApplyAttributes() override;
-
     /// Set update period attribute.
     void SetUpdatePeriodAttr(float updatePeriod);
     /// Get update period attribute.
@@ -34,8 +31,8 @@ public:
     /// Is dirty?
     bool DoesNeedUpdate() const;
 
-    /// Forcibly update component.
-    void Update();
+    /// Update component.
+    void Update(bool forceUpdate = true);
 
 private:
     /// Implementation of procedural generator. May be called from a worker thread.

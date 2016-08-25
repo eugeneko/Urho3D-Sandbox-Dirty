@@ -13,7 +13,7 @@ void VS(
     #ifndef NOUV
         float4 iTexCoord : TEXCOORD0,
     #endif
-    float4 iColor : COLOR0,
+    float4 iColor : TEXCOORD1,
     #ifdef INSTANCED
         float4x3 iModelInstance : TEXCOORD4,
     #endif
@@ -72,15 +72,17 @@ void PS(
     // Generate procedural textures
     float4 diffColor = 0.0;
     #if defined(MASK)
-        float mask = ComputeMask(iTexCoord, iColor);
+        float mask = ComputeMask(iTexCoord, iColor * cMatDiffColor);
     #elif defined(SUPERMASK)
         float mask = ComputeSuperMask(iTexCoord);
+    #elif defined(MASKSCALE)
+        float mask = ComputeScaledMask(iTexCoord, iColor * cMatDiffColor);
     #elif defined(MIXCOLOR)
-        diffColor = ComputeMixedColor(iTexCoord, iColor);
+        diffColor = ComputeMixedColor(iTexCoord, iColor * cMatDiffColor);
         //diffColor = 1.0;
     #endif
 
-    #if defined(MASK) || defined(SUPERMASK)
+    #if defined(MASK) || defined(SUPERMASK) || defined(MASKSCALE)
         #ifndef ADDITIVE
             diffColor.rgb = mask;
             diffColor.a = 1.0;

@@ -10,6 +10,7 @@
 // #include <FlexEngine/Resource/ResourceCacheHelpers.h>
 // 
 // #include <Urho3D/AngelScript/ScriptFile.h>
+#include <Urho3D/AngelScript/ScriptFile.h>
 #include <Urho3D/Graphics/Geometry.h>
 #include <Urho3D/Graphics/IndexBuffer.h>
 #include <Urho3D/Graphics/Model.h>
@@ -42,7 +43,6 @@ const PODVector<VertexElement>& DefaultVertex::GetVertexElements()
     static const PODVector<VertexElement> elements =
     {
         VertexElement(TYPE_VECTOR3, SEM_POSITION),
-        VertexElement(TYPE_VECTOR3, SEM_NORMAL, 1),
         VertexElement(TYPE_VECTOR3, SEM_TANGENT),
         VertexElement(TYPE_VECTOR3, SEM_BINORMAL),
         VertexElement(TYPE_VECTOR3, SEM_NORMAL),
@@ -50,30 +50,14 @@ const PODVector<VertexElement>& DefaultVertex::GetVertexElements()
         VertexElement(TYPE_VECTOR4, SEM_TEXCOORD, 1),
         VertexElement(TYPE_VECTOR4, SEM_TEXCOORD, 2),
         VertexElement(TYPE_VECTOR4, SEM_TEXCOORD, 3),
+        VertexElement(TYPE_VECTOR4, SEM_COLOR, 0),
+        VertexElement(TYPE_VECTOR4, SEM_COLOR, 1),
+        VertexElement(TYPE_VECTOR4, SEM_COLOR, 2),
+        VertexElement(TYPE_VECTOR4, SEM_COLOR, 3),
         VertexElement(TYPE_UBYTE4,  SEM_BLENDINDICES),
         VertexElement(TYPE_VECTOR4, SEM_BLENDWEIGHTS),
     };
     return elements;
-}
-
-DefaultVertex DefaultVertex::ConstructFromXML(const XMLElement& element)
-{
-    DefaultVertex result;
-    result.position_ = element.GetVector3("position");
-    result.geometryNormal_ = element.GetVector3("geomnormal");
-    result.tangent_ = element.GetVector3("tangent");
-    result.binormal_ = element.GetVector3("binormal");
-    result.normal_ = element.GetVector3("normal");
-    for (unsigned i = 0; i < MAX_VERTEX_TEXCOORD; ++i)
-    {
-        result.uv_[i] = element.GetVector4(ToString("uv%d", i));
-    }
-    for (unsigned i = 0; i < MAX_VERTEX_BONES; ++i)
-    {
-        result.boneIndices_[i] = element.GetUInt(ToString("i%d", i));
-        result.boneWeights_[i] = element.GetFloat(ToString("w%d", i));
-    }
-    return result;
 }
 
 Vector4 DefaultVertex::GetPackedTangentBinormal() const
@@ -329,6 +313,21 @@ Vector<SharedPtr<Material>> ModelFactory::GetMaterials() const
         result.Push(geometry.first_);
     }
     return result;
+}
+
+//////////////////////////////////////////////////////////////////////////
+SharedPtr<ModelFactory> CreateModelFromScript(ScriptFile& scriptFile, const String& entryPoint)
+{
+    SharedPtr<ModelFactory> factory = MakeShared<ModelFactory>(scriptFile.GetContext());
+    factory->Initialize(DefaultVertex::GetVertexElements(), true);
+
+    const VariantVector param = { Variant(factory) };
+    if (!scriptFile.Execute(ToString("void %s(ModelFactory@ dest)", entryPoint.CString()), param))
+    {
+        return nullptr;
+    }
+
+    return factory;
 }
 
 }

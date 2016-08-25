@@ -31,6 +31,8 @@ set (SOURCE_FILES
     "${SOURCE_FOLDER}FlexEngine/Factory/ProxyGeometryFactory.h"
     "${SOURCE_FOLDER}FlexEngine/Factory/TextureFactory.cpp"
     "${SOURCE_FOLDER}FlexEngine/Factory/TextureFactory.h"
+    "${SOURCE_FOLDER}FlexEngine/Factory/TextureHost.cpp"
+    "${SOURCE_FOLDER}FlexEngine/Factory/TextureHost.h"
     "${SOURCE_FOLDER}FlexEngine/Factory/TreeHost.cpp"
     "${SOURCE_FOLDER}FlexEngine/Factory/TreeHost.h"
     "${SOURCE_FOLDER}FlexEngine/Math/BezierCurve.cpp"

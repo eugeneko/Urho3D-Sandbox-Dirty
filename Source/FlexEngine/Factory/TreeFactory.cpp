@@ -107,7 +107,6 @@ VegetationVertex VegetationVertex::Construct(const DefaultVertex& vertex)
     result.tangent_ = vertex.tangent_;
     result.binormal_ = vertex.binormal_;
     result.normal_ = vertex.normal_;
-    result.geometryNormal_ = vertex.geometryNormal_;
     result.uv_.x_ = vertex.uv_[0].x_;
     result.uv_.y_ = vertex.uv_[0].y_;
     result.param_.x_ = vertex.uv_[1].x_;
@@ -269,7 +268,6 @@ PODVector<DefaultVertex> GenerateBranchVertices(const TessellatedBranchPoints& p
 
             DefaultVertex vertex;
             vertex.position_ = position + radius * normal;
-            vertex.geometryNormal_ = normal;
             vertex.normal_ = normal;
             vertex.tangent_ = zAxis;
             vertex.binormal_ = CrossProduct(vertex.normal_, vertex.tangent_);

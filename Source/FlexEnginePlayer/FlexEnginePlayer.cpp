@@ -4,6 +4,7 @@
 #include <FlexEngine/Component/Procedural.h>
 #include <FlexEngine/Factory/ProceduralComponent.h>
 #include <FlexEngine/Factory/ProceduralFactory.h>
+#include <FlexEngine/Factory/TextureHost.h>
 #include <FlexEngine/Factory/TreeHost.h>
 #include <FlexEngine/Scene/DynamicComponent.h>
 
@@ -32,6 +33,8 @@ void FlexEnginePlayer::Start()
     TreeElement::RegisterObject(context_);
     BranchGroup::RegisterObject(context_);
     LeafGroup::RegisterObject(context_);
+    TextureHost::RegisterObject(context_);
+    TextureElement::RegisterObject(context_);
 
     Urho3DPlayer::Start();
 

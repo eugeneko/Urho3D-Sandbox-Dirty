@@ -9,18 +9,22 @@ namespace Urho3D
 {
 
 class Model;
-struct VertexElement;
+class ScriptFile;
 class XMLElement;
+struct VertexElement;
 
 }
 
 namespace FlexEngine
 {
 
-/// Maximum number of texture coordinates.
+/// Maximum number of texture coordinates per vertex.
 static const unsigned MAX_VERTEX_TEXCOORD = 4;
 
-/// Maximum number of bones that affect one vertex.
+/// Maximum number of colors per vertex.
+static const unsigned MAX_VERTEX_COLOR = 4;
+
+/// Maximum number of bones per vertex.
 static const unsigned MAX_VERTEX_BONES = 4;
 
 /// Vertex that contain all attribute data with maximum precision.
@@ -28,8 +32,6 @@ struct DefaultVertex
 {
     /// Vertex position.
     Vector3 position_;
-    /// Normal of model geometry. Should not be used for lighting.
-    Vector3 geometryNormal_;
 
     /// Tangent, X axis.
     Vector3 tangent_;
@@ -40,6 +42,8 @@ struct DefaultVertex
 
     /// Texture coordinates.
     Vector4 uv_[MAX_VERTEX_TEXCOORD];
+    /// Colors.
+    Color colors_[MAX_VERTEX_COLOR];
 
     /// Skeleton bone indices.
     unsigned char boneIndices_[MAX_VERTEX_BONES];
@@ -48,8 +52,6 @@ struct DefaultVertex
 
     /// Get vertex elements.
     static const PODVector<VertexElement>& GetVertexElements();
-    /// Construct from XML.
-    static DefaultVertex ConstructFromXML(const XMLElement& element);
     /// Get packed tangent.
     Vector4 GetPackedTangentBinormal() const;
 };
@@ -173,5 +175,8 @@ private:
     /// Geometry data grouped by material and levels.
     GeometryBufferMap geometry_;
 };
+
+/// Create model from script.
+SharedPtr<ModelFactory> CreateModelFromScript(ScriptFile& scriptFile, const String& entryPoint);
 
 }

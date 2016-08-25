@@ -19,50 +19,6 @@
 namespace FlexEngine
 {
 
-namespace
-{
-
-/// Load geometry from script.
-SharedPtr<ModelFactory> ConstructGeometryFromScript(ScriptFile& scriptFile, const String& entryPoint)
-{
-    SharedPtr<ModelFactory> factory = MakeShared<ModelFactory>(scriptFile.GetContext());
-    factory->Initialize(DefaultVertex::GetVertexElements(), true);
-
-    const VariantVector param = { Variant(factory) };
-    if (!scriptFile.Execute(ToString("void %s(ModelFactory@ dest)", entryPoint.CString()), param))
-    {
-        return nullptr;
-    }
-
-    return factory;
-}
-
-}
-
-SyntheticVertex SyntheticVertex::Construct(const DefaultVertex& vertex)
-{
-    SyntheticVertex result;
-    result.position_ = vertex.position_;
-    result.normal_ = vertex.normal_;
-    result.tangent_ = vertex.GetPackedTangentBinormal();
-    result.uv_ = vertex.uv_[0];
-    result.color_ = vertex.uv_[1];
-    return result;
-}
-
-PODVector<VertexElement> SyntheticVertex::Format()
-{
-    static const PODVector<VertexElement> format =
-    {
-        VertexElement(TYPE_VECTOR3, SEM_POSITION),
-        VertexElement(TYPE_VECTOR3, SEM_NORMAL),
-        VertexElement(TYPE_VECTOR4, SEM_TANGENT),
-        VertexElement(TYPE_VECTOR4, SEM_TEXCOORD),
-        VertexElement(TYPE_VECTOR4, SEM_COLOR),
-    };
-    return format;
-}
-
 void GenerateTempGeometryFromXML(XMLElement& node, ResourceCache& resourceCache, const FactoryContext& factoryContext)
 {
     // Get destination name
@@ -98,7 +54,7 @@ void GenerateTempGeometryFromXML(XMLElement& node, ResourceCache& resourceCache,
     }
 
     // Run script
-    SharedPtr<ModelFactory> factory = ConstructGeometryFromScript(*script, entryPoint);
+    SharedPtr<ModelFactory> factory = CreateModelFromScript(*script, entryPoint);
     if (!factory)
     {
         URHO3D_LOGERRORF("Failed to call entry point of procedural geometry script '%s'", scriptName.CString());

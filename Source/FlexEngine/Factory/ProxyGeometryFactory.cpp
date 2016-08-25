@@ -127,7 +127,6 @@ void GenerateCylinderProxy(const BoundingBox& boundingBox, const CylinderProxyPa
 //                 v.edgeOscillation_ = 0.0f;
 
                 v.normal_ = normal;
-                v.geometryNormal_ = normal;
             }
 
             // Generate quads

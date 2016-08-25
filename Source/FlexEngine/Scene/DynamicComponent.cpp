@@ -27,11 +27,6 @@ void DynamicComponent::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Dirty", bool, dirty_, false, AM_DEFAULT | AM_NOEDIT);
 }
 
-void DynamicComponent::ApplyAttributes()
-{
-    MarkNeedUpdate();
-}
-
 void DynamicComponent::SetUpdatePeriodAttr(float updatePeriod)
 {
     updatePeriod_ = updatePeriod;
@@ -52,10 +47,13 @@ bool DynamicComponent::DoesNeedUpdate() const
     return dirty_;
 }
 
-void DynamicComponent::Update()
+void DynamicComponent::Update(bool forceUpdate /*= true*/)
 {
-    DoUpdate();
-    dirty_ = false;
+    if (forceUpdate || dirty_)
+    {
+        DoUpdate();
+        dirty_ = false;
+    }
 }
 
 void DynamicComponent::OnUpdate(bool)

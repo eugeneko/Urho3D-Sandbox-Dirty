@@ -2,9 +2,12 @@
 
 #include <FlexEngine/Core/StringUtils.h>
 #include <FlexEngine/Factory/FactoryContext.h>
+#include <FlexEngine/Factory/ModelFactory.h>
 #include <FlexEngine/Factory/ProxyGeometryFactory.h>
 #include <FlexEngine/Resource/ResourceCacheHelpers.h>
+#include <FlexEngine/Resource/XMLHelpers.h>
 
+#include <Urho3D/AngelScript/ScriptFile.h>
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/Graphics/Graphics.h>
@@ -49,6 +52,134 @@ TextureUnit ParseTextureUnit(const String& name)
         return MAX_TEXTURE_UNITS;
     }
 }
+
+/// DirectDraw color key definition.
+struct DDColorKey
+{
+    unsigned dwColorSpaceLowValue_;
+    unsigned dwColorSpaceHighValue_;
+};
+
+/// DirectDraw pixel format definition.
+struct DDPixelFormat
+{
+    unsigned dwSize_;
+    unsigned dwFlags_;
+    unsigned dwFourCC_;
+    union
+    {
+        unsigned dwRGBBitCount_;
+        unsigned dwYUVBitCount_;
+        unsigned dwZBufferBitDepth_;
+        unsigned dwAlphaBitDepth_;
+        unsigned dwLuminanceBitCount_;
+        unsigned dwBumpBitCount_;
+        unsigned dwPrivateFormatBitCount_;
+    };
+    union
+    {
+        unsigned dwRBitMask_;
+        unsigned dwYBitMask_;
+        unsigned dwStencilBitDepth_;
+        unsigned dwLuminanceBitMask_;
+        unsigned dwBumpDuBitMask_;
+        unsigned dwOperations_;
+    };
+    union
+    {
+        unsigned dwGBitMask_;
+        unsigned dwUBitMask_;
+        unsigned dwZBitMask_;
+        unsigned dwBumpDvBitMask_;
+        struct
+        {
+            unsigned short wFlipMSTypes_;
+            unsigned short wBltMSTypes_;
+        } multiSampleCaps_;
+    };
+    union
+    {
+        unsigned dwBBitMask_;
+        unsigned dwVBitMask_;
+        unsigned dwStencilBitMask_;
+        unsigned dwBumpLuminanceBitMask_;
+    };
+    union
+    {
+        unsigned dwRGBAlphaBitMask_;
+        unsigned dwYUVAlphaBitMask_;
+        unsigned dwLuminanceAlphaBitMask_;
+        unsigned dwRGBZBitMask_;
+        unsigned dwYUVZBitMask_;
+    };
+};
+
+/// DirectDraw surface capabilities.
+struct DDSCaps2
+{
+    unsigned dwCaps_;
+    unsigned dwCaps2_;
+    unsigned dwCaps3_;
+    union
+    {
+        unsigned dwCaps4_;
+        unsigned dwVolumeDepth_;
+    };
+};
+
+struct DDSHeader10
+{
+    unsigned dxgiFormat;
+    unsigned resourceDimension;
+    unsigned miscFlag;
+    unsigned arraySize;
+    unsigned reserved;
+};
+
+/// DirectDraw surface description.
+struct DDSurfaceDesc2
+{
+    unsigned dwSize_;
+    unsigned dwFlags_;
+    unsigned dwHeight_;
+    unsigned dwWidth_;
+    union
+    {
+        unsigned lPitch_;
+        unsigned dwLinearSize_;
+    };
+    union
+    {
+        unsigned dwBackBufferCount_;
+        unsigned dwDepth_;
+    };
+    union
+    {
+        unsigned dwMipMapCount_;
+        unsigned dwRefreshRate_;
+        unsigned dwSrcVBHandle_;
+    };
+    unsigned dwAlphaBitDepth_;
+    unsigned dwReserved_;
+    unsigned lpSurface_; // Do not define as a void pointer, as it is 8 bytes in a 64bit build
+    union
+    {
+        DDColorKey ddckCKDestOverlay_;
+        unsigned dwEmptyFaceColor_;
+    };
+    DDColorKey ddckCKDestBlt_;
+    DDColorKey ddckCKSrcOverlay_;
+    DDColorKey ddckCKSrcBlt_;
+    union
+    {
+        DDPixelFormat ddpfPixelFormat_;
+        unsigned dwFVF_;
+    };
+    DDSCaps2 ddsCaps_;
+    unsigned dwTextureStage_;
+};
+
+static_assert(sizeof(DDSurfaceDesc2) == 124, "Invalid DDS header size");
 
 }
 
@@ -106,23 +237,108 @@ SharedPtr<Texture2D> RenderViews(Context* context, unsigned width, unsigned heig
     return texture;
 }
 
-SharedPtr<Image> ConvertTextureToImage(SharedPtr<Texture2D> texture)
+SharedPtr<Image> ConvertTextureToImage(const Texture2D& texture)
 {
-    const unsigned width = texture->GetWidth();
-    const unsigned height = texture->GetHeight();
-    const unsigned dataSize = texture->GetDataSize(width, height);
-    if (texture->GetFormat() != Graphics::GetRGBAFormat())
+    const unsigned width = texture.GetWidth();
+    const unsigned height = texture.GetHeight();
+    const unsigned dataSize = texture.GetDataSize(width, height);
+    if (texture.GetFormat() != Graphics::GetRGBAFormat())
     {
         URHO3D_LOGERROR("Texture must have RGBA8 format");
         return nullptr;
     }
     
     PODVector<unsigned char> buffer(dataSize);
-    texture->GetData(0, buffer.Buffer());
-    SharedPtr<Image> image = MakeShared<Image>(texture->GetContext());
-    image->SetSize(width, height, texture->GetComponents());
+    texture.GetData(0, buffer.Buffer());
+    SharedPtr<Image> image = MakeShared<Image>(texture.GetContext());
+    image->SetSize(width, height, texture.GetComponents());
     image->SetData(buffer.Buffer());
+    image->SetName(texture.GetName());
     return image;
+}
+
+bool SaveImageToDDS(const Image& image, const String& fileName)
+{
+    File outFile(image.GetContext(), fileName, FILE_WRITE);
+    if (!outFile.IsOpen())
+    {
+        URHO3D_LOGERROR("Access denied to " + fileName);
+        return false;
+    }
+
+    if (image.IsCompressed())
+    {
+        URHO3D_LOGERROR("Can not save compressed image to DDS");
+        return false;
+    }
+
+    if (image.GetComponents() != 4)
+    {
+        URHO3D_LOGERRORF("Can not save image with %u components to DDS", image.GetComponents());
+        return false;
+    }
+
+    outFile.WriteFileID("DDS ");
+
+    DDSurfaceDesc2 ddsd;
+    memset(&ddsd, 0, sizeof(ddsd));
+    ddsd.dwSize_ = sizeof(ddsd);
+    ddsd.dwFlags_ = 0x00000001l /*DDSD_CAPS*/ | 0x00000002l /*DDSD_HEIGHT*/ | 0x00000004l /*DDSD_WIDTH*/ | 0x00001000l /*DDSD_PIXELFORMAT*/;
+    ddsd.dwWidth_ = image.GetWidth();
+    ddsd.dwHeight_ = image.GetHeight();
+    ddsd.ddpfPixelFormat_.dwFlags_ = 0x00000040l /*DDPF_RGB*/ | 0x00000001l /*DDPF_ALPHAPIXELS*/;
+    ddsd.ddpfPixelFormat_.dwSize_ = sizeof(ddsd.ddpfPixelFormat_);
+    ddsd.ddpfPixelFormat_.dwRGBBitCount_ = 32;
+    ddsd.ddpfPixelFormat_.dwRBitMask_ = 0x000000ff;
+    ddsd.ddpfPixelFormat_.dwGBitMask_ = 0x0000ff00;
+    ddsd.ddpfPixelFormat_.dwBBitMask_ = 0x00ff0000;
+    ddsd.ddpfPixelFormat_.dwRGBAlphaBitMask_ = 0xff000000;
+
+    outFile.Write(&ddsd, sizeof(ddsd));
+    outFile.Write(image.GetData(), image.GetWidth() * image.GetHeight() * 4);
+
+    return true;
+}
+
+bool SaveImage(ResourceCache* cache, const Image& image)
+{
+    // Create directories
+    const String& outputFileName = GetOutputResourceCacheDir(*cache) + image.GetName();
+    CreateDirectoriesToFile(*cache, outputFileName);
+
+    // Save image
+    bool success = false;
+    if (outputFileName.EndsWith(".dds", false))
+    {
+        success = SaveImageToDDS(image, outputFileName);
+    }
+    else if (outputFileName.EndsWith(".png", false))
+    {
+        success = image.SavePNG(outputFileName);
+    }
+    else if (outputFileName.EndsWith(".bmp", false))
+    {
+        success = image.SaveBMP(outputFileName);
+    }
+    else if (outputFileName.EndsWith(".jpg", false))
+    {
+        success = image.SaveJPG(outputFileName, 100);
+    }
+    else if (outputFileName.EndsWith(".tga", false))
+    {
+        success = image.SaveTGA(outputFileName);
+    }
+    else
+    {
+        URHO3D_LOGERROR("Unknown texture type");
+    }
+
+    if (!success)
+    {
+        URHO3D_LOGERRORF("Cannot save texture to '%s'", outputFileName.CString());
+    }
+
+    return success;
 }
 
 Vector<ViewDescription> ConstructViewsForTexture(Context* context, const TextureDescription& desc, const TextureMap& textures)
@@ -160,8 +376,16 @@ Vector<ViewDescription> ConstructViewsForTexture(Context* context, const Texture
                 staticModel->SetModel(geometryDesc.model_);
                 for (unsigned i = 0; i < geometryDesc.materials_.Size(); ++i)
                 {
-                    // Clone material and override textures
+                    if (!geometryDesc.materials_[i])
+                    {
+                        URHO3D_LOGERROR("Missing material of source model");
+                        continue;
+                    }
+
+                    // Clone material
                     const SharedPtr<Material> material(geometryDesc.materials_[i]->Clone());
+
+                    // Override textures
                     for (const HashMap<TextureUnit, String>::KeyValue& unitDesc : desc.textures_)
                     {
                         SharedPtr<Texture2D> texture;
@@ -178,6 +402,12 @@ Vector<ViewDescription> ConstructViewsForTexture(Context* context, const Texture
                         {
                             URHO3D_LOGERRORF("Cannot resolve input texture name '%s'", unitDesc.second_.CString());
                         }
+                    }
+
+                    // Override parameters
+                    for (const HashMap<String, Variant>::KeyValue& paramDesc : desc.parameters_)
+                    {
+                        material->SetShaderParameter(paramDesc.first_, paramDesc.second_);
                     }
 
                     staticModel->SetMaterial(i, material);
@@ -223,12 +453,12 @@ void GenerateTexturesFromXML(XMLElement& node, ResourceCache& resourceCache, con
     textureFactory.Load(node);
     if (!textureFactory.CheckAllOutputs(factoryContext.outputDirectory_) || factoryContext.forceGeneration_)
     {
-        textureFactory.Generate(factoryContext.outputDirectory_);
+        textureFactory.Generate();
+        textureFactory.Save(factoryContext.outputDirectory_);
     }
 }
 
 //////////////////////////////////////////////////////////////////////////
-
 TextureFactory::TextureFactory(Context* context)
     : Resource(context)
 {
@@ -272,6 +502,7 @@ bool TextureFactory::Load(const XMLElement& source)
 
     currectDirectory_ = GetFilePath(GetName());
 
+    StringVector texturesNames;
     for (XMLElement textureNode = source.GetChild("texture"); textureNode; textureNode = textureNode.GetNext("texture"))
     {
         TextureDescription textureDesc;
@@ -313,12 +544,28 @@ bool TextureFactory::Load(const XMLElement& source)
             GeometryDescription geometryDesc;
 
             // Load model
-            const String modelName = geometryNode.GetAttribute("model").Trimmed().Replaced("@", currectDirectory_);
-            geometryDesc.model_ = resourceCache_->GetResource<Model>(modelName);
-            if (!geometryDesc.model_)
+            if (geometryNode.HasAttribute("model"))
             {
-                URHO3D_LOGERRORF("Source geometry model '%s' was not found", modelName.CString());
-                return false;
+                const String modelName = geometryNode.GetAttribute("model").Trimmed().Replaced("@", currectDirectory_);
+                geometryDesc.model_ = resourceCache_->GetResource<Model>(modelName);
+                if (!geometryDesc.model_)
+                {
+                    URHO3D_LOGERRORF("Source geometry model '%s' was not found", modelName.CString());
+                    return false;
+                }
+            }
+            else if (geometryNode.HasAttribute("script"))
+            {
+                const String scriptName = geometryNode.GetAttribute("script").Trimmed().Replaced("@", currectDirectory_);
+                const String entryPoint = GetAttribute(geometryNode, "entry", String("Main"));
+                SharedPtr<ScriptFile> script(resourceCache_->GetResource<ScriptFile>(scriptName));
+                if (!script)
+                {
+                    URHO3D_LOGERRORF("Source geometry script '%s' was not found", scriptName.CString());
+                    return false;
+                }
+                SharedPtr<ModelFactory> factory = CreateModelFromScript(*script, entryPoint);
+                geometryDesc.model_ = factory->BuildModel(factory->GetMaterials());
             }
 
             // Load bounding box
@@ -336,7 +583,7 @@ bool TextureFactory::Load(const XMLElement& source)
                 geometryDesc.materials_.Push(material);
                 if (!material)
                 {
-                    URHO3D_LOGERRORF("Source geometry model '%s' was not found", modelName.CString());
+                    URHO3D_LOGERRORF("Source geometry material '%s' was not found", materialName.CString());
                     return false;
                 }
             }
@@ -348,6 +595,17 @@ bool TextureFactory::Load(const XMLElement& source)
         for (XMLElement cameraNode = textureNode.GetChild("camera"); cameraNode; cameraNode = cameraNode.GetNext("camera"))
         {
             textureDesc.cameras_ += GenerateProxyCamerasFromXML(boundingBox, textureDesc.width_, textureDesc.height_, cameraNode);
+        }
+        if (textureDesc.cameras_.Empty())
+        {
+            OrthoCameraDescription cameraDesc;
+
+            cameraDesc.position_ = Vector3(0.5f, 0.5f, 0.0f);
+            cameraDesc.farClip_ = 1.0f;
+            cameraDesc.size_ = Vector2(1.0f, 1.0f);
+            cameraDesc.viewport_ = IntRect(0, 0, textureDesc.width_, textureDesc.height_);
+
+            textureDesc.cameras_.Push(cameraDesc);
         }
 
         // Load textures
@@ -369,6 +627,15 @@ bool TextureFactory::Load(const XMLElement& source)
             }
 
             textureDesc.textures_.Populate(unit, textureName);
+        }
+
+        // Load textures
+        for (XMLElement paramNode = textureNode.GetChild("param"); paramNode; paramNode = paramNode.GetNext("param"))
+        {
+            const String paramName = paramNode.GetAttribute("name");
+            const Variant paramValue = paramNode.GetVectorVariant("value");
+
+            textureDesc.parameters_.Populate(paramName, paramValue);
         }
 
         // Load all variations
@@ -404,6 +671,7 @@ bool TextureFactory::Load(const XMLElement& source)
             }
 
             textureDesc.renderPath_ = renderPath;
+            texturesNames.Push(variation.first_);
             AddTexture(variation.first_, textureDesc);
         }
     }
@@ -419,6 +687,14 @@ bool TextureFactory::Load(const XMLElement& source)
 
         const String& fileName = outputNode.GetAttribute("file").Trimmed().Replaced("@", currectDirectory_);
         AddOutput(textureName, fileName);
+    }
+
+    if (outputs_.Empty())
+    {
+        for (const String& textureName : texturesNames)
+        {
+            AddOutput(textureName, "");
+        }
     }
 
     return true;
@@ -462,7 +738,7 @@ bool TextureFactory::CheckAllOutputs(const String& outputDirectory) const
     return true;
 }
 
-bool TextureFactory::Generate(const String& outputDirectory)
+bool TextureFactory::Generate()
 {
     if (!resourceCache_)
     {
@@ -481,6 +757,11 @@ bool TextureFactory::Generate(const String& outputDirectory)
         textureMap_.Populate(textureDesc.first_, texture);
     }
 
+    return true;
+}
+
+bool TextureFactory::Save(const String& outputDirectory)
+{
     // Save textures
     for (const Pair<String, String>& outputDesc : outputs_)
     {
@@ -496,7 +777,7 @@ bool TextureFactory::Generate(const String& outputDirectory)
         // Save
         const String& outputFileName = outputDirectory + outputName;
         CreateDirectoriesToFile(*resourceCache_, outputFileName);
-        const SharedPtr<Image> image = ConvertTextureToImage(texture);
+        const SharedPtr<Image> image = ConvertTextureToImage(*texture);
         if (image->SavePNG(outputFileName))
         {
             resourceCache_->ReloadResourceWithDependencies(outputName);
@@ -507,6 +788,25 @@ bool TextureFactory::Generate(const String& outputDirectory)
         }
     }
     return true;
+}
+
+Vector<SharedPtr<Texture2D>> TextureFactory::GetTextures() const
+{
+    Vector<SharedPtr<Texture2D>> textures;
+    for (const Pair<String, String>& outputDesc : outputs_)
+    {
+        const SharedPtr<Texture2D>* texture = textureMap_[outputDesc.first_];
+        if (!texture)
+        {
+            URHO3D_LOGERRORF("Cannot find procedural texture with internal name '%s'", outputDesc.first_);
+            textures.Push(nullptr);
+        }
+        else
+        {
+            textures.Push(*texture);
+        }
+    }
+    return textures;
 }
 
 int TextureFactory::FindTexture(const String& name) const

@@ -47,7 +47,13 @@ struct ViewDescription
 SharedPtr<Texture2D> RenderViews(Context* context, unsigned width, unsigned height, const Vector<ViewDescription>& views);
 
 /// Convert RGBA8 texture to image.
-SharedPtr<Image> ConvertTextureToImage(SharedPtr<Texture2D> texture);
+SharedPtr<Image> ConvertTextureToImage(const Texture2D& texture);
+
+/// Save RGBA8 image to DDS file.
+bool SaveImageToDDS(const Image& image, const String& fileName);
+
+/// Save RGBA8 image to BMP,JPG,PNG,TGA or DDS file depending on file extension.
+bool SaveImage(ResourceCache* cache, const Image& image);
 
 /// Orthogonal camera description.
 struct OrthoCameraDescription
@@ -90,6 +96,8 @@ struct TextureDescription
     Vector<GeometryDescription> geometries_;
     /// Texture units to override.
     HashMap<TextureUnit, String> textures_;
+    /// Input parameters passed to material.
+    HashMap<String, Variant> parameters_;
 };
 
 /// Texture mapping from name to object.
@@ -131,7 +139,11 @@ public:
     /// Check that all outputs exist.
     bool CheckAllOutputs(const String& outputDirectory) const;
     /// Generate textures.
-    bool Generate(const String& outputDirectory);
+    bool Generate();
+    /// Save outputs.
+    bool Save(const String& outputDirectory);
+    /// Get all generated textures.
+    Vector<SharedPtr<Texture2D>> GetTextures() const;
 
 private:
     /// Get texture index.
