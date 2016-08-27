@@ -10,6 +10,7 @@ set (SOURCE_FILES
     "${SOURCE_FOLDER}FlexEngine/Component/Procedural.h"
     "${SOURCE_FOLDER}FlexEngine/Container/Ptr.h"
     "${SOURCE_FOLDER}FlexEngine/Container/Utility.h"
+    "${SOURCE_FOLDER}FlexEngine/Core/Attribute.h"
     "${SOURCE_FOLDER}FlexEngine/Core/StringUtils.cpp"
     "${SOURCE_FOLDER}FlexEngine/Core/StringUtils.h"
     "${SOURCE_FOLDER}FlexEngine/Factory/FactoryContext.h"

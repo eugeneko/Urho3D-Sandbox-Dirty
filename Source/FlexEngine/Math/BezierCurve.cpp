@@ -377,7 +377,7 @@ const String& CubicCurveWrapper::GetCurveString() const
 
 void CubicCurveWrapper::SetResultRange(const Vector2& range)
 {
-    range_.Set(range);
+    range_.SetVector(range);
 }
 
 const FloatRange& CubicCurveWrapper::GetResultRange() const

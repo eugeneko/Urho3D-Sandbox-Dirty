@@ -1,5 +1,6 @@
 #include <FlexEngine/Factory/TreeHost.h>
 
+#include <FlexEngine/Core/Attribute.h>
 #include <FlexEngine/Factory/ModelFactory.h>
 
 #include <Urho3D/Core/Context.h>
@@ -133,19 +134,20 @@ void TreeElement::RegisterObject(Context* context)
 {
     URHO3D_COPY_BASE_ATTRIBUTES(ProceduralComponentAgent);
 
-    URHO3D_ACCESSOR_ATTRIBUTE("Seed", GetSeedAttr, SetSeedAttr, unsigned, 0, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Frequency", GetFrequencyAttr, SetFrequencyAttr, unsigned, 0, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Seed", unsigned, distribution_.seed_, 0, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Frequency", unsigned, distribution_.frequency_, 0, AM_DEFAULT);
 
-    URHO3D_ACCESSOR_ATTRIBUTE("Growth Location", GetLocationAttr, SetLocationAttr, Vector2, Vector2(0.0f, 1.0f), AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Growth Density", GetDensityAttr, SetDensityAttr, String, "one", AM_DEFAULT);
-    URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Distribution", GetDistributionTypeAttr, SetDistributionTypeAttr, unsigned, branchDistributionNames, 0, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Twirl angle step", GetTwirlStepAttr, SetTwirlStepAttr, float, 180.0f, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Twirl angle random", GetTwirlNoiseAttr, SetTwirlNoiseAttr, float, 0.0f, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Twirl angle base", GetTwirlBaseAttr, SetTwirlBaseAttr, float, 0.0f, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Growth Scale", GetGrowthScaleAttr, SetGrowthScaleAttr, Vector2, Vector2::ONE, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Growth Scale Curve", GetGrowthScaleCurveAttr, SetGrowthScaleCurveAttr, String, "linear", AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Growth Angle", GetGrowthAngleAttr, SetGrowthAngleAttr, Vector2, Vector2::ZERO, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Growth Angle Curve", GetGrowthAngleCurveAttr, SetGrowthAngleCurveAttr, String, "linear", AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Growth Location", Vector2, distribution_.location_, GetVector, SetVector, Vector2(0.0f, 1.0f), AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Growth Density", String, distribution_.density_, GetCurveString, SetCurveString, "one", AM_DEFAULT);
+    URHO3D_MEMBER_ENUM_ATTRIBUTE("Distribution", TreeElementDistributionType, distribution_.distributionType_, branchDistributionNames, 0, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Twirl angle step", float, distribution_.twirlStep_, 180.0f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Twirl angle random", float, distribution_.twirlNoise_, 0.0f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Twirl angle base", float, distribution_.twirlBase_, 0.0f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Growth Scale", Vector2, distribution_.growthScale_, GetResultRange, SetResultRange, Vector2::ONE, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Growth Scale Curve", String, distribution_.growthScale_, GetCurveString, SetCurveString, "linear", AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Growth Angle", Vector2, distribution_.growthAngle_, GetResultRange, SetResultRange, Vector2::ZERO, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Growth Angle Curve", String, distribution_.growthAngle_, GetCurveString, SetCurveString, "linear", AM_DEFAULT);
+
 }
 
 void TreeElement::ApplyAttributes()
@@ -185,15 +187,15 @@ void BranchGroup::RegisterObject(Context* context)
     URHO3D_COPY_BASE_ATTRIBUTES(TreeElement);
 
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Material", GetMaterialAttr, SetMaterialAttr, ResourceRef, ResourceRef(Material::GetTypeStatic()), AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("UV Scale", GetTextureScaleAttr, SetTextureScaleAttr, Vector2, Vector2::ONE, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Quality", GetQualityAttr, SetQualityAttr, float, 1.0f, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Length", GetLengthAttr, SetLengthAttr, Vector2, Vector2::ONE, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Relative Length", GetRelativeLengthAttr, SetRelativeLengthAttr, bool, true, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Fake Ending", GetFakeEndingAttr, SetFakeEndingAttr, bool, false, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Radius", GetRadiusAttr, SetRadiusAttr, Vector2, Vector2(0.5f, 0.1f), AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Radius Curve", GetRadiusCurveAttr, SetRadiusCurveAttr, String, "linear", AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Gravity Intensity", GetGravityIntensityAttr, SetGravityIntensityAttr, float, 0.0f, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Gravity Resistance", GetGravityResistanceAttr, SetGravityResistanceAttr, float, 0.5f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("UV Scale", Vector2, shape_.textureScale_, Vector2::ONE, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Quality", float, shape_.quality_, 1.0f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Length", Vector2, shape_.length_, GetVector, SetVector, Vector2::ONE, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Relative Length", bool, shape_.relativeLength_, true, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Fake Ending", bool, shape_.fakeEnding_, false, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Radius", Vector2, shape_.radius_, GetResultRange, SetResultRange, Vector2(0.5f, 0.1f), AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Radius Curve", String, shape_.radius_, GetCurveString, SetCurveString, "linear", AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Gravity Intensity", float, shape_.gravityIntensity_, 0.0f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Gravity Resistance", float, shape_.gravityResistance_, 0.5f, AM_DEFAULT);
 }
 
 void BranchGroup::Generate(TreeHost& host)
@@ -284,14 +286,14 @@ void LeafGroup::RegisterObject(Context* context)
 
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Material", GetMaterialAttr, SetMaterialAttr, ResourceRef, ResourceRef(Material::GetTypeStatic()), AM_DEFAULT);
 
-    URHO3D_ACCESSOR_ATTRIBUTE("Size", GetSizeAttr, SetSizeAttr, Vector2, Vector2::ONE, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Scale", GetScaleAttr, SetScaleAttr, Vector3, Vector3::ONE, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Adjust to Global", GetAdjustToGlobalAttr, SetAdjustToGlobalAttr, Vector2, Vector2::ZERO, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Align Vertical", GetAlignVerticalAttr, SetAlignVerticalAttr, Vector2, Vector2::ZERO, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Junction Offset", GetJunctionOffsetAttr, SetJunctionOffsetAttr, Vector3, Vector3::ZERO, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Gravity Intensity", GetGravityIntensityAttr, SetGravityIntensityAttr, Vector3, Vector3::ZERO, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Gravity Resistance", GetGravityResistanceAttr, SetGravityResistanceAttr, Vector3, Vector3::ONE * 0.5f, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Bump Normals", GetBumpNormalsAttr, SetBumpNormalsAttr, float, 0.0f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Size", Vector2, shape_.size_, GetVector, SetVector, Vector2::ONE, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Scale", Vector3, shape_.scale_, Vector3::ONE, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Adjust to Global", Vector2, shape_.adjustToGlobal_, GetVector, SetVector, Vector2::ZERO, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Align Vertical", Vector2, shape_.alignVertical_, GetVector, SetVector, Vector2::ZERO, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Junction Offset", Vector3, shape_.junctionOffset_, Vector3::ZERO, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Gravity Intensity", Vector3, shape_.gravityIntensity_, Vector3::ZERO, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Gravity Resistance", Vector3, shape_.gravityResistance_, Vector3::ONE * 0.5f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Bump Normals", float, shape_.bumpNormals_, 0.0f, AM_DEFAULT);
 }
 
 void LeafGroup::Generate(TreeHost& host)

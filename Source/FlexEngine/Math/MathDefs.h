@@ -184,11 +184,17 @@ public:
     /// Construct with values.
     FloatRange(float first, float second) : Vector2(first, second) { }
 
+    /// Construct with values.
+    explicit FloatRange(const Vector2& values) : Vector2(values) { }
+
     /// Get interpolated value.
     float Get(float factor) const { return Urho3D::Lerp(x_, y_, factor); }
 
+    /// Get vector.
+    const Vector2& GetVector() const { return *this; }
+
     /// Set vector.
-    void Set(const Vector2& vec)
+    void SetVector(const Vector2& vec)
     {
         x_ = vec.x_;
         y_ = vec.y_;
