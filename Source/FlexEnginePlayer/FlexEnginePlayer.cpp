@@ -35,6 +35,7 @@ void FlexEnginePlayer::Start()
     LeafGroup::RegisterObject(context_);
     TextureHost::RegisterObject(context_);
     TextureElement::RegisterObject(context_);
+    RenderedModelTexture::RegisterObject(context_);
 
     Urho3DPlayer::Start();
 

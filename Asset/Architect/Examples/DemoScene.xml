@@ -7,8 +7,8 @@
 	<attribute name="Elapsed Time" value="0" />
 	<attribute name="Next Replicated Node ID" value="27" />
 	<attribute name="Next Replicated Component ID" value="44" />
-	<attribute name="Next Local Node ID" value="16777260" />
-	<attribute name="Next Local Component ID" value="16777744" />
+	<attribute name="Next Local Node ID" value="16777261" />
+	<attribute name="Next Local Component ID" value="16777756" />
 	<attribute name="Variables" />
 	<attribute name="Variable Names" value="" />
 	<component type="Octree" id="1" />
@@ -189,7 +189,7 @@
 			<attribute name="Rotation" value="1 0 0 0" />
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
-			<component type="TextureElement" id="26">
+			<component type="RenderedModelTexture" id="26">
 				<attribute name="Width" value="1024" />
 				<attribute name="Height" value="1024" />
 				<attribute name="Render Path" value="XMLFile;Procedural/RenderPaths/BakeTransparent.xml" />
@@ -209,7 +209,7 @@
 				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="1 1 1" />
 				<attribute name="Variables" />
-				<component type="TextureElement" id="24">
+				<component type="RenderedModelTexture" id="24">
 					<attribute name="Width" value="1024" />
 					<attribute name="Height" value="1024" />
 					<attribute name="Render Path" value="XMLFile;Procedural/RenderPaths/BakeOpaque.xml" />
@@ -227,7 +227,7 @@
 					<attribute name="Rotation" value="1 0 0 0" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
-					<component type="TextureElement" id="22">
+					<component type="RenderedModelTexture" id="22">
 						<attribute name="Width" value="64" />
 						<attribute name="Height" value="64" />
 						<attribute name="Render Path" value="XMLFile;Procedural/RenderPaths/BakeOpaque.xml" />
@@ -246,7 +246,7 @@
 				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="1 1 1" />
 				<attribute name="Variables" />
-				<component type="TextureElement" id="29">
+				<component type="RenderedModelTexture" id="29">
 					<attribute name="Color" value="0.204 0.502 0.09 1" />
 					<attribute name="Render Path" value="XMLFile;" />
 				</component>
@@ -259,7 +259,7 @@
 				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="1 1 1" />
 				<attribute name="Variables" />
-				<component type="TextureElement" id="30">
+				<component type="RenderedModelTexture" id="30">
 					<attribute name="Color" value="0.298 0.769 0.09 1" />
 					<attribute name="Render Path" value="XMLFile;" />
 				</component>
@@ -272,7 +272,7 @@
 				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="1 1 1" />
 				<attribute name="Variables" />
-				<component type="TextureElement" id="32">
+				<component type="RenderedModelTexture" id="32">
 					<attribute name="Render Path" value="XMLFile;" />
 				</component>
 			</node>
@@ -301,7 +301,7 @@
 			<attribute name="Rotation" value="1 0 0 0" />
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
-			<component type="TextureElement" id="39">
+			<component type="RenderedModelTexture" id="39">
 				<attribute name="Width" value="256" />
 				<attribute name="Height" value="1024" />
 				<attribute name="Render Path" value="XMLFile;Procedural/RenderPaths/BakeOpaque.xml" />
@@ -318,7 +318,7 @@
 				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="1 1 1" />
 				<attribute name="Variables" />
-				<component type="TextureElement" id="38">
+				<component type="RenderedModelTexture" id="38">
 					<attribute name="Width" value="256" />
 					<attribute name="Height" value="1024" />
 					<attribute name="Render Path" value="XMLFile;Procedural/RenderPaths/BakeOpaque.xml" />
@@ -336,7 +336,7 @@
 			<attribute name="Rotation" value="1 0 0 0" />
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
-			<component type="TextureElement" id="43">
+			<component type="RenderedModelTexture" id="43">
 				<attribute name="Width" value="256" />
 				<attribute name="Height" value="1024" />
 				<attribute name="Render Path" value="XMLFile;Procedural/RenderPaths/BakeOpaque.xml" />
@@ -353,7 +353,7 @@
 				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="1 1 1" />
 				<attribute name="Variables" />
-				<component type="TextureElement" id="41">
+				<component type="RenderedModelTexture" id="41">
 					<attribute name="Width" value="256" />
 					<attribute name="Height" value="1024" />
 					<attribute name="Render Path" value="XMLFile;Procedural/RenderPaths/BakeOpaque.xml" />

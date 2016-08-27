@@ -159,24 +159,10 @@ TextureElement::~TextureElement()
 
 void TextureElement::RegisterObject(Context* context)
 {
-    context->RegisterFactory<TextureElement>(FLEXENGINE_CATEGORY);
-
     URHO3D_COPY_BASE_ATTRIBUTES(ProceduralComponentAgent);
+
     URHO3D_TRIGGER_ATTRIBUTE("<Preview>", DoShowInPreview);
-    URHO3D_MEMBER_ATTRIBUTE("Color", Color, color_, Color::TRANSPARENT, AM_DEFAULT);
-    URHO3D_MEMBER_ATTRIBUTE("Width", unsigned, width_, 1, AM_DEFAULT);
-    URHO3D_MEMBER_ATTRIBUTE("Height", unsigned, height_, 1, AM_DEFAULT);
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Render Path", GetRenderPathAttr, SetRenderPathAttr, ResourceRef, ResourceRef(Model::GetTypeStatic()), AM_DEFAULT);
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Model Script", GetScriptAttr, SetScriptAttr, ResourceRef, ResourceRef(ScriptFile::GetTypeStatic()), AM_DEFAULT);
-    URHO3D_MEMBER_ATTRIBUTE("Entry Point", String, entryPoint_, "Main", AM_DEFAULT);
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Model", GetModelAttr, SetModelAttr, ResourceRef, ResourceRef(Model::GetTypeStatic()), AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Materials", GetMaterialsAttr, SetMaterialsAttr, ResourceRefList, ResourceRefList(Material::GetTypeStatic()), AM_DEFAULT);
-    URHO3D_MEMBER_ATTRIBUTE("Model Position", Vector3, modelPosition_, Vector3::ZERO, AM_DEFAULT);
-    URHO3D_MEMBER_ATTRIBUTE("Parameter 0", Vector4, inputParameter_[0], Vector4::ONE, AM_DEFAULT);
-    URHO3D_MEMBER_ENUM_ATTRIBUTE("Input 0", unsigned, inputTexture_[0], textureInputsNames, 0, AM_DEFAULT);
-    URHO3D_MEMBER_ENUM_ATTRIBUTE("Input 1", unsigned, inputTexture_[1], textureInputsNames, 0, AM_DEFAULT);
-    URHO3D_MEMBER_ENUM_ATTRIBUTE("Input 2", unsigned, inputTexture_[2], textureInputsNames, 0, AM_DEFAULT);
-    URHO3D_MEMBER_ENUM_ATTRIBUTE("Input 3", unsigned, inputTexture_[3], textureInputsNames, 0, AM_DEFAULT);
+
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Destination Texture", GetDestinationTextureAttr, SetDestinationTextureAttr, ResourceRef, ResourceRef(Texture2D::GetTypeStatic()), AM_DEFAULT);
 }
 
@@ -225,81 +211,6 @@ void TextureElement::ShowInPreview()
     }
 }
 
-void TextureElement::SetRenderPathAttr(const ResourceRef& value)
-{
-    ResourceCache* cache = GetSubsystem<ResourceCache>();
-    renderPath_ = cache->GetResource<XMLFile>(value.name_);
-}
-
-ResourceRef TextureElement::GetRenderPathAttr() const
-{
-    return GetResourceRef(renderPath_, XMLFile::GetTypeStatic());
-}
-
-void TextureElement::SetModelAttr(const ResourceRef& value)
-{
-    ResourceCache* cache = GetSubsystem<ResourceCache>();
-    model_ = cache->GetResource<Model>(value.name_);
-    if (model_)
-    {
-        materials_.Resize(model_->GetNumGeometries());
-    }
-}
-
-ResourceRef TextureElement::GetModelAttr() const
-{
-    return GetResourceRef(model_, Model::GetTypeStatic());
-}
-
-void TextureElement::SetScriptAttr(const ResourceRef& value)
-{
-    ResourceCache* cache = GetSubsystem<ResourceCache>();
-    script_ = cache->GetResource<ScriptFile>(value.name_);
-    if (script_)
-    {
-        materials_.Resize(1);
-    }
-}
-
-ResourceRef TextureElement::GetScriptAttr() const
-{
-    return GetResourceRef(script_, ScriptFile::GetTypeStatic());
-}
-
-void TextureElement::SetMaterialsAttr(const ResourceRefList& value)
-{
-    ResourceCache* cache = GetSubsystem<ResourceCache>();
-    for (unsigned i = 0; i < value.names_.Size(); ++i)
-    {
-        if (i <= materials_.Size())
-        {
-            materials_[i] = cache->GetResource<Material>(value.names_[i]);
-        }
-    }
-}
-
-const ResourceRefList& TextureElement::GetMaterialsAttr() const
-{
-    materialsAttr_.names_.Resize(materials_.Size());
-    for (unsigned i = 0; i < materials_.Size(); ++i)
-    {
-        materialsAttr_.names_[i] = GetResourceName(materials_[i]);
-    }
-
-    return materialsAttr_;
-}
-
-void TextureElement::SetDestinationTextureAttr(const ResourceRef& value)
-{
-    ResourceCache* cache = GetSubsystem<ResourceCache>();
-    destinationTextureName_ = value.name_;
-}
-
-ResourceRef TextureElement::GetDestinationTextureAttr() const
-{
-    return ResourceRef(Texture2D::GetTypeStatic(), destinationTextureName_);
-}
-
 void TextureElement::Update()
 {
     if (node_)
@@ -328,7 +239,34 @@ void TextureElement::Update()
             }
         }
     }
+}
 
+void TextureElement::SetDestinationTextureAttr(const ResourceRef& value)
+{
+    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    destinationTextureName_ = value.name_;
+}
+
+ResourceRef TextureElement::GetDestinationTextureAttr() const
+{
+    return ResourceRef(Texture2D::GetTypeStatic(), destinationTextureName_);
+}
+
+void TextureElement::GenerateTexture()
+{
+    generatedTexture_ = DoGenerateTexture();
+    if (!destinationTextureName_.Empty() && generatedTexture_)
+    {
+        // Write texture to file and re-load it
+        generatedTexture_->SetName(destinationTextureName_);
+        const SharedPtr<Image> image = ConvertTextureToImage(*generatedTexture_);
+
+        ResourceCache* cache = GetSubsystem<ResourceCache>();
+        if (SaveImage(cache, *image))
+        {
+            cache->ReloadResourceWithDependencies(destinationTextureName_);
+        }
+    }
 }
 
 TextureHost* TextureElement::GetHostComponent()
@@ -342,7 +280,121 @@ TextureHost* TextureElement::GetHostComponent()
 
 }
 
-SharedPtr<Model> TextureElement::GetOrCreateModel() const
+PODVector<TextureElement*> TextureElement::GetDependencies() const
+{
+    PODVector<TextureElement*> result;
+    if (node_)
+    {
+        for (const SharedPtr<Node> child : node_->GetChildren())
+        {
+            PODVector<TextureElement*> dependencies;
+            child->GetDerivedComponents(dependencies);
+            result += dependencies;
+        }
+    }
+    return result;
+}
+
+//////////////////////////////////////////////////////////////////////////
+RenderedModelTexture::RenderedModelTexture(Context* context)
+    : TextureElement(context)
+    , materialsAttr_(Material::GetTypeStatic())
+{
+    ResetToDefault();
+}
+
+RenderedModelTexture::~RenderedModelTexture()
+{
+
+}
+
+void RenderedModelTexture::RegisterObject(Context* context)
+{
+    context->RegisterFactory<RenderedModelTexture>(FLEXENGINE_CATEGORY);
+
+    URHO3D_COPY_BASE_ATTRIBUTES(TextureElement);
+
+    URHO3D_MEMBER_ATTRIBUTE("Color", Color, color_, Color::TRANSPARENT, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Width", unsigned, width_, 1, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Height", unsigned, height_, 1, AM_DEFAULT);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Render Path", GetRenderPathAttr, SetRenderPathAttr, ResourceRef, ResourceRef(Model::GetTypeStatic()), AM_DEFAULT);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Model Script", GetScriptAttr, SetScriptAttr, ResourceRef, ResourceRef(ScriptFile::GetTypeStatic()), AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Entry Point", String, entryPoint_, "Main", AM_DEFAULT);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Model", GetModelAttr, SetModelAttr, ResourceRef, ResourceRef(Model::GetTypeStatic()), AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Materials", GetMaterialsAttr, SetMaterialsAttr, ResourceRefList, ResourceRefList(Material::GetTypeStatic()), AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Model Position", Vector3, modelPosition_, Vector3::ZERO, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Parameter 0", Vector4, inputParameter_[0], Vector4::ONE, AM_DEFAULT);
+    URHO3D_MEMBER_ENUM_ATTRIBUTE("Input 0", unsigned, inputTexture_[0], textureInputsNames, 0, AM_DEFAULT);
+    URHO3D_MEMBER_ENUM_ATTRIBUTE("Input 1", unsigned, inputTexture_[1], textureInputsNames, 0, AM_DEFAULT);
+    URHO3D_MEMBER_ENUM_ATTRIBUTE("Input 2", unsigned, inputTexture_[2], textureInputsNames, 0, AM_DEFAULT);
+    URHO3D_MEMBER_ENUM_ATTRIBUTE("Input 3", unsigned, inputTexture_[3], textureInputsNames, 0, AM_DEFAULT);
+}
+
+void RenderedModelTexture::SetRenderPathAttr(const ResourceRef& value)
+{
+    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    renderPath_ = cache->GetResource<XMLFile>(value.name_);
+}
+
+ResourceRef RenderedModelTexture::GetRenderPathAttr() const
+{
+    return GetResourceRef(renderPath_, XMLFile::GetTypeStatic());
+}
+
+void RenderedModelTexture::SetModelAttr(const ResourceRef& value)
+{
+    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    model_ = cache->GetResource<Model>(value.name_);
+    if (model_)
+    {
+        materials_.Resize(model_->GetNumGeometries());
+    }
+}
+
+ResourceRef RenderedModelTexture::GetModelAttr() const
+{
+    return GetResourceRef(model_, Model::GetTypeStatic());
+}
+
+void RenderedModelTexture::SetScriptAttr(const ResourceRef& value)
+{
+    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    script_ = cache->GetResource<ScriptFile>(value.name_);
+    if (script_)
+    {
+        materials_.Resize(1);
+    }
+}
+
+ResourceRef RenderedModelTexture::GetScriptAttr() const
+{
+    return GetResourceRef(script_, ScriptFile::GetTypeStatic());
+}
+
+void RenderedModelTexture::SetMaterialsAttr(const ResourceRefList& value)
+{
+    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    for (unsigned i = 0; i < value.names_.Size(); ++i)
+    {
+        if (i <= materials_.Size())
+        {
+            materials_[i] = cache->GetResource<Material>(value.names_[i]);
+        }
+    }
+}
+
+const ResourceRefList& RenderedModelTexture::GetMaterialsAttr() const
+{
+    materialsAttr_.names_.Resize(materials_.Size());
+    for (unsigned i = 0; i < materials_.Size(); ++i)
+    {
+        materialsAttr_.names_[i] = GetResourceName(materials_[i]);
+    }
+
+    return materialsAttr_;
+}
+
+SharedPtr<Model> RenderedModelTexture::GetOrCreateModel() const
 {
     SharedPtr<Model> model = model_;
     if (!model_)
@@ -360,7 +412,7 @@ SharedPtr<Model> TextureElement::GetOrCreateModel() const
     return model;
 }
 
-TextureDescription TextureElement::CreateTextureDescription() const
+TextureDescription RenderedModelTexture::CreateTextureDescription() const
 {
     TextureDescription desc;
     desc.renderPath_ = renderPath_;
@@ -397,22 +449,7 @@ TextureDescription TextureElement::CreateTextureDescription() const
     return desc;
 }
 
-PODVector<TextureElement*> TextureElement::GetDependencies() const
-{
-    PODVector<TextureElement*> result;
-    if (node_)
-    {
-        for (const SharedPtr<Node> child : node_->GetChildren())
-        {
-            PODVector<TextureElement*> dependencies;
-            child->GetComponents(dependencies);
-            result += dependencies;
-        }
-    }
-    return result;
-}
-
-HashMap<String, SharedPtr<Texture2D>> TextureElement::CreateInputTextureMap() const
+HashMap<String, SharedPtr<Texture2D>> RenderedModelTexture::CreateInputTextureMap() const
 {
     HashMap<String, SharedPtr<Texture2D>> result;
     if (node_)
@@ -426,26 +463,13 @@ HashMap<String, SharedPtr<Texture2D>> TextureElement::CreateInputTextureMap() co
     return result;
 }
 
-void TextureElement::GenerateTexture()
+SharedPtr<Texture2D> RenderedModelTexture::DoGenerateTexture()
 {
     assert(node_);
 
-    // Render texture
     const TextureDescription desc = CreateTextureDescription();
     const HashMap<String, SharedPtr<Texture2D>> inputMap = CreateInputTextureMap();
-    generatedTexture_ = RenderTexture(context_, desc, inputMap);
-    if (!destinationTextureName_.Empty() && generatedTexture_)
-    {
-        // Write texture to file and re-load it
-        generatedTexture_->SetName(destinationTextureName_);
-        const SharedPtr<Image> image = ConvertTextureToImage(*generatedTexture_);
-
-        ResourceCache* cache = GetSubsystem<ResourceCache>();
-        if (SaveImage(cache, *image))
-        {
-            cache->ReloadResourceWithDependencies(destinationTextureName_);
-        }
-    }
+    return RenderTexture(context_, desc, inputMap);
 }
 
 }

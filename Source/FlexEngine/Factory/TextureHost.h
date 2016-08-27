@@ -96,6 +96,63 @@ public:
     /// Get generated texture.
     SharedPtr<Texture2D> GetGeneratedTexture() const { return generatedTexture_; }
 
+    /// Set destination texture attribute.
+    void SetDestinationTextureAttr(const ResourceRef& value);
+    /// Get destination texture attribute.
+    ResourceRef GetDestinationTextureAttr() const;
+
+private:
+    /// Show this previewed.
+    void DoShowInPreview(bool) { ShowInPreview(); }
+    /// Implementation of texture generator.
+    virtual SharedPtr<Texture2D> DoGenerateTexture() = 0;
+    /// Generate texture.
+    void GenerateTexture();
+
+protected:
+    /// Get host component.
+    TextureHost* GetHostComponent();
+    /// Get dependencies.
+    PODVector<TextureElement*> GetDependencies() const;
+
+private:
+    /// Name of destination texture.
+    String destinationTextureName_;
+
+    /// Does this texture need update?
+    bool dirty_ = true;
+    /// Should this element set its texture to preview?
+    bool needPreview_ = false;
+    /// Source of cloned material for preview textures.
+    SharedPtr<Material> previewMaterialCached_;
+    /// Cloned material for preview textures.
+    SharedPtr<Material> clonedPreviewMaterial_;
+    /// Generated texture.
+    SharedPtr<Texture2D> generatedTexture_;
+
+    /// Material list attribute.
+    mutable ResourceRefList materialsAttr_;
+};
+
+/// Rendered model as procedural texture.
+class RenderedModelTexture : public TextureElement
+{
+    URHO3D_OBJECT(RenderedModelTexture, TextureElement);
+
+public:
+    /// Max number of input parameters.
+    static const unsigned MaxInputParameters = 1;
+    /// Max number of input textures.
+    static const unsigned MaxInputTextures = 4;
+
+public:
+    /// Construct.
+    RenderedModelTexture(Context* context);
+    /// Destruct.
+    virtual ~RenderedModelTexture();
+    /// Register object factory.
+    static void RegisterObject(Context* context);
+
     /// Set render path attribute.
     void SetRenderPathAttr(const ResourceRef& value);
     /// Get render path attribute.
@@ -112,27 +169,16 @@ public:
     void SetMaterialsAttr(const ResourceRefList& value);
     /// Get materials attribute.
     const ResourceRefList& GetMaterialsAttr() const;
-    /// Set destination texture attribute.
-    void SetDestinationTextureAttr(const ResourceRef& value);
-    /// Get destination texture attribute.
-    ResourceRef GetDestinationTextureAttr() const;
 
 private:
-    /// Show this previewed.
-    void DoShowInPreview(bool) { ShowInPreview(); }
-
-    /// Get host component.
-    TextureHost* GetHostComponent();
     /// Get source model.
     SharedPtr<Model> GetOrCreateModel() const;
     /// Create texture description.
     TextureDescription CreateTextureDescription() const;
-    /// Get dependencies.
-    PODVector<TextureElement*> GetDependencies() const;
     /// Create input texture map.
     HashMap<String, SharedPtr<Texture2D>> CreateInputTextureMap() const;
     /// Generate texture.
-    void GenerateTexture();
+    virtual SharedPtr<Texture2D> DoGenerateTexture() override;
 
 private:
     /// Base color of texture.
@@ -159,17 +205,6 @@ private:
     unsigned inputTexture_[MaxInputTextures];
     /// Name of destination texture.
     String destinationTextureName_;
-
-    /// Does this texture need update?
-    bool dirty_ = true;
-    /// Should this element set its texture to preview?
-    bool needPreview_ = false;
-    /// Source of cloned material for preview textures.
-    SharedPtr<Material> previewMaterialCached_;
-    /// Cloned material for preview textures.
-    SharedPtr<Material> clonedPreviewMaterial_;
-    /// Generated texture.
-    SharedPtr<Texture2D> generatedTexture_;
 
     /// Material list attribute.
     mutable ResourceRefList materialsAttr_;
