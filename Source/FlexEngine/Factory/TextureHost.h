@@ -84,8 +84,11 @@ public:
     /// Register object factory.
     static void RegisterObject(Context* context);
 
+    /// Apply attribute changes that can not be applied immediately. Called after scene load or a network update.
+    virtual void ApplyAttributes() override;
+
     /// Mark texture element as dirty.
-    void MarkNeedUpdate(bool updatePreview = true);
+    void MarkNeedUpdate(bool updatePreview);
     /// Show this in the host's preview.
     void ShowInPreview();
     /// Update this element and its children.
@@ -93,18 +96,6 @@ public:
     /// Get generated texture.
     SharedPtr<Texture2D> GetGeneratedTexture() const { return generatedTexture_; }
 
-    /// Set color attribute.
-    void SetColorAttr(const Color& color) { color_ = color; MarkNeedUpdate(); }
-    /// Get color attribute.
-    const Color& GetColorAttr() const { return color_; }
-    /// Set width attribute.
-    void SetWidthAttr(unsigned width) { width_ = width; MarkNeedUpdate(); }
-    /// Get width attribute.
-    unsigned GetWidthAttr() const { return width_; }
-    /// Set height attribute.
-    void SetHeightAttr(unsigned height) { height_ = height; MarkNeedUpdate(); }
-    /// Get height attribute.
-    unsigned GetHeightAttr() const { return height_; }
     /// Set render path attribute.
     void SetRenderPathAttr(const ResourceRef& value);
     /// Get render path attribute.
@@ -117,39 +108,10 @@ public:
     void SetScriptAttr(const ResourceRef& value);
     /// Get script attribute.
     ResourceRef GetScriptAttr() const;
-    /// Set entry point attribute.
-    void SetEntryPointAttr(const String& entryPoint) { entryPoint_ = entryPoint; MarkNeedUpdate(); }
-    /// Get entry point attribute.
-    const String& GetEntryPointAttr() const { return entryPoint_; }
     /// Set materials attribute.
     void SetMaterialsAttr(const ResourceRefList& value);
     /// Get materials attribute.
     const ResourceRefList& GetMaterialsAttr() const;
-    /// Set model position attribute.
-    void SetModelPositionAttr(const Vector3& modelPosition) { modelPosition_ = modelPosition; MarkNeedUpdate(); }
-    /// Get model position attribute.
-    const Vector3& GetModelPositionAttr() const { return modelPosition_; }
-    /// Set input parameter0 attribute.
-    void SetInputParameter0Attr(const Vector4& inputParameter0) { inputParameter_[0] = inputParameter0; MarkNeedUpdate(); }
-    /// Get input parameter0 attribute.
-    const Vector4& GetInputParameter0Attr() const { return inputParameter_[0]; }
-    /// Set input texture 0 attribute.
-    void SetInputTexture0Attr(unsigned inputTexture0) { inputTexture_[0] = inputTexture0; MarkNeedUpdate(); }
-    /// Get input texture 0 attribute.
-    unsigned GetInputTexture0Attr() const { return inputTexture_[0]; }
-    /// Set input texture 1 attribute.
-    void SetInputTexture1Attr(unsigned inputTexture1) { inputTexture_[1] = inputTexture1; MarkNeedUpdate(); }
-    /// Get input texture 1 attribute.
-    unsigned GetInputTexture1Attr() const { return inputTexture_[1]; }
-    /// Set input texture 2 attribute.
-    void SetInputTexture2Attr(unsigned inputTexture2) { inputTexture_[2] = inputTexture2; MarkNeedUpdate(); }
-    /// Get input texture 2 attribute.
-    unsigned GetInputTexture2Attr() const { return inputTexture_[2]; }
-    /// Set input texture 3 attribute.
-    void SetInputTexture3Attr(unsigned inputTexture3) { inputTexture_[3] = inputTexture3; MarkNeedUpdate(); }
-    /// Get input texture 3 attribute.
-    unsigned GetInputTexture3Attr() const { return inputTexture_[3]; }
-
     /// Set destination texture attribute.
     void SetDestinationTextureAttr(const ResourceRef& value);
     /// Get destination texture attribute.

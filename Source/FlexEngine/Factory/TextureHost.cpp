@@ -1,5 +1,6 @@
 #include <FlexEngine/Factory/TextureHost.h>
 
+#include <FlexEngine/Core/Attribute.h>
 #include <FlexEngine/Factory/ModelFactory.h>
 #include <FlexEngine/Factory/TextureFactory.h>
 #include <FlexEngine/Resource/ResourceCacheHelpers.h>
@@ -162,22 +163,26 @@ void TextureElement::RegisterObject(Context* context)
 
     URHO3D_COPY_BASE_ATTRIBUTES(ProceduralComponentAgent);
     URHO3D_TRIGGER_ATTRIBUTE("<Preview>", DoShowInPreview);
-    URHO3D_ACCESSOR_ATTRIBUTE("Color", GetColorAttr, SetColorAttr, Color, Color::TRANSPARENT, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Width", GetWidthAttr, SetWidthAttr, unsigned, 1, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Height", GetHeightAttr, SetHeightAttr, unsigned, 1, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Color", Color, color_, Color::TRANSPARENT, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Width", unsigned, width_, 1, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Height", unsigned, height_, 1, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Render Path", GetRenderPathAttr, SetRenderPathAttr, ResourceRef, ResourceRef(Model::GetTypeStatic()), AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Model Script", GetScriptAttr, SetScriptAttr, ResourceRef, ResourceRef(ScriptFile::GetTypeStatic()), AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Entry Point", GetEntryPointAttr, SetEntryPointAttr, String, "Main", AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Entry Point", String, entryPoint_, "Main", AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Model", GetModelAttr, SetModelAttr, ResourceRef, ResourceRef(Model::GetTypeStatic()), AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Materials", GetMaterialsAttr, SetMaterialsAttr, ResourceRefList, ResourceRefList(Material::GetTypeStatic()), AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Model Position", GetModelPositionAttr, SetModelPositionAttr, Vector3, Vector3::ZERO, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Parameter 0", GetInputParameter0Attr, SetInputParameter0Attr, Vector4, Vector4::ONE, AM_DEFAULT);
-    URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Input 0", GetInputTexture0Attr, SetInputTexture0Attr, unsigned, textureInputsNames, 0, AM_DEFAULT);
-    URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Input 1", GetInputTexture1Attr, SetInputTexture1Attr, unsigned, textureInputsNames, 0, AM_DEFAULT);
-    URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Input 2", GetInputTexture2Attr, SetInputTexture2Attr, unsigned, textureInputsNames, 0, AM_DEFAULT);
-    URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Input 3", GetInputTexture3Attr, SetInputTexture3Attr, unsigned, textureInputsNames, 0, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Model Position", Vector3, modelPosition_, Vector3::ZERO, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Parameter 0", Vector4, inputParameter_[0], Vector4::ONE, AM_DEFAULT);
+    URHO3D_MEMBER_ENUM_ATTRIBUTE("Input 0", unsigned, inputTexture_[0], textureInputsNames, 0, AM_DEFAULT);
+    URHO3D_MEMBER_ENUM_ATTRIBUTE("Input 1", unsigned, inputTexture_[1], textureInputsNames, 0, AM_DEFAULT);
+    URHO3D_MEMBER_ENUM_ATTRIBUTE("Input 2", unsigned, inputTexture_[2], textureInputsNames, 0, AM_DEFAULT);
+    URHO3D_MEMBER_ENUM_ATTRIBUTE("Input 3", unsigned, inputTexture_[3], textureInputsNames, 0, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Destination Texture", GetDestinationTextureAttr, SetDestinationTextureAttr, ResourceRef, ResourceRef(Texture2D::GetTypeStatic()), AM_DEFAULT);
+}
 
+void TextureElement::ApplyAttributes()
+{
+    MarkNeedUpdate(true);
 }
 
 void TextureElement::MarkNeedUpdate(bool updatePreview)
@@ -224,7 +229,6 @@ void TextureElement::SetRenderPathAttr(const ResourceRef& value)
 {
     ResourceCache* cache = GetSubsystem<ResourceCache>();
     renderPath_ = cache->GetResource<XMLFile>(value.name_);
-    MarkNeedUpdate();
 }
 
 ResourceRef TextureElement::GetRenderPathAttr() const
@@ -240,7 +244,6 @@ void TextureElement::SetModelAttr(const ResourceRef& value)
     {
         materials_.Resize(model_->GetNumGeometries());
     }
-    MarkNeedUpdate();
 }
 
 ResourceRef TextureElement::GetModelAttr() const
@@ -256,7 +259,6 @@ void TextureElement::SetScriptAttr(const ResourceRef& value)
     {
         materials_.Resize(1);
     }
-    MarkNeedUpdate();
 }
 
 ResourceRef TextureElement::GetScriptAttr() const
@@ -274,7 +276,6 @@ void TextureElement::SetMaterialsAttr(const ResourceRefList& value)
             materials_[i] = cache->GetResource<Material>(value.names_[i]);
         }
     }
-    MarkNeedUpdate();
 }
 
 const ResourceRefList& TextureElement::GetMaterialsAttr() const
@@ -292,7 +293,6 @@ void TextureElement::SetDestinationTextureAttr(const ResourceRef& value)
 {
     ResourceCache* cache = GetSubsystem<ResourceCache>();
     destinationTextureName_ = value.name_;
-    MarkNeedUpdate();
 }
 
 ResourceRef TextureElement::GetDestinationTextureAttr() const
