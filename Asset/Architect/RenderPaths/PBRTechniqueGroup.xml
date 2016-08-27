@@ -1,0 +1,54 @@
+<technique_group vs="PBRLitSolid" ps="PBRLitSolid">
+    <pass name="base" />
+    <pass name="alpha" depthwrite="false" blend="alpha" />
+    <pass name="litalpha" depthwrite="false" blend="addalpha" />
+    <pass name="light" depthtest="equal" depthwrite="false" blend="add" />
+    <pass name="prepass" psdefines="PREPASS" />
+    <pass name="material" psdefines="MATERIAL" depthtest="equal" depthwrite="false" />
+    <pass name="deferred" psdefines="DEFERRED" />
+    <pass name="depth" vs="Depth" ps="Depth" />
+    <pass name="shadow" vs="Shadow" ps="Shadow" />
+    
+    <switch name="pbr">
+        <on defines="PBR IBL"/>
+    </switch>
+    <switch name="alpha">
+        <on excludepass="alpha litalpha"/>
+        <off excludepass="base light prepass material deferred depth"/>
+    </switch>
+    <switch name="diff">
+        <on defines="DIFFMAP"/>
+        <off defines="NOUV"/>
+    </switch>
+    <switch name="normal">
+        <on defines="NORMALMAP"/>
+    </switch>
+    <switch name="spec">
+        <on defines="SPECMAP"/>
+    </switch>
+    <switch name="emissive">
+        <on defines="EMISSIVEMAP"/>
+    </switch>
+    <switch name="metallic">
+        <on defines="METALLIC"/>
+    </switch>
+    <switch name="roughness">
+        <on defines="ROUGHNESS"/>
+    </switch>
+    
+    <technique name="DiffNormalSpecEmissive" switch="diff normal spec emissive"/>
+    <technique name="DiffNormalSpecEmissiveAlpha" switch="diff normal spec emissive alpha"/>
+    <technique name="PBRDiff" switch="pbr diff"/>
+    <technique name="PBRDiffAlpha" switch="pbr diff alpha"/>
+    <technique name="PBRDiffNormal" switch="pbr diff normal"/>
+    <technique name="PBRDiffNormalAlpha" switch="pbr diff normal alpha"/>
+    <technique name="PBRDiffEmissiveNormal" switch="pbr diff normal emissive"/>
+    <technique name="PBRDiffEmissiveNormalAlpha" switch="pbr diff normal emissive alpha"/>
+    <technique name="PBRMetallicRoughDiffNormalSpec" switch="pbr diff normal metallic roughness"/>
+    <technique name="PBRMetallicRoughDiffNormalSpecEmissive" switch="pbr diff normal metallic roughness emissive"/>
+    <technique name="PBRMetallicRoughDiffNormalSpecEmissiveAlpha" switch="pbr diff normal metallic roughness emissive alpha"/>
+    <technique name="PBRMetallicRoughDiffSpec" switch="pbr diff metallic roughness"/>
+    <technique name="PBRMetallicRoughDiffSpecAlpha" switch="pbr diff metallic roughness alpha"/>
+    <technique name="PBRNoTexture" switch="pbr"/>
+    <technique name="PBRNoTextureAlpha" switch="pbr alpha"/>
+</technique_group>

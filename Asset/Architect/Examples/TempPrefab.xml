@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<node id="2">
+	<attribute name="Is Enabled" value="true" />
+	<attribute name="Name" value="" />
+	<attribute name="Tags" />
+	<attribute name="Position" value="0 0 0" />
+	<attribute name="Rotation" value="1 0 0 0" />
+	<attribute name="Scale" value="1 1 1" />
+	<attribute name="Variables" />
+	<component type="TextureElement" id="3">
+		<attribute name="Width" value="64" />
+		<attribute name="Height" value="64" />
+		<attribute name="Render Path" value="XMLFile;Procedural/RenderPaths/BakeOpaque.xml" />
+		<attribute name="Model Script" value="ScriptFile;Objects/WhiteTree/Procedural/LeafTextureGeometry.as" />
+		<attribute name="Materials" value=";Procedural/Materials/MaskAdd.xml" />
+		<attribute name="Model Position" value="0.5 0 0.5" />
+		<attribute name="Preview Material" value="Material;Procedural/Materials/TexturePreview.xml" />
+	</component>
+	<component type="StaticModel" id="4">
+		<attribute name="Model" value="Model;Models/Box.mdl" />
+		<attribute name="Material" value="Material;" />
+	</component>
+</node>
