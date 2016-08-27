@@ -20,6 +20,7 @@ namespace FlexEngine
 
 struct TextureDescription;
 class ModelFactory;
+class TextureElement;
 
 /// Host component of procedural texture.
 class TextureHost : public ProceduralComponent
@@ -34,22 +35,13 @@ public:
     /// Register object factory.
     static void RegisterObject(Context* context);
 
-    /// Set description attribute.
-    void SetDescriptionAttr(const ResourceRef& value);
-    /// Get description attribute.
-    ResourceRef GetDescriptionAttr() const;
+    /// Set preview texture.
+    void SetPreviewTexture(SharedPtr<Texture2D> texture);
+
     /// Set preview material attribute.
     void SetPreviewMaterialAttr(const ResourceRef& value);
     /// Get preview material attribute.
     ResourceRef GetPreviewMaterialAttr() const;
-    /// Set texture to preview attribute.
-    void SetTextureToPreviewAttr(unsigned textureToPreview) { textureToPreview_ = textureToPreview; UpdateViews(); }
-    /// Get texture to preview attribute.
-    unsigned GetTextureToPreviewAttr() const { return textureToPreview_; }
-    /// Set textures attribute.
-    void SetTexturesAttr(const ResourceRefList& value);
-    /// Return textures attribute.
-    const ResourceRefList& GetTexturesAttr() const;
 
 private:
     /// Implementation of procedural generator.
@@ -59,32 +51,24 @@ private:
     void UpdateViews();
 
 protected:
-    /// Description of procedural textures.
-    SharedPtr<XMLFile> description_;
     /// Material for preview textures.
     SharedPtr<Material> previewMaterial_;
-    /// Textures names.
-    StringVector textureNames_;
-    /// Procedural textures.
-    Vector<SharedPtr<Texture2D>> textures_;
-
-    /// Current texture to preview.
-    unsigned textureToPreview_ = 0;
 
     /// Source of cloned material for preview textures.
-    SharedPtr<Material> sourceMaterial_;
+    SharedPtr<Material> previewMaterialCached_;
     /// Cloned material for preview textures.
-    SharedPtr<Material> material_;
+    SharedPtr<Material> clonedPreviewMaterial_;
+    /// Generated texture to preview.
+    SharedPtr<Texture2D> generatedTextureToPreview_;
 
-    /// Textures list attribute.
-    mutable ResourceRefList texturesAttr_;
-
+    /// Previewed texture element.
+    SharedPtr<Texture2D> previewTexture_;
 };
 
 /// Element of procedural texture.
-class TextureElement : public ProceduralComponent
+class TextureElement : public ProceduralComponentAgent
 {
-    URHO3D_OBJECT(TextureElement, ProceduralComponent);
+    URHO3D_OBJECT(TextureElement, ProceduralComponentAgent);
 
 public:
     /// Max number of input parameters.
@@ -100,9 +84,12 @@ public:
     /// Register object factory.
     static void RegisterObject(Context* context);
 
-    /// Apply attribute changes that can not be applied immediately. Called after scene load or a network update.
-    virtual void ApplyAttributes() override;
-
+    /// Mark texture element as dirty.
+    void MarkNeedUpdate(bool updatePreview = true);
+    /// Show this in the host's preview.
+    void ShowInPreview();
+    /// Update this element and its children.
+    void Update();
     /// Get generated texture.
     SharedPtr<Texture2D> GetGeneratedTexture() const { return generatedTexture_; }
 
@@ -163,18 +150,17 @@ public:
     /// Get input texture 3 attribute.
     unsigned GetInputTexture3Attr() const { return inputTexture_[3]; }
 
-    /// Set preview material attribute.
-    void SetPreviewMaterialAttr(const ResourceRef& value);
-    /// Get preview material attribute.
-    ResourceRef GetPreviewMaterialAttr() const;
     /// Set destination texture attribute.
     void SetDestinationTextureAttr(const ResourceRef& value);
     /// Get destination texture attribute.
     ResourceRef GetDestinationTextureAttr() const;
 
 private:
-    /// Implementation of procedural generator.
-    virtual void DoUpdate() override;
+    /// Show this previewed.
+    void DoShowInPreview(bool) { ShowInPreview(); }
+
+    /// Get host component.
+    TextureHost* GetHostComponent();
     /// Get source model.
     SharedPtr<Model> GetOrCreateModel() const;
     /// Create texture description.
@@ -183,9 +169,8 @@ private:
     PODVector<TextureElement*> GetDependencies() const;
     /// Create input texture map.
     HashMap<String, SharedPtr<Texture2D>> CreateInputTextureMap() const;
-
-    /// Update views with generated resource.
-    void UpdateViews();
+    /// Generate texture.
+    void GenerateTexture();
 
 private:
     /// Base color of texture.
@@ -210,11 +195,13 @@ private:
     Vector4 inputParameter_[MaxInputParameters];
     /// Input textures.
     unsigned inputTexture_[MaxInputTextures];
-    /// Material for preview textures.
-    SharedPtr<Material> previewMaterial_;
     /// Name of destination texture.
     String destinationTextureName_;
 
+    /// Does this texture need update?
+    bool dirty_ = true;
+    /// Should this element set its texture to preview?
+    bool needPreview_ = false;
     /// Source of cloned material for preview textures.
     SharedPtr<Material> previewMaterialCached_;
     /// Cloned material for preview textures.

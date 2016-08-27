@@ -79,6 +79,22 @@ float ComputeScaledMask(float4 iTexCoord, float4 iColor)
     return clamp(lerp(iColor.x, iColor.y, baseMask.x), iColor.z, iColor.w) * iTexCoord.w;
 }
 
+/// Generalization of Hermite interpolation.
+float SmoothStepEx(float t, float k)
+{
+    float q = 1 - t;
+    return clamp(q*q*t*(1 - k) + q*t*t*(2 + k) + t*t*t, 0, 1);
+}
+
+/// Compute sharp mask.
+/// @param iTexCoord.xy Texture coordinates
+/// @param iColor.x     Intensity
+float ComputeSharpMask(float4 iTexCoord, float4 iColor)
+{
+    float4 baseMask = Sample2D(TextureUnit0, iTexCoord.xy);
+    return SmoothStepEx(baseMask.x, iColor.x);
+}
+
 /// Compute color using the following formula:
 ///   m > 0 ? x*(1 - m) + y*m : z
 /// @param iTexCoord.xy Texture coordinates

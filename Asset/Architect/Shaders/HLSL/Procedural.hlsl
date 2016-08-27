@@ -70,19 +70,21 @@ void PS(
     //float3 normal = normalize(mul(procNormal.xyz, tbn));
 
     // Generate procedural textures
+    float4 inputColor = iColor * cMatDiffColor;
     float4 diffColor = 0.0;
     #if defined(MASK)
-        float mask = ComputeMask(iTexCoord, iColor * cMatDiffColor);
+        float mask = ComputeMask(iTexCoord, inputColor);
     #elif defined(SUPERMASK)
         float mask = ComputeSuperMask(iTexCoord);
     #elif defined(MASKSCALE)
-        float mask = ComputeScaledMask(iTexCoord, iColor * cMatDiffColor);
+        float mask = ComputeScaledMask(iTexCoord, inputColor);
+    #elif defined(MASKSHARP)
+        float mask = ComputeSharpMask(iTexCoord, inputColor);
     #elif defined(MIXCOLOR)
-        diffColor = ComputeMixedColor(iTexCoord, iColor * cMatDiffColor);
-        //diffColor = 1.0;
+        diffColor = ComputeMixedColor(iTexCoord, inputColor);
     #endif
 
-    #if defined(MASK) || defined(SUPERMASK) || defined(MASKSCALE)
+    #if defined(MASK) || defined(SUPERMASK) || defined(MASKSCALE) || defined(MASKSHARP)
         #ifndef ADDITIVE
             diffColor.rgb = mask;
             diffColor.a = 1.0;

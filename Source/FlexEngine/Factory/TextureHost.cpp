@@ -66,7 +66,6 @@ static_assert(sizeof(textureInputsNames) / sizeof(textureInputsNames[0]) == maxT
 
 TextureHost::TextureHost(Context* context)
     : ProceduralComponent(context)
-    , texturesAttr_(Texture2D::GetTypeStatic())
 {
     ResetToDefault();
 }
@@ -82,24 +81,14 @@ void TextureHost::RegisterObject(Context* context)
 
     URHO3D_COPY_BASE_ATTRIBUTES(ProceduralComponent);
 
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Description", GetDescriptionAttr, SetDescriptionAttr, ResourceRef, ResourceRef(XMLFile::GetTypeStatic()), AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Texture", GetTexturesAttr, SetTexturesAttr, ResourceRefList, ResourceRefList(Material::GetTypeStatic()), AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Preview Material", GetPreviewMaterialAttr, SetPreviewMaterialAttr, ResourceRef, ResourceRef(Material::GetTypeStatic()), AM_DEFAULT);
-    URHO3D_ENUM_ACCESSOR_ATTRIBUTE("[Texture to preview]", GetTextureToPreviewAttr, SetTextureToPreviewAttr, unsigned, textureToPreviewNames, 0, AM_EDIT);
 
 }
 
-//////////////////////////////////////////////////////////////////////////
-void TextureHost::SetDescriptionAttr(const ResourceRef& value)
+void TextureHost::SetPreviewTexture(SharedPtr<Texture2D> texture)
 {
-    ResourceCache* cache = GetSubsystem<ResourceCache>();
-    description_ = cache->GetResource<XMLFile>(value.name_);
-    MarkNeedUpdate();
-}
-
-ResourceRef TextureHost::GetDescriptionAttr() const
-{
-    return GetResourceRef(description_, XMLFile::GetTypeStatic());
+    previewTexture_ = texture;
+    UpdateViews();
 }
 
 void TextureHost::SetPreviewMaterialAttr(const ResourceRef& value)
@@ -114,72 +103,19 @@ ResourceRef TextureHost::GetPreviewMaterialAttr() const
     return GetResourceRef(previewMaterial_, Material::GetTypeStatic());
 }
 
-void TextureHost::SetTexturesAttr(const ResourceRefList& value)
-{
-    ResourceCache* cache = GetSubsystem<ResourceCache>();
-
-    const unsigned numTextures = value.names_.Size();
-    textureNames_.Resize(numTextures);
-    textures_.Resize(numTextures);
-    for (unsigned i = 0; i < numTextures; ++i)
-    {
-        textureNames_[i] = value.names_[i];
-        if (!textureNames_[i].Empty())
-        {
-            textures_[i] = cache->GetResource<Texture2D>(textureNames_[i]);
-        }
-    }
-
-    MarkNeedUpdate();
-}
-
-const ResourceRefList& TextureHost::GetTexturesAttr() const
-{
-    texturesAttr_.names_.Resize(textureNames_.Size());
-    for (unsigned i = 0; i < textureNames_.Size(); ++i)
-    {
-        texturesAttr_.names_[i] = textureNames_[i];
-    }
-
-    return texturesAttr_;
-}
-
 void TextureHost::DoUpdate()
 {
-    if (description_)
+    if (node_)
     {
-        ResourceCache* cache = GetSubsystem<ResourceCache>();
-        TextureFactory textureFactory(context_);
-        textureFactory.SetName(description_->GetName());
-        textureFactory.Load(description_->GetRoot());
-        textureFactory.Generate();
-        const Vector<SharedPtr<Texture2D>> generatedTextures = textureFactory.GetTextures();
-        const unsigned numTextures = generatedTextures.Size();
-        textures_.Resize(numTextures);
-        textureNames_.Resize(numTextures);
-        for (unsigned i = 0; i < numTextures; ++i)
+        for (SharedPtr<Node> child : node_->GetChildren())
         {
-            if (generatedTextures[i])
+            PODVector<TextureElement*> elements;
+            child->GetDerivedComponents<TextureElement>(elements);
+            for (TextureElement* element : elements)
             {
-                if (!textureNames_[i].Empty())
-                {
-                    // Fairly write image to file and re-load
-                    generatedTextures[i]->SetName(textureNames_[i]);
-                    const SharedPtr<Image> image = ConvertTextureToImage(*generatedTextures[i]);
-
-                    if (SaveImage(cache, *image))
-                    {
-                        cache->ReloadResourceWithDependencies(image->GetName());
-                    }
-                }
-                else
-                {
-                    // Just set temporary texture to allow preview
-                    textures_[i] = generatedTextures[i];
-                }
+                element->Update();
             }
         }
-        UpdateViews();
     }
 }
 
@@ -193,23 +129,23 @@ void TextureHost::UpdateViews()
     StaticModel* staticModel = node_->GetComponent<StaticModel>();
     if (staticModel)
     {
-        if (sourceMaterial_ != previewMaterial_)
+        if (previewMaterialCached_ != previewMaterial_)
         {
-            sourceMaterial_ = previewMaterial_;
-            material_ = sourceMaterial_->Clone();
+            previewMaterialCached_ = previewMaterial_;
+            clonedPreviewMaterial_ = previewMaterial_->Clone();
         }
 
-        if (material_)
+        if (clonedPreviewMaterial_)
         {
-            material_->SetTexture(TU_DIFFUSE, textureToPreview_ < textures_.Size() ? textures_[textureToPreview_] : nullptr);
-            staticModel->SetMaterial(0, material_);
+            clonedPreviewMaterial_->SetTexture(TU_DIFFUSE, previewTexture_);
+            staticModel->SetMaterial(0, clonedPreviewMaterial_);
         }
     }
 }
 
 //////////////////////////////////////////////////////////////////////////
 TextureElement::TextureElement(Context* context)
-    : ProceduralComponent(context)
+    : ProceduralComponentAgent(context)
     , materialsAttr_(Material::GetTypeStatic())
 {
     ResetToDefault();
@@ -224,8 +160,8 @@ void TextureElement::RegisterObject(Context* context)
 {
     context->RegisterFactory<TextureElement>(FLEXENGINE_CATEGORY);
 
-    URHO3D_COPY_BASE_ATTRIBUTES(ProceduralComponent);
-
+    URHO3D_COPY_BASE_ATTRIBUTES(ProceduralComponentAgent);
+    URHO3D_TRIGGER_ATTRIBUTE("<Preview>", DoShowInPreview);
     URHO3D_ACCESSOR_ATTRIBUTE("Color", GetColorAttr, SetColorAttr, Color, Color::TRANSPARENT, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Width", GetWidthAttr, SetWidthAttr, unsigned, 1, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Height", GetHeightAttr, SetHeightAttr, unsigned, 1, AM_DEFAULT);
@@ -240,17 +176,50 @@ void TextureElement::RegisterObject(Context* context)
     URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Input 1", GetInputTexture1Attr, SetInputTexture1Attr, unsigned, textureInputsNames, 0, AM_DEFAULT);
     URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Input 2", GetInputTexture2Attr, SetInputTexture2Attr, unsigned, textureInputsNames, 0, AM_DEFAULT);
     URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Input 3", GetInputTexture3Attr, SetInputTexture3Attr, unsigned, textureInputsNames, 0, AM_DEFAULT);
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Preview Material", GetPreviewMaterialAttr, SetPreviewMaterialAttr, ResourceRef, ResourceRef(Material::GetTypeStatic()), AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Destination Texture", GetDestinationTextureAttr, SetDestinationTextureAttr, ResourceRef, ResourceRef(Texture2D::GetTypeStatic()), AM_DEFAULT);
 
 }
 
-void TextureElement::ApplyAttributes()
+void TextureElement::MarkNeedUpdate(bool updatePreview)
 {
-    Update(false);
+    dirty_ = true;
+    if (updatePreview)
+    {
+        ShowInPreview();
+    }
+
+    if (node_ && node_->GetParent())
+    {
+        // Mark parents
+        PODVector<TextureElement*> parentElements;
+        node_->GetParent()->GetComponents(parentElements);
+        for (TextureElement* parent : parentElements)
+        {
+            parent->MarkNeedUpdate(false);
+        }
+
+        // Mark host
+        if (TextureHost* host = GetHostComponent())
+        {
+            host->MarkNeedUpdate();
+        }
+    }
 }
 
-//////////////////////////////////////////////////////////////////////////
+void TextureElement::ShowInPreview()
+{
+    if (node_ && node_->GetParent())
+    {
+        needPreview_ = true;
+
+        // Mark host
+        if (TextureHost* host = GetHostComponent())
+        {
+            host->MarkNeedUpdate();
+        }
+    }
+}
+
 void TextureElement::SetRenderPathAttr(const ResourceRef& value)
 {
     ResourceCache* cache = GetSubsystem<ResourceCache>();
@@ -319,18 +288,6 @@ const ResourceRefList& TextureElement::GetMaterialsAttr() const
     return materialsAttr_;
 }
 
-void TextureElement::SetPreviewMaterialAttr(const ResourceRef& value)
-{
-    ResourceCache* cache = GetSubsystem<ResourceCache>();
-    previewMaterial_ = cache->GetResource<Material>(value.name_);
-    UpdateViews();
-}
-
-ResourceRef TextureElement::GetPreviewMaterialAttr() const
-{
-    return GetResourceRef(previewMaterial_, Material::GetTypeStatic());
-}
-
 void TextureElement::SetDestinationTextureAttr(const ResourceRef& value)
 {
     ResourceCache* cache = GetSubsystem<ResourceCache>();
@@ -343,39 +300,46 @@ ResourceRef TextureElement::GetDestinationTextureAttr() const
     return ResourceRef(Texture2D::GetTypeStatic(), destinationTextureName_);
 }
 
-void TextureElement::DoUpdate()
+void TextureElement::Update()
 {
-    if (!node_)
+    if (node_)
     {
-        return;
-    }
-
-    // Update all dependencies
-    const PODVector<TextureElement*> dependencies = GetDependencies();
-    for (TextureElement* dependency : dependencies)
-    {
-        dependency->Update(false);
-    }
-
-    // Render texture
-    const TextureDescription desc = CreateTextureDescription();
-    const HashMap<String, SharedPtr<Texture2D>> inputMap = CreateInputTextureMap();
-    generatedTexture_ = RenderTexture(context_, desc, inputMap);
-    if (!destinationTextureName_.Empty() && generatedTexture_)
-    {
-        // Write texture to file and re-load it
-        generatedTexture_->SetName(destinationTextureName_);
-        const SharedPtr<Image> image = ConvertTextureToImage(*generatedTexture_);
-
-        ResourceCache* cache = GetSubsystem<ResourceCache>();
-        if (SaveImage(cache, *image))
+        // Update all dependencies
+        const PODVector<TextureElement*> dependencies = GetDependencies();
+        for (TextureElement* dependency : dependencies)
         {
-            cache->ReloadResourceWithDependencies(destinationTextureName_);
+            dependency->Update();
+        }
+
+        // Re-generate if dirty
+        if (dirty_)
+        {
+            dirty_ = false;
+            GenerateTexture();
+        }
+
+        // Update preview if needed
+        if (needPreview_)
+        {
+            needPreview_ = false;
+            if (TextureHost* host = GetHostComponent())
+            {
+                host->SetPreviewTexture(generatedTexture_);
+            }
         }
     }
 
-    // Update views
-    UpdateViews();
+}
+
+TextureHost* TextureElement::GetHostComponent()
+{
+    TextureHost* host = node_->GetComponent<TextureHost>();
+    if (!host)
+    {
+        host = node_->GetParentComponent<TextureHost>(true);
+    }
+    return host;
+
 }
 
 SharedPtr<Model> TextureElement::GetOrCreateModel() const
@@ -386,7 +350,7 @@ SharedPtr<Model> TextureElement::GetOrCreateModel() const
         if (script_)
         {
             SharedPtr<ModelFactory> factory = CreateModelFromScript(*script_, entryPoint_);
-            model = factory->BuildModel(factory->GetMaterials());
+            model = factory ? factory->BuildModel(factory->GetMaterials()) : nullptr;
             if (!model)
             {
                 URHO3D_LOGERROR("Failed to create procedural model");
@@ -462,26 +426,24 @@ HashMap<String, SharedPtr<Texture2D>> TextureElement::CreateInputTextureMap() co
     return result;
 }
 
-void TextureElement::UpdateViews()
+void TextureElement::GenerateTexture()
 {
-    if (!node_)
-    {
-        return;
-    }
+    assert(node_);
 
-    StaticModel* staticModel = node_->GetComponent<StaticModel>();
-    if (staticModel)
+    // Render texture
+    const TextureDescription desc = CreateTextureDescription();
+    const HashMap<String, SharedPtr<Texture2D>> inputMap = CreateInputTextureMap();
+    generatedTexture_ = RenderTexture(context_, desc, inputMap);
+    if (!destinationTextureName_.Empty() && generatedTexture_)
     {
-        if (previewMaterialCached_ != previewMaterial_)
-        {
-            previewMaterialCached_ = previewMaterial_;
-            clonedPreviewMaterial_ = previewMaterial_->Clone();
-        }
+        // Write texture to file and re-load it
+        generatedTexture_->SetName(destinationTextureName_);
+        const SharedPtr<Image> image = ConvertTextureToImage(*generatedTexture_);
 
-        if (clonedPreviewMaterial_)
+        ResourceCache* cache = GetSubsystem<ResourceCache>();
+        if (SaveImage(cache, *image))
         {
-            clonedPreviewMaterial_->SetTexture(TU_DIFFUSE, generatedTexture_);
-            staticModel->SetMaterial(0, clonedPreviewMaterial_);
+            cache->ReloadResourceWithDependencies(destinationTextureName_);
         }
     }
 }
