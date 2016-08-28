@@ -2,6 +2,7 @@
 
 #include <FlexEngine/Common.h>
 // #include <FlexEngine/Factory/ModelFactory.h>
+#include <FlexEngine/Math/MathDefs.h>
 #include <FlexEngine/Factory/ProceduralComponent.h>
 
 #include <Urho3D/Graphics/Material.h>
@@ -208,6 +209,72 @@ private:
 
     /// Material list attribute.
     mutable ResourceRefList materialsAttr_;
+};
+
+/// Perlin noise texture.
+class PerlinNoiseTexture : public TextureElement
+{
+    URHO3D_OBJECT(PerlinNoiseTexture, TextureElement);
+
+public:
+    /// Construct.
+    PerlinNoiseTexture(Context* context);
+    /// Destruct.
+    virtual ~PerlinNoiseTexture();
+    /// Register object factory.
+    static void RegisterObject(Context* context);
+
+    /// Apply attribute changes that can not be applied immediately. Called after scene load or a network update.
+    virtual void ApplyAttributes() override;
+
+    /// Set render path attribute.
+    void SetRenderPathAttr(const ResourceRef& value);
+    /// Get render path attribute.
+    ResourceRef GetRenderPathAttr() const;
+    /// Set material attribute.
+    void SetMaterialAttr(const ResourceRef& value);
+    /// Get material attribute.
+    ResourceRef GetMaterialAttr() const;
+
+private:
+    /// Apply number of octaves.
+    void ApplyNumberOfOctaves();
+    /// Generate texture with specified parameters.
+    SharedPtr<Texture2D> GenerateOctaveTexture(const Vector2& scale, float seed) const;
+    /// Add octave to result buffer.
+    void AddOctaveToBuffer(unsigned i, PODVector<float>& buffer, float& totalMagnitude) const;
+    /// Generate texture.
+    virtual SharedPtr<Texture2D> DoGenerateTexture() override;
+
+private:
+    /// Output texture width.
+    unsigned width_ = 0;
+    /// Output texture height.
+    unsigned height_ = 0;
+    /// Render path for rendering.
+    SharedPtr<XMLFile> renderPath_;
+    /// Material.
+    SharedPtr<Material> material_;
+    /// First color.
+    Color firstColor_;
+    /// Second color.
+    Color secondColor_;
+    /// Bias.
+    float bias_ = 0.0f;
+    /// Range to remap noise from [0, 1] to [begin, end].
+    FloatRange range_;
+    /// Contrast.
+    float contrast_ = 0.0f;
+    /// Number of octaves.
+    unsigned numOctaves_ = 0;
+    /// Octaves as array of 4-vectors. Each vector contains scale as 2-vector, magnitude and seed.
+    VariantMap octaves_;
+
+    /// Quad model.
+    SharedPtr<Model> model_;
+    /// Buffer for texture data.
+    PODVector<float> buffer_;
+
 };
 
 }

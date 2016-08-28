@@ -330,4 +330,22 @@ SharedPtr<ModelFactory> CreateModelFromScript(ScriptFile& scriptFile, const Stri
     return factory;
 }
 
+SharedPtr<Model> CreateQuadModel(Context* context)
+{
+    static const unsigned indices[6] = { 0, 2, 3, 0, 3, 1 };
+    static const Vector2 positions[4] = { Vector2(0, 0), Vector2(1, 0), Vector2(0, 1), Vector2(1, 1) };
+    DefaultVertex vertices[4];
+    for (unsigned i = 0; i < 4; ++i)
+    {
+        vertices[i].position_ = Vector3(positions[i], 0.5f);
+        vertices[i].uv_[0] = Vector4(positions[i].x_, positions[i].y_, 0.0f, 0.0f);
+        vertices[i].uv_[1] = Vector4::ONE;
+    }
+
+    ModelFactory factory(context);
+    factory.Initialize(DefaultVertex::GetVertexElements(), true);
+    factory.Push(vertices, indices, true);
+    return factory.BuildModel(factory.GetMaterials());
+}
+
 }

@@ -1,0 +1,3 @@
+<material>
+    <technique name="Procedural/Techniques/PerlinNoise.xml"/>
+</material>

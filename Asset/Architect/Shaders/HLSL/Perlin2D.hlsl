@@ -57,14 +57,3 @@ float PerlinNoise2D(float2 iPixel, float2 iRepeat)
     float n_xy = lerp(n_x.x, n_x.y, fade_xy.y);
     return 2.3 * n_xy;
 }
-
-float PerlinNoise2Dx4(float2 iPixel, float2 iRepeat, float4 iPeriods, float4 iMagnitude)
-{
-    float4 ret;
-    ret.x = PerlinNoise2D(iPixel * iRepeat * iPeriods.x, iPeriods.x * iRepeat);
-    ret.y = PerlinNoise2D(iPixel * iRepeat * iPeriods.y, iPeriods.y * iRepeat);
-    ret.z = PerlinNoise2D(iPixel * iRepeat * iPeriods.z, iPeriods.z * iRepeat);
-    ret.w = PerlinNoise2D(iPixel * iRepeat * iPeriods.w, iPeriods.w * iRepeat);
-    float totalMagnitude = dot(iMagnitude, 1.0);
-    return dot(0.5 + 0.5 * ret, iMagnitude) / totalMagnitude;
-}

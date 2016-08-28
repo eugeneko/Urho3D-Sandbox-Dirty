@@ -58,6 +58,8 @@ bool SaveImage(ResourceCache* cache, const Image& image);
 /// Orthogonal camera description.
 struct OrthoCameraDescription
 {
+    /// Identity camera that covers box from (0, 0, 0) to (1, 1, 1) in Z direction.
+    static OrthoCameraDescription Identity(unsigned width, unsigned height, const Vector3& offset = Vector3::ZERO);
     /// Camera position.
     Vector3 position_;
     /// Camera direction.

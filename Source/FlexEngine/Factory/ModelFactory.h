@@ -179,4 +179,7 @@ private:
 /// Create model from script.
 SharedPtr<ModelFactory> CreateModelFromScript(ScriptFile& scriptFile, const String& entryPoint);
 
+/// Create quad model.
+SharedPtr<Model> CreateQuadModel(Context* context);
+
 }

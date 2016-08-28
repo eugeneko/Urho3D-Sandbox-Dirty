@@ -1,8 +1,10 @@
 #include <FlexEngine/Factory/TextureHost.h>
 
+#include <FlexEngine/Container/Utility.h>
 #include <FlexEngine/Core/Attribute.h>
 #include <FlexEngine/Factory/ModelFactory.h>
 #include <FlexEngine/Factory/TextureFactory.h>
+#include <FlexEngine/Math/MathDefs.h>
 #include <FlexEngine/Resource/ResourceCacheHelpers.h>
 
 #include <Urho3D/Core/Context.h>
@@ -20,23 +22,6 @@ namespace FlexEngine
 
 namespace
 {
-
-static const char* textureToPreviewNames[] =
-{
-    "Output 0",
-    "Output 1",
-    "Output 2",
-    "Output 3",
-    "Output 4",
-    "Output 5",
-    "Output 6",
-    "Output 7",
-    "Output 8",
-    "Output 9",
-    "Output 10",
-    "Output 11",
-    0
-};
 
 static const unsigned maxTextureInputs = 16;
 
@@ -63,6 +48,9 @@ static const char* textureInputsNames[] =
 };
 
 static_assert(sizeof(textureInputsNames) / sizeof(textureInputsNames[0]) == maxTextureInputs + 2, "Mismatch of texture inputs count");
+
+static const char* inputParameterUniform[] = { "MatDiffColor" };
+
 }
 
 TextureHost::TextureHost(Context* context)
@@ -149,7 +137,6 @@ TextureElement::TextureElement(Context* context)
     : ProceduralComponentAgent(context)
     , materialsAttr_(Material::GetTypeStatic())
 {
-    ResetToDefault();
 }
 
 TextureElement::~TextureElement()
@@ -317,7 +304,7 @@ void RenderedModelTexture::RegisterObject(Context* context)
     URHO3D_MEMBER_ATTRIBUTE("Color", Color, color_, Color::TRANSPARENT, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Width", unsigned, width_, 1, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Height", unsigned, height_, 1, AM_DEFAULT);
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Render Path", GetRenderPathAttr, SetRenderPathAttr, ResourceRef, ResourceRef(Model::GetTypeStatic()), AM_DEFAULT);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Render Path", GetRenderPathAttr, SetRenderPathAttr, ResourceRef, ResourceRef(XMLFile::GetTypeStatic()), AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Model Script", GetScriptAttr, SetScriptAttr, ResourceRef, ResourceRef(ScriptFile::GetTypeStatic()), AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Entry Point", String, entryPoint_, "Main", AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Model", GetModelAttr, SetModelAttr, ResourceRef, ResourceRef(Model::GetTypeStatic()), AM_DEFAULT);
@@ -428,12 +415,7 @@ TextureDescription RenderedModelTexture::CreateTextureDescription() const
         desc.geometries_.Push(geometryDesc);
     }
 
-    OrthoCameraDescription cameraDesc;
-    cameraDesc.position_ = Vector3(0.5f, 0.5f, 0.0f) - modelPosition_;
-    cameraDesc.farClip_ = 1.0f;
-    cameraDesc.size_ = Vector2(1.0f, 1.0f);
-    cameraDesc.viewport_ = IntRect(0, 0, desc.width_, desc.height_);
-    desc.cameras_.Push(cameraDesc);
+    desc.cameras_.Push(OrthoCameraDescription::Identity(desc.width_, desc.height_, -modelPosition_));
 
     static const TextureUnit units[MaxInputTextures] = { TU_DIFFUSE, TU_NORMAL, TU_SPECULAR, TU_EMISSIVE };
     for (unsigned i = 0; i < MaxInputTextures; ++i)
@@ -444,7 +426,7 @@ TextureDescription RenderedModelTexture::CreateTextureDescription() const
         }
     }
 
-    desc.parameters_.Populate("MatDiffColor", inputParameter_[0]);
+    desc.parameters_.Populate(inputParameterUniform[0], inputParameter_[0]);
 
     return desc;
 }
@@ -470,6 +452,181 @@ SharedPtr<Texture2D> RenderedModelTexture::DoGenerateTexture()
     const TextureDescription desc = CreateTextureDescription();
     const HashMap<String, SharedPtr<Texture2D>> inputMap = CreateInputTextureMap();
     return RenderTexture(context_, desc, inputMap);
+}
+
+//////////////////////////////////////////////////////////////////////////
+PerlinNoiseTexture::PerlinNoiseTexture(Context* context)
+    : TextureElement(context)
+    , model_(CreateQuadModel(context_))
+{
+    ResetToDefault();
+}
+
+PerlinNoiseTexture::~PerlinNoiseTexture()
+{
+
+}
+
+void PerlinNoiseTexture::RegisterObject(Context* context)
+{
+    context->RegisterFactory<PerlinNoiseTexture>(FLEXENGINE_CATEGORY);
+
+    URHO3D_COPY_BASE_ATTRIBUTES(TextureElement);
+
+    URHO3D_MEMBER_ATTRIBUTE("Width", unsigned, width_, 1, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Height", unsigned, height_, 1, AM_DEFAULT);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Render Path", GetRenderPathAttr, SetRenderPathAttr, ResourceRef, ResourceRef(XMLFile::GetTypeStatic()), AM_DEFAULT);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Material", GetMaterialAttr, SetMaterialAttr, ResourceRef, ResourceRef(Material::GetTypeStatic()), AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Color 1", Color, firstColor_, Color::BLACK, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Color 2", Color, secondColor_, Color::WHITE, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Bias", float, bias_, 0.0f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Range", Vector2, range_, GetVector, SetVector, Vector2(0.0f, 1.0f), AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Contrast", float, contrast_, 0.0f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Number of Octaves", unsigned, numOctaves_, 1, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Octaves", VariantMap, octaves_, Variant::emptyVariantMap, AM_DEFAULT);
+}
+
+void PerlinNoiseTexture::ApplyAttributes()
+{
+    TextureElement::ApplyAttributes();
+    ApplyNumberOfOctaves();
+    width_ = Max(1u, width_);
+    height_ = Max(1u, height_);
+}
+
+void PerlinNoiseTexture::SetRenderPathAttr(const ResourceRef& value)
+{
+    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    renderPath_ = cache->GetResource<XMLFile>(value.name_);
+}
+
+ResourceRef PerlinNoiseTexture::GetRenderPathAttr() const
+{
+    return GetResourceRef(renderPath_, XMLFile::GetTypeStatic());
+}
+
+void PerlinNoiseTexture::SetMaterialAttr(const ResourceRef& value)
+{
+    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    material_ = cache->GetResource<Material>(value.name_);
+}
+
+ResourceRef PerlinNoiseTexture::GetMaterialAttr() const
+{
+    return GetResourceRef(material_, Material::GetTypeStatic());
+}
+
+void PerlinNoiseTexture::ApplyNumberOfOctaves()
+{
+    const unsigned oldSize = octaves_.Size();
+    for (unsigned i = oldSize; i < numOctaves_; ++i)
+    {
+        octaves_.Populate(StringHash(i), Vector4::ONE);
+    }
+    for (unsigned i = numOctaves_; i < oldSize; ++i)
+    {
+        octaves_.Erase(StringHash(i));
+    }
+}
+
+SharedPtr<Texture2D> PerlinNoiseTexture::GenerateOctaveTexture(const Vector2& scale, float seed) const
+{
+    TextureDescription desc;
+    desc.renderPath_ = renderPath_;
+    desc.width_ = Max(1u, width_);
+    desc.height_ = Max(1u, height_);
+
+    GeometryDescription geometryDesc;
+    geometryDesc.model_ = model_;
+    geometryDesc.materials_.Push(material_);
+    desc.geometries_.Push(geometryDesc);
+
+    desc.cameras_.Push(OrthoCameraDescription::Identity(desc.width_, desc.height_));
+    desc.parameters_.Populate(inputParameterUniform[0], Vector4(scale.x_, scale.y_, seed, seed));
+
+    return RenderTexture(context_, desc, TextureMap());
+}
+
+void PerlinNoiseTexture::AddOctaveToBuffer(unsigned i, PODVector<float>& buffer, float& totalMagnitude) const
+{
+    // Compute base scale
+    const Vector2 baseScale = width_ > height_
+        ? Vector2(static_cast<float>(width_) / height_, 1.0f)
+        : Vector2(1.0f, static_cast<float>(height_) / width_);
+
+    // Read parameters
+    const Variant* varParam = octaves_[StringHash(i)];
+    const Vector4& param = varParam ? varParam->GetVector4() : Vector4::ZERO;
+    const Vector2 scale(param.x_, param.y_);
+    const float magnitude = param.z_;
+    const float seed = param.w_;
+
+    // Generate texture
+    const SharedPtr<Texture2D> texture = GenerateOctaveTexture(scale * baseScale, seed);
+    const SharedPtr<Image> image = texture ? ConvertTextureToImage(*texture) : nullptr;
+    if (!image)
+    {
+        return;
+    }
+
+    // Write to buffer
+    assert(image->GetWidth() == width_);
+    assert(image->GetHeight() == height_);
+    assert(buffer.Size() == width_ * height_);
+    totalMagnitude += magnitude;
+    for (unsigned y = 0; y < height_; ++y)
+    {
+        for (unsigned x = 0; x < width_; ++x)
+        {
+            const float value = image->GetPixel(x, y).r_;
+            buffer[y * width_ + x] += value * magnitude;
+        }
+    }
+}
+
+SharedPtr<Texture2D> PerlinNoiseTexture::DoGenerateTexture()
+{
+    // Reset buffer
+    buffer_.Resize(width_ * height_);
+    for (float& value : buffer_)
+    {
+        value = 0.0f;
+    }
+
+    // Apply octaves
+    float maxMagnitude = 0.0f;
+    for (unsigned i = 0; i < numOctaves_; ++i)
+    {
+        AddOctaveToBuffer(i, buffer_, maxMagnitude);
+    }
+
+    // Apply modifiers
+    for (float& value : buffer_)
+    {
+        // Normalize and apply bias
+        value = Clamp(value / maxMagnitude + bias_, 0.0f, 1.0f);
+        // Apply contrast
+        value = SmoothStepEx(value, contrast_);
+        // Remap to range
+        value = Clamp(range_.Get(value), 0.0f, 1.0f);
+    }
+
+    // Build image
+    Image image(context_);
+    image.SetSize(width_, height_, 4);
+    for (unsigned y = 0; y < height_; ++y)
+    {
+        for (unsigned x = 0; x < width_; ++x)
+        {
+            const float value = buffer_[y * width_ + x];
+            const Color color = Lerp(firstColor_, secondColor_, value);
+            image.SetPixel(x, y, color);
+        }
+    }
+
+    SharedPtr<Texture2D> texture = MakeShared<Texture2D>(context_);
+    texture->SetData(&image);
+    return texture;
 }
 
 }

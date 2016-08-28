@@ -31,6 +31,13 @@ T UnLerpClamped(const T& first, const T& second, const T& value)
     return Clamp(UnLerp(first, second, value), T(0), T(1));
 }
 
+/// Generalization of Hermite interpolation with variable degree of smoothing.
+inline float SmoothStepEx(float t, float k)
+{
+    float q = 1 - t;
+    return Clamp(q*q*t*(1 - k) + q*t*t*(2 + k) + t*t*t, 0.0f, 1.0f);
+}
+
 /// Construct orthogonal vector for passed one. XOY plane is preferred.
 inline Vector3 ConstructOrthogonalVector(const Vector3& vec)
 {

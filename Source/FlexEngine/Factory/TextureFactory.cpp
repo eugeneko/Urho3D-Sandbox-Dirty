@@ -341,6 +341,16 @@ bool SaveImage(ResourceCache* cache, const Image& image)
     return success;
 }
 
+OrthoCameraDescription OrthoCameraDescription::Identity(unsigned width, unsigned height, const Vector3& offset /*= Vector3::ZERO*/)
+{
+    OrthoCameraDescription result;
+    result.position_ = Vector3(0.5f, 0.5f, 0.0f) + offset;
+    result.farClip_ = 1.0f;
+    result.size_ = Vector2(1.0f, 1.0f);
+    result.viewport_ = IntRect(0, 0, width, height);
+    return result;
+}
+
 Vector<ViewDescription> ConstructViewsForTexture(Context* context, const TextureDescription& desc, const TextureMap& textures)
 {
     ResourceCache* resourceCache = context->GetSubsystem<ResourceCache>();

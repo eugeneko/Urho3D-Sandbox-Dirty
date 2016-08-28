@@ -27,14 +27,6 @@ float ComputeMaskSegment(float2 iTexCoord, float4 iColor)
     return value;
 }
 
-/// Compute mask: perlin noise
-float ComputeMaskPerlin(float2 iTexCoord, float4 iColor)
-{
-    float k = iColor.w;
-    return PerlinNoise2Dx4(iTexCoord + iColor.z, iColor.xy, float4(1.0, 2.0, 4.0, 8.0), float4(1.0, k, k*k, k*k*k));
-
-}
-
 /// Compute mask.
 /// @param iTexCoord.xy Texture coordinates
 /// @param iTexCoord.z  Mask type
@@ -49,10 +41,6 @@ float ComputeMask(float4 iTexCoord, float4 iColor)
     {
         mask = ComputeMaskSegment(iTexCoord.xy, iColor);
     }
-    else if (type == 1)
-    {
-        mask = ComputeMaskPerlin(iTexCoord.xy, iColor);
-    }
 
     // Return mask
     return mask * iTexCoord.w;
@@ -65,6 +53,15 @@ float ComputeSuperMask(float4 iTexCoord)
 {
     float4 baseMask = Sample2D(TextureUnit0, iTexCoord.xy);
     return baseMask.x * iTexCoord.w;
+}
+
+/// Compute perlin noise.
+/// @param iTexCoord.xy Texture coordinates
+/// @param iColor.xy    Noise scale
+/// @param iColor.zw    Noise offset
+float ComputePerlinNoise(float4 iTexCoord, float4 iColor)
+{
+    return PerlinNoise2D((iTexCoord.xy + iColor.zw) * iColor.xy, iColor.xy);
 }
 
 /// Compute scaled mask.

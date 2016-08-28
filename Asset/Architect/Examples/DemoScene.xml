@@ -5,10 +5,10 @@
 	<attribute name="Smoothing Constant" value="50" />
 	<attribute name="Snap Threshold" value="5" />
 	<attribute name="Elapsed Time" value="0" />
-	<attribute name="Next Replicated Node ID" value="27" />
-	<attribute name="Next Replicated Component ID" value="44" />
-	<attribute name="Next Local Node ID" value="16777261" />
-	<attribute name="Next Local Component ID" value="16777756" />
+	<attribute name="Next Replicated Node ID" value="28" />
+	<attribute name="Next Replicated Component ID" value="45" />
+	<attribute name="Next Local Node ID" value="16777271" />
+	<attribute name="Next Local Component ID" value="16777876" />
 	<attribute name="Variables" />
 	<attribute name="Variable Names" value="" />
 	<component type="Octree" id="1" />
@@ -190,6 +190,7 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="RenderedModelTexture" id="26">
+				<attribute name="Destination Texture" value="Texture2D;Objects/WhiteTree/FoliageDiffuse.dds" />
 				<attribute name="Width" value="1024" />
 				<attribute name="Height" value="1024" />
 				<attribute name="Render Path" value="XMLFile;Procedural/RenderPaths/BakeTransparent.xml" />
@@ -199,7 +200,6 @@
 				<attribute name="Input 1" value="Input 1" />
 				<attribute name="Input 2" value="Input 2" />
 				<attribute name="Input 3" value="Input 3" />
-				<attribute name="Destination Texture" value="Texture2D;Objects/WhiteTree/FoliageDiffuse.dds" />
 			</component>
 			<node id="16">
 				<attribute name="Is Enabled" value="true" />
@@ -248,7 +248,6 @@
 				<attribute name="Variables" />
 				<component type="RenderedModelTexture" id="29">
 					<attribute name="Color" value="0.204 0.502 0.09 1" />
-					<attribute name="Render Path" value="XMLFile;" />
 				</component>
 			</node>
 			<node id="20">
@@ -261,7 +260,6 @@
 				<attribute name="Variables" />
 				<component type="RenderedModelTexture" id="30">
 					<attribute name="Color" value="0.298 0.769 0.09 1" />
-					<attribute name="Render Path" value="XMLFile;" />
 				</component>
 			</node>
 			<node id="18">
@@ -272,9 +270,7 @@
 				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="1 1 1" />
 				<attribute name="Variables" />
-				<component type="RenderedModelTexture" id="32">
-					<attribute name="Render Path" value="XMLFile;" />
-				</component>
+				<component type="RenderedModelTexture" id="32" />
 			</node>
 		</node>
 	</node>
@@ -306,62 +302,31 @@
 				<attribute name="Height" value="1024" />
 				<attribute name="Render Path" value="XMLFile;Procedural/RenderPaths/BakeOpaque.xml" />
 				<attribute name="Model Script" value="ScriptFile;Objects/WhiteTree/ProceduralBark.as" />
-				<attribute name="Materials" value="Material;Procedural/Materials/MaskScale.xml" />
-				<attribute name="Parameter 0" value="-0.1 1 0 1" />
-				<attribute name="Input 0" value="Input 0" />
+				<attribute name="Materials" value="Material;Procedural/Materials/PerlinNoise.xml" />
+				<attribute name="Parameter 0" value="32 32 -0.1 6.92" />
 			</component>
-			<node id="22">
-				<attribute name="Is Enabled" value="true" />
-				<attribute name="Name" value="CrackShape" />
-				<attribute name="Tags" />
-				<attribute name="Position" value="0 0 0" />
-				<attribute name="Rotation" value="1 0 0 0" />
-				<attribute name="Scale" value="1 1 1" />
-				<attribute name="Variables" />
-				<component type="RenderedModelTexture" id="38">
-					<attribute name="Width" value="256" />
-					<attribute name="Height" value="1024" />
-					<attribute name="Render Path" value="XMLFile;Procedural/RenderPaths/BakeOpaque.xml" />
-					<attribute name="Model Script" value="ScriptFile;Objects/WhiteTree/ProceduralBark.as" />
-					<attribute name="Materials" value="Material;Procedural/Materials/MaskAdd.xml" />
-					<attribute name="Parameter 0" value="4 32 0 0.5" />
-				</component>
-			</node>
 		</node>
-		<node id="26">
+		<node id="27">
 			<attribute name="Is Enabled" value="true" />
-			<attribute name="Name" value="DetailsShapeScaled" />
+			<attribute name="Name" value="CrackMap" />
 			<attribute name="Tags" />
 			<attribute name="Position" value="0 0 0" />
 			<attribute name="Rotation" value="1 0 0 0" />
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
-			<component type="RenderedModelTexture" id="43">
+			<component type="PerlinNoiseTexture" id="44">
 				<attribute name="Width" value="256" />
 				<attribute name="Height" value="1024" />
-				<attribute name="Render Path" value="XMLFile;Procedural/RenderPaths/BakeOpaque.xml" />
-				<attribute name="Model Script" value="ScriptFile;Objects/WhiteTree/ProceduralBark.as" />
-				<attribute name="Materials" value="Material;Procedural/Materials/MaskScale.xml" />
-				<attribute name="Parameter 0" value="-0.5 1 0 1" />
-				<attribute name="Input 0" value="Input 0" />
+				<attribute name="Render Path" value="XMLFile;Procedural/RenderPaths/BakeTransparent.xml" />
+				<attribute name="Material" value="Material;Procedural/Materials/PerlinNoise.xml" />
+				<attribute name="Color 2" value="0 1 1 1" />
+				<attribute name="Contrast" value="-3" />
+				<attribute name="Number of Octaves" value="2" />
+				<attribute name="Octaves">
+					<variant hash="0" type="Vector4" value="32 32 1 1" />
+					<variant hash="1" type="Vector4" value="64 64 0.5 1" />
+				</attribute>
 			</component>
-			<node id="25">
-				<attribute name="Is Enabled" value="true" />
-				<attribute name="Name" value="DetailsShape" />
-				<attribute name="Tags" />
-				<attribute name="Position" value="0 0 0" />
-				<attribute name="Rotation" value="1 0 0 0" />
-				<attribute name="Scale" value="1 1 1" />
-				<attribute name="Variables" />
-				<component type="RenderedModelTexture" id="41">
-					<attribute name="Width" value="256" />
-					<attribute name="Height" value="1024" />
-					<attribute name="Render Path" value="XMLFile;Procedural/RenderPaths/BakeOpaque.xml" />
-					<attribute name="Model Script" value="ScriptFile;Objects/WhiteTree/ProceduralBark.as" />
-					<attribute name="Materials" value="Material;Procedural/Materials/MaskAdd.xml" />
-					<attribute name="Parameter 0" value="8 256 0 0.5" />
-				</component>
-			</node>
 		</node>
 	</node>
 </scene>
