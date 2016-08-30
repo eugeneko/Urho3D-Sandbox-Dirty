@@ -78,12 +78,10 @@ void PS(
         float mask = ComputeSuperMask(iTexCoord);
     #elif defined(PERLINNOISE)
         float mask = ComputePerlinNoise(iTexCoord, inputColor);
-    #elif defined(MASKSCALE)
-        float mask = ComputeScaledMask(iTexCoord, inputColor);
-    #elif defined(MASKSHARP)
-        float mask = ComputeSharpMask(iTexCoord, inputColor);
     #elif defined(MIXCOLOR)
         diffColor = ComputeMixedColor(iTexCoord, inputColor);
+    #elif defined(SUPERMIXCOLOR)
+        diffColor = ComputeSuperMixedColor(iTexCoord, inputColor);
     #endif
 
     #if defined(MASK) || defined(SUPERMASK) || defined(PERLINNOISE) || defined(MASKSCALE) || defined(MASKSHARP)

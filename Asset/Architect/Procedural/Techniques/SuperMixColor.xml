@@ -1,3 +1,3 @@
-<technique vs="Procedural" ps="Procedural" psdefines="MASKSCALE">
+<technique vs="Procedural" ps="Procedural" psdefines="SUPERMIXCOLOR">
     <pass name="alpha" depthwrite="false" blend="alpha" />
 </technique>

@@ -64,34 +64,6 @@ float ComputePerlinNoise(float4 iTexCoord, float4 iColor)
     return PerlinNoise2D((iTexCoord.xy + iColor.zw) * iColor.xy, iColor.xy);
 }
 
-/// Compute scaled mask.
-/// @param iTexCoord.xy Texture coordinates
-/// @param iTexCoord.w  Transparency
-/// @param iColor.xy    Mask value is mapped on [begin, end] range
-/// @param iColor.zw    Mask value is clamped by [begin, end] range
-/// @param TextureUnit0 Mask
-float ComputeScaledMask(float4 iTexCoord, float4 iColor)
-{
-    float4 baseMask = Sample2D(TextureUnit0, iTexCoord.xy);
-    return clamp(lerp(iColor.x, iColor.y, baseMask.x), iColor.z, iColor.w) * iTexCoord.w;
-}
-
-/// Generalization of Hermite interpolation.
-float SmoothStepEx(float t, float k)
-{
-    float q = 1 - t;
-    return clamp(q*q*t*(1 - k) + q*t*t*(2 + k) + t*t*t, 0, 1);
-}
-
-/// Compute sharp mask.
-/// @param iTexCoord.xy Texture coordinates
-/// @param iColor.x     Intensity
-float ComputeSharpMask(float4 iTexCoord, float4 iColor)
-{
-    float4 baseMask = Sample2D(TextureUnit0, iTexCoord.xy);
-    return SmoothStepEx(baseMask.x, iColor.x);
-}
-
 /// Compute color using the following formula:
 ///   m > 0 ? x*(1 - m) + y*m : z
 /// @param iTexCoord.xy Texture coordinates
@@ -107,6 +79,31 @@ float4 ComputeMixedColor(float4 iTexCoord, float4 iColor)
     float4 ytex = Sample2D(TextureUnit2, iTexCoord.xy);
     float4 ztex = Sample2D(TextureUnit3, iTexCoord.xy);
     return mask.x > 0 ? lerp(xtex, ytex, mask.x) : ztex;    
+}
+
+/// Noise interpolation
+float4 NoiseLerp(float4 source0, float4 source1, float factor, float noise, float smoothing)
+{
+    float scaledFactor = lerp(-2*smoothing, 1.0 + 2*smoothing, factor);
+    float blendFactor = smoothstep(scaledFactor - smoothing, scaledFactor + smoothing, noise);
+    return lerp(source1, source0, blendFactor);
+}
+
+/// Compute color using the following formula:
+///   m > 0 ? x*(1 - m) + y*m : z
+/// @param iTexCoord.xy Texture coordinates
+// /// @param iColor       Color modifier
+/// @param TextureUnit0 Mask
+/// @param TextureUnit1 X channel
+/// @param TextureUnit2 Y channel
+/// @param TextureUnit3 Noise
+float4 ComputeSuperMixedColor(float4 iTexCoord, float4 iColor)
+{
+    float4 mask = Sample2D(TextureUnit0, iTexCoord.xy);
+    float4 xtex = Sample2D(TextureUnit1, iTexCoord.xy);
+    float4 ytex = Sample2D(TextureUnit2, iTexCoord.xy);
+    float4 noise = Sample2D(TextureUnit3, iTexCoord.xy);
+    return NoiseLerp(xtex, ytex, mask.x, noise.x, 0.2);    
 }
 
 #endif

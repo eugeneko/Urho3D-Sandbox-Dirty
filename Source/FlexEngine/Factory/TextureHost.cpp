@@ -51,6 +51,29 @@ static_assert(sizeof(textureInputsNames) / sizeof(textureInputsNames[0]) == maxT
 
 static const char* inputParameterUniform[] = { "MatDiffColor" };
 
+SharedPtr<Model> GetOrCreateQuadModel(Context* context)
+{
+    static const String modelName = "ProceduralTextureDefaultQuadModel";
+    const Variant& var = context->GetGlobalVar(modelName);
+
+    // Get existing
+    if (var.GetType() == VAR_PTR)
+    {
+        if (Object* object = dynamic_cast<Object*>(var.GetPtr()))
+        {
+            if (Model* model = dynamic_cast<Model*>(object))
+            {
+                return SharedPtr<Model>(model);
+            }
+        }
+    }
+
+    // Create new
+    const SharedPtr<Model> model = CreateQuadModel(context);
+    context->SetGlobalVar(modelName, var);
+    return model;
+}
+
 }
 
 TextureHost::TextureHost(Context* context)
@@ -170,7 +193,7 @@ void TextureElement::MarkNeedUpdate(bool updatePreview)
     {
         // Mark parents
         PODVector<TextureElement*> parentElements;
-        node_->GetParent()->GetComponents(parentElements);
+        node_->GetParent()->GetDerivedComponents(parentElements);
         for (TextureElement* parent : parentElements)
         {
             parent->MarkNeedUpdate(false);
@@ -283,8 +306,38 @@ PODVector<TextureElement*> TextureElement::GetDependencies() const
 }
 
 //////////////////////////////////////////////////////////////////////////
+InputTexture::InputTexture(Context* context)
+    : TextureElement(context)
+{
+}
+
+InputTexture::~InputTexture()
+{
+
+}
+
+void InputTexture::RegisterObject(Context* context)
+{
+    context->RegisterFactory<InputTexture>(FLEXENGINE_CATEGORY);
+
+    URHO3D_COPY_BASE_ATTRIBUTES(TextureElement);
+
+    URHO3D_MEMBER_ATTRIBUTE("Color", Color, color_, Color::BLACK, AM_DEFAULT);
+}
+
+SharedPtr<Texture2D> InputTexture::DoGenerateTexture()
+{
+    TextureDescription desc;
+    desc.color_ = color_;
+    desc.width_ = 1;
+    desc.height_ = 1;
+    return RenderTexture(context_, desc, TextureMap());
+}
+
+//////////////////////////////////////////////////////////////////////////
 RenderedModelTexture::RenderedModelTexture(Context* context)
     : TextureElement(context)
+    , materials_(1)
     , materialsAttr_(Material::GetTypeStatic())
 {
     ResetToDefault();
@@ -301,7 +354,7 @@ void RenderedModelTexture::RegisterObject(Context* context)
 
     URHO3D_COPY_BASE_ATTRIBUTES(TextureElement);
 
-    URHO3D_MEMBER_ATTRIBUTE("Color", Color, color_, Color::TRANSPARENT, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Color", Color, color_, Color::BLACK, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Width", unsigned, width_, 1, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Height", unsigned, height_, 1, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Render Path", GetRenderPathAttr, SetRenderPathAttr, ResourceRef, ResourceRef(XMLFile::GetTypeStatic()), AM_DEFAULT);
@@ -336,6 +389,10 @@ void RenderedModelTexture::SetModelAttr(const ResourceRef& value)
     {
         materials_.Resize(model_->GetNumGeometries());
     }
+    else
+    {
+        materials_.Resize(1u);
+    }
 }
 
 ResourceRef RenderedModelTexture::GetModelAttr() const
@@ -347,10 +404,6 @@ void RenderedModelTexture::SetScriptAttr(const ResourceRef& value)
 {
     ResourceCache* cache = GetSubsystem<ResourceCache>();
     script_ = cache->GetResource<ScriptFile>(value.name_);
-    if (script_)
-    {
-        materials_.Resize(1);
-    }
 }
 
 ResourceRef RenderedModelTexture::GetScriptAttr() const
@@ -363,7 +416,7 @@ void RenderedModelTexture::SetMaterialsAttr(const ResourceRefList& value)
     ResourceCache* cache = GetSubsystem<ResourceCache>();
     for (unsigned i = 0; i < value.names_.Size(); ++i)
     {
-        if (i <= materials_.Size())
+        if (i < materials_.Size())
         {
             materials_[i] = cache->GetResource<Material>(value.names_[i]);
         }
@@ -388,15 +441,17 @@ SharedPtr<Model> RenderedModelTexture::GetOrCreateModel() const
     {
         if (script_)
         {
-            SharedPtr<ModelFactory> factory = CreateModelFromScript(*script_, entryPoint_);
-            model = factory ? factory->BuildModel(factory->GetMaterials()) : nullptr;
-            if (!model)
+            if (SharedPtr<ModelFactory> factory = CreateModelFromScript(*script_, entryPoint_))
             {
-                URHO3D_LOGERROR("Failed to create procedural model");
+                model = factory->BuildModel(factory->GetMaterials());
+                if (!model)
+                {
+                    URHO3D_LOGERROR("Failed to create procedural model");
+                }
             }
         }
     }
-    return model;
+    return model ? model : GetOrCreateQuadModel(context_);
 }
 
 TextureDescription RenderedModelTexture::CreateTextureDescription() const
@@ -450,14 +505,14 @@ SharedPtr<Texture2D> RenderedModelTexture::DoGenerateTexture()
     assert(node_);
 
     const TextureDescription desc = CreateTextureDescription();
-    const HashMap<String, SharedPtr<Texture2D>> inputMap = CreateInputTextureMap();
+    const TextureMap inputMap = CreateInputTextureMap();
     return RenderTexture(context_, desc, inputMap);
 }
 
 //////////////////////////////////////////////////////////////////////////
 PerlinNoiseTexture::PerlinNoiseTexture(Context* context)
     : TextureElement(context)
-    , model_(CreateQuadModel(context_))
+    , model_(GetOrCreateQuadModel(context_))
 {
     ResetToDefault();
 }
@@ -479,6 +534,7 @@ void PerlinNoiseTexture::RegisterObject(Context* context)
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Material", GetMaterialAttr, SetMaterialAttr, ResourceRef, ResourceRef(Material::GetTypeStatic()), AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Color 1", Color, firstColor_, Color::BLACK, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Color 2", Color, secondColor_, Color::WHITE, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Base Scale", Vector2, baseScale_, Vector2::ONE, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Bias", float, bias_, 0.0f, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Range", Vector2, range_, GetVector, SetVector, Vector2(0.0f, 1.0f), AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Contrast", float, contrast_, 0.0f, AM_DEFAULT);
@@ -521,7 +577,9 @@ void PerlinNoiseTexture::ApplyNumberOfOctaves()
     const unsigned oldSize = octaves_.Size();
     for (unsigned i = oldSize; i < numOctaves_; ++i)
     {
-        octaves_.Populate(StringHash(i), Vector4::ONE);
+        const float scale = Pow(2.0f, static_cast<float>(i));
+        const float magnitude = 1.0f / scale;
+        octaves_.Populate(StringHash(i), Vector4(scale, scale, magnitude, 0.0f));
     }
     for (unsigned i = numOctaves_; i < oldSize; ++i)
     {
@@ -550,7 +608,7 @@ SharedPtr<Texture2D> PerlinNoiseTexture::GenerateOctaveTexture(const Vector2& sc
 void PerlinNoiseTexture::AddOctaveToBuffer(unsigned i, PODVector<float>& buffer, float& totalMagnitude) const
 {
     // Compute base scale
-    const Vector2 baseScale = width_ > height_
+    const Vector2 textureScale = width_ > height_
         ? Vector2(static_cast<float>(width_) / height_, 1.0f)
         : Vector2(1.0f, static_cast<float>(height_) / width_);
 
@@ -562,7 +620,7 @@ void PerlinNoiseTexture::AddOctaveToBuffer(unsigned i, PODVector<float>& buffer,
     const float seed = param.w_;
 
     // Generate texture
-    const SharedPtr<Texture2D> texture = GenerateOctaveTexture(scale * baseScale, seed);
+    const SharedPtr<Texture2D> texture = GenerateOctaveTexture(scale * textureScale * baseScale_, seed);
     const SharedPtr<Image> image = texture ? ConvertTextureToImage(*texture) : nullptr;
     if (!image)
     {

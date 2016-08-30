@@ -1,3 +1,0 @@
-<technique vs="Procedural" ps="Procedural" psdefines="MASKSHARP">
-    <pass name="alpha" depthwrite="false" blend="alpha" />
-</technique>

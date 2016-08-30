@@ -135,6 +135,29 @@ private:
     mutable ResourceRefList materialsAttr_;
 };
 
+/// Input texture element receive data from file or contain pure color.
+class InputTexture : public TextureElement
+{
+    URHO3D_OBJECT(InputTexture, TextureElement);
+
+public:
+    /// Construct.
+    InputTexture(Context* context);
+    /// Destruct.
+    virtual ~InputTexture();
+    /// Register object factory.
+    static void RegisterObject(Context* context);
+
+private:
+    /// Generate texture.
+    virtual SharedPtr<Texture2D> DoGenerateTexture() override;
+
+private:
+    /// Base color of texture.
+    Color color_ = Color::TRANSPARENT;
+
+};
+
 /// Rendered model as procedural texture.
 class RenderedModelTexture : public TextureElement
 {
@@ -204,8 +227,6 @@ private:
     Vector4 inputParameter_[MaxInputParameters];
     /// Input textures.
     unsigned inputTexture_[MaxInputTextures];
-    /// Name of destination texture.
-    String destinationTextureName_;
 
     /// Material list attribute.
     mutable ResourceRefList materialsAttr_;
@@ -259,6 +280,8 @@ private:
     Color firstColor_;
     /// Second color.
     Color secondColor_;
+    /// Scale of noise is a number of repeats of noise pattern.
+    Vector2 baseScale_;
     /// Bias.
     float bias_ = 0.0f;
     /// Range to remap noise from [0, 1] to [begin, end].
