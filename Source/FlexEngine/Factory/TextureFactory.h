@@ -49,10 +49,16 @@ SharedPtr<Texture2D> RenderViews(Context* context, unsigned width, unsigned heig
 /// Convert RGBA8 texture to image.
 SharedPtr<Image> ConvertTextureToImage(const Texture2D& texture);
 
+/// Get number of levels of image.
+unsigned GetNumImageLevels(const Image& image);
+
+/// Adjust alpha channel of levels with formula a * k^i, where i is a number of level.
+void AdjustImageLevelsAlpha(Image& image, float factor);
+
 /// Save RGBA8 image to DDS file.
 bool SaveImageToDDS(const Image& image, const String& fileName);
 
-/// Save RGBA8 image to BMP,JPG,PNG,TGA or DDS file depending on file extension.
+/// Save RGBA8 image to BMP, JPG, PNG, TGA or DDS file depending on file extension.
 bool SaveImage(ResourceCache* cache, const Image& image);
 
 /// Orthogonal camera description.

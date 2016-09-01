@@ -257,6 +257,37 @@ SharedPtr<Image> ConvertTextureToImage(const Texture2D& texture)
     return image;
 }
 
+unsigned GetNumImageLevels(const Image& image)
+{
+    return Texture::CheckMaxLevels(image.GetWidth(), image.GetHeight(), 0);
+}
+
+void AdjustImageLevelsAlpha(Image& image, float factor)
+{
+    const unsigned numLevels = GetNumImageLevels(image);
+    if (numLevels <= 1)
+    {
+        return;
+    }
+
+    SharedPtr<Image> level = image.GetNextLevel();
+    float k = factor;
+    for (unsigned i = 1; i < numLevels; ++i)
+    {
+        for (int y = 0; y < level->GetHeight(); ++y)
+        {
+            for (int x = 0; x < level->GetWidth(); ++x)
+            {
+                Color color = level->GetPixel(x, y);
+                color.a_ *= k;
+                level->SetPixel(x, y, color);
+            }
+        }
+        k *= factor;
+        level = level->GetNextLevel();
+    }
+}
+
 bool SaveImageToDDS(const Image& image, const String& fileName)
 {
     File outFile(image.GetContext(), fileName, FILE_WRITE);
@@ -278,14 +309,27 @@ bool SaveImageToDDS(const Image& image, const String& fileName)
         return false;
     }
 
+    // Enumerate levels
+    const unsigned numLevels = Texture::CheckMaxLevels(image.GetWidth(), image.GetHeight(), 0);
+    const Image* level = &image;
+    Vector<const Image*> levels(numLevels);
+    for (unsigned i = 0; i < numLevels; ++i)
+    {
+        levels[i] = level;
+        level = i + 1 == numLevels ? nullptr : level->GetNextLevel();
+    }
+
+    // Write image
     outFile.WriteFileID("DDS ");
 
     DDSurfaceDesc2 ddsd;
     memset(&ddsd, 0, sizeof(ddsd));
     ddsd.dwSize_ = sizeof(ddsd);
-    ddsd.dwFlags_ = 0x00000001l /*DDSD_CAPS*/ | 0x00000002l /*DDSD_HEIGHT*/ | 0x00000004l /*DDSD_WIDTH*/ | 0x00001000l /*DDSD_PIXELFORMAT*/;
+    ddsd.dwFlags_ = 0x00000001l /*DDSD_CAPS*/
+        | 0x00000002l /*DDSD_HEIGHT*/ | 0x00000004l /*DDSD_WIDTH*/ | 0x00020000l /*DDSD_MIPMAPCOUNT*/ | 0x00001000l /*DDSD_PIXELFORMAT*/;
     ddsd.dwWidth_ = image.GetWidth();
     ddsd.dwHeight_ = image.GetHeight();
+    ddsd.dwMipMapCount_ = levels.Size();
     ddsd.ddpfPixelFormat_.dwFlags_ = 0x00000040l /*DDPF_RGB*/ | 0x00000001l /*DDPF_ALPHAPIXELS*/;
     ddsd.ddpfPixelFormat_.dwSize_ = sizeof(ddsd.ddpfPixelFormat_);
     ddsd.ddpfPixelFormat_.dwRGBBitCount_ = 32;
@@ -295,7 +339,10 @@ bool SaveImageToDDS(const Image& image, const String& fileName)
     ddsd.ddpfPixelFormat_.dwRGBAlphaBitMask_ = 0xff000000;
 
     outFile.Write(&ddsd, sizeof(ddsd));
-    outFile.Write(image.GetData(), image.GetWidth() * image.GetHeight() * 4);
+    for (const Image* level : levels)
+    {
+        outFile.Write(level->GetData(), level->GetWidth() * level->GetHeight() * 4);
+    }
 
     return true;
 }

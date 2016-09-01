@@ -174,6 +174,7 @@ void TextureElement::RegisterObject(Context* context)
     URHO3D_TRIGGER_ATTRIBUTE("<Preview>", DoShowInPreview);
 
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Destination Texture", GetDestinationTextureAttr, SetDestinationTextureAttr, ResourceRef, ResourceRef(Texture2D::GetTypeStatic()), AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Adjust Alpha", float, adjustAlpha_, 1.0f, AM_DEFAULT);
 }
 
 void TextureElement::ApplyAttributes()
@@ -269,7 +270,9 @@ void TextureElement::GenerateTexture()
     {
         // Write texture to file and re-load it
         generatedTexture_->SetName(destinationTextureName_);
-        const SharedPtr<Image> image = ConvertTextureToImage(*generatedTexture_);
+        SharedPtr<Image> image = ConvertTextureToImage(*generatedTexture_);
+        image->PrecalculateLevels();
+        AdjustImageLevelsAlpha(*image, adjustAlpha_);
 
         ResourceCache* cache = GetSubsystem<ResourceCache>();
         if (SaveImage(cache, *image))

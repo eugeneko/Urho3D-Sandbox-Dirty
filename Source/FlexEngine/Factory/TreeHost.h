@@ -41,6 +41,11 @@ public:
     /// Get foliage center.
     const Vector3& GetFoliageCenter() const { return foliageCenter_; }
 
+    /// Set destination model attribute.
+    void SetDestinationModelAttr(const ResourceRef& value);
+    /// Get destination model attribute.
+    ResourceRef GetDestinationModelAttr() const;
+
 private:
     /// Implementation of procedural generator.
     virtual void DoUpdate() override;
@@ -49,6 +54,8 @@ private:
     void UpdateViews();
 
 protected:
+    /// Name of destination texture.
+    String destinationModelName_;
     /// Tree model.
     SharedPtr<Model> model_;
     /// Tree model materials.

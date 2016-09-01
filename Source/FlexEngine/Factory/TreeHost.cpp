@@ -2,6 +2,7 @@
 
 #include <FlexEngine/Core/Attribute.h>
 #include <FlexEngine/Factory/ModelFactory.h>
+#include <FlexEngine/Resource/ResourceCacheHelpers.h>
 
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/Graphics/Material.h>
@@ -65,6 +66,8 @@ void TreeHost::RegisterObject(Context* context)
     context->RegisterFactory<TreeHost>(FLEXENGINE_CATEGORY);
 
     URHO3D_COPY_BASE_ATTRIBUTES(ProceduralComponent);
+
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Destination Model", GetDestinationModelAttr, SetDestinationModelAttr, ResourceRef, ResourceRef(Model::GetTypeStatic()), AM_DEFAULT);
 }
 
 void TreeHost::OnBranchGenerated(const BranchDescription& /*branch*/, const BranchShapeSettings& /*shape*/)
@@ -75,6 +78,17 @@ void TreeHost::OnBranchGenerated(const BranchDescription& /*branch*/, const Bran
 void TreeHost::OnLeafGenerated(const LeafDescription& leaf, const LeafShapeSettings& /*shape*/)
 {
     leavesPositions_.Push(leaf.location_.position_);
+}
+
+void TreeHost::SetDestinationModelAttr(const ResourceRef& value)
+{
+    destinationModelName_ = value.name_;
+    MarkNeedUpdate();
+}
+
+ResourceRef TreeHost::GetDestinationModelAttr() const
+{
+    return ResourceRef(Model::GetTypeStatic(), destinationModelName_);
 }
 
 void TreeHost::UpdateViews()
@@ -113,6 +127,26 @@ void TreeHost::DoUpdate()
     TriangulateChildren(*node_, factory, *this);
     materials_ = factory.GetMaterials();
     model_ = factory.BuildModel(materials_);
+
+    // Save model
+    if (!destinationModelName_.Empty() && model_)
+    {
+        // Write texture to file and re-load it
+        model_->SetName(destinationModelName_);
+
+        // Create directories
+        // #TODO Move to function
+        ResourceCache* cache = GetSubsystem<ResourceCache>();
+        const String& outputFileName = GetOutputResourceCacheDir(*cache) + destinationModelName_;
+        CreateDirectoriesToFile(*cache, outputFileName);
+
+        File file(context_, outputFileName, FILE_WRITE);
+        if (file.IsOpen() && model_->Save(file))
+        {
+            file.Close();
+            cache->ReloadResourceWithDependencies(destinationModelName_);
+        }
+    }
 
     // Update model and materials
     UpdateViews();

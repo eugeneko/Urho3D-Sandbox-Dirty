@@ -119,7 +119,8 @@ protected:
 private:
     /// Name of destination texture.
     String destinationTextureName_;
-
+    /// Adjusts alpha of mipmap levels.
+    float adjustAlpha_ = 0.0f;
     /// Does this texture need update?
     bool dirty_ = true;
     /// Should this element set its texture to preview?
