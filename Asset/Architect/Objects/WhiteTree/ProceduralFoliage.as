@@ -69,14 +69,14 @@ void MainFoliageMask(ModelFactory@ dest)
     ModelFactoryWrapper model(dest);
     
     FoliageDesc desc;
-    desc.leafSize_ = Vector2(1, 1) * 0.05;
+    desc.leafSize_ = Vector2(1, 1) * 0.02;
     desc.branchHeight_ = Vector4(0.7, -0.2, 0, 0);
     desc.branchSize_ = 0.8;
-    desc.trailStride_ = 0.1;
+    desc.trailStride_ = 0.05;
     desc.trailLengthAbove_ = Vector4(0.2, 0, -0.2, 0);
     desc.trailLengthBelow_ = Vector4(-0.7, 0.2, 0, 0);
     desc.trailLengthNoise_ = Vector2(0.1, 0.2);
-    desc.leafStride_ = 0.03;
+    desc.leafStride_ = 0.015;
     desc.leafNoise_ = Vector2(0.1, 0.05);
     
     GenerateFoliage(model, desc);
