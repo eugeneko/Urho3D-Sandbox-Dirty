@@ -150,7 +150,7 @@ public:
     unsigned GetNumVerticesInBucket() const;
 
     /// Build model from stored data.
-    SharedPtr<Model> BuildModel(const Vector<SharedPtr<Material>>& materials) const;
+    SharedPtr<Model> BuildModel(const Vector<SharedPtr<Material>>& materials, const PODVector<float>& distances = {}) const;
 
     /// Get vertex size.
     unsigned GetVertexSize() const { return vertexSize_; }

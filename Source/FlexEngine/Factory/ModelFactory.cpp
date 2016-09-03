@@ -184,7 +184,7 @@ unsigned ModelFactory::GetNumVerticesInBucket() const
     return geometryBuffer.vertexData.Size() / vertexSize_;
 }
 
-SharedPtr<Model> ModelFactory::BuildModel(const Vector<SharedPtr<Material>>& materials) const
+SharedPtr<Model> ModelFactory::BuildModel(const Vector<SharedPtr<Material>>& materials, const PODVector<float>& distances /*= {}*/) const
 {
     // Prepare buffers for accumulated geometry data
     SharedPtr<VertexBuffer> vertexBuffer = MakeShared<VertexBuffer>(context_);
@@ -244,6 +244,7 @@ SharedPtr<Model> ModelFactory::BuildModel(const Vector<SharedPtr<Material>>& mat
             SharedPtr<Geometry> geometry = MakeShared<Geometry>(context_);
             geometry->SetVertexBuffer(0, vertexBuffer);
             geometry->SetIndexBuffer(indexBuffer);
+            geometry->SetLodDistance(j < distances.Size() ? distances[j] : 0.0f);
             model->SetGeometry(i, j, geometry);
         }
     }

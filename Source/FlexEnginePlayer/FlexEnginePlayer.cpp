@@ -33,6 +33,7 @@ void FlexEnginePlayer::Start()
     TreeElement::RegisterObject(context_);
     BranchGroup::RegisterObject(context_);
     LeafGroup::RegisterObject(context_);
+    TreeLevelOfDetail::RegisterObject(context_);
     TextureHost::RegisterObject(context_);
     TextureElement::RegisterObject(context_);
     InputTexture::RegisterObject(context_);

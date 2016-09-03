@@ -17,6 +17,7 @@ namespace FlexEngine
 {
 
 class ModelFactory;
+class TreeLevelOfDetail;
 
 /// Host component of tree editor.
 class TreeHost : public ProceduralComponent
@@ -47,6 +48,8 @@ public:
     ResourceRef GetDestinationModelAttr() const;
 
 private:
+    /// Generate tree topology and invariants.
+    void GenerateTreeTopology();
     /// Implementation of procedural generator.
     virtual void DoUpdate() override;
 
@@ -65,13 +68,15 @@ protected:
     PODVector<Vector3> leavesPositions_;
     /// Center of leaves.
     Vector3 foliageCenter_;
+    /// Levels of detail.
+    PODVector<TreeLevelOfDetail*> lods_;
 
 };
 
 /// Tree element component.
 class TreeElement : public ProceduralComponentAgent
 {
-    URHO3D_OBJECT(TreeElement, Component);
+    URHO3D_OBJECT(TreeElement, ProceduralComponentAgent);
 
 public:
     /// Construct.
@@ -87,11 +92,11 @@ public:
     /// Generate.
     virtual void Generate(TreeHost& host) = 0;
     /// Triangulate tree element recursively.
-    void Triangulate(ModelFactory& factory, TreeHost& host) const;
+    void Triangulate(ModelFactory& factory, TreeHost& host, TreeLevelOfDetail& lod) const;
 
 private:
     /// Triangulate this tree element.
-    virtual void DoTriangulate(ModelFactory& factory, TreeHost& host) const = 0;
+    virtual void DoTriangulate(ModelFactory& factory, TreeHost& host, TreeLevelOfDetail& lod) const = 0;
 
 protected:
     /// Distribution settings.
@@ -124,7 +129,7 @@ public:
 
 private:
     /// Triangulate this tree element.
-    virtual void DoTriangulate(ModelFactory& factory, TreeHost& host) const override;
+    virtual void DoTriangulate(ModelFactory& factory, TreeHost& host, TreeLevelOfDetail& lod) const override;
 
 protected:
     /// Branch material.
@@ -160,7 +165,7 @@ public:
 
 private:
     /// Triangulate this tree element.
-    virtual void DoTriangulate(ModelFactory& factory, TreeHost& host) const override;
+    virtual void DoTriangulate(ModelFactory& factory, TreeHost& host, TreeLevelOfDetail& lod) const override;
 
 protected:
     /// Leaf material.
@@ -169,6 +174,44 @@ protected:
     LeafShapeSettings shape_;
     /// Leaves.
     PODVector<LeafDescription> leaves_;
+};
+
+/// Level of detail component.
+class TreeLevelOfDetail : public ProceduralComponentAgent
+{
+    URHO3D_OBJECT(TreeLevelOfDetail, ProceduralComponentAgent);
+
+public:
+    /// Construct.
+    TreeLevelOfDetail(Context* context);
+    /// Destruct.
+    virtual ~TreeLevelOfDetail();
+    /// Register object factory.
+    static void RegisterObject(Context* context);
+
+    /// Get distance.
+    float GetDistance() const { return distance_; }
+    /// Get maximum number of branch segments.
+    unsigned GetMaxBranchSegments() const { return maxBranchSegments_; }
+    /// Get minimum number of branch segments.
+    unsigned GetMinBranchSegments() const { return minBranchSegments_; }
+    /// Get minimum angle.
+    float GetMinAngle() const { return minAngle_; }
+    /// Get number of radial segments.
+    unsigned GetNumRadialSegments() const { return numRadialSegments_; }
+
+protected:
+    /// Distance.
+    float distance_ = 0.0f;
+    /// Maximum number of branch segments.
+    unsigned maxBranchSegments_ = 0;
+    /// Minimum number of branch segments.
+    unsigned minBranchSegments_ = 0;
+    /// If branch direction change within some region is greater than minimum angle, the region is divided into several segments.
+    float minAngle_ = 0.0f;
+    /// Number of radial segments.
+    unsigned numRadialSegments_ = 0;
+
 };
 
 }

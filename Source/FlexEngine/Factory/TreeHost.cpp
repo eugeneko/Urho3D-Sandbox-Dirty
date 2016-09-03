@@ -23,6 +23,12 @@ static const char* branchDistributionNames[] =
     0
 };
 
+static const char* treeLodTypeNames[] =
+{
+    "Geometry",
+    "Billboard"
+};
+
 void GenerateChildren(Node& node, TreeHost& host)
 {
     for (SharedPtr<Node> child : node.GetChildren())
@@ -36,7 +42,7 @@ void GenerateChildren(Node& node, TreeHost& host)
     }
 }
 
-void TriangulateChildren(Node& node, ModelFactory& factory, TreeHost& host)
+void TriangulateChildren(Node& node, ModelFactory& factory, TreeHost& host, TreeLevelOfDetail& lod)
 {
     for (SharedPtr<Node> child : node.GetChildren())
     {
@@ -44,7 +50,7 @@ void TriangulateChildren(Node& node, ModelFactory& factory, TreeHost& host)
         child->GetDerivedComponents<TreeElement>(elements);
         for (TreeElement* element : elements)
         {
-            element->Triangulate(factory, host);
+            element->Triangulate(factory, host, lod);
         }
     }
 }
@@ -104,7 +110,7 @@ void TreeHost::UpdateViews()
     }
 }
 
-void TreeHost::DoUpdate()
+void TreeHost::GenerateTreeTopology()
 {
     // Generate tree
     leavesPositions_.Clear();
@@ -120,13 +126,32 @@ void TreeHost::DoUpdate()
     {
         foliageCenter_ /= static_cast<float>(leavesPositions_.Size());
     }
+}
+
+void TreeHost::DoUpdate()
+{
+    GenerateTreeTopology();
+
+    // Update list of LODs
+    lods_.Clear();
+    GetComponents(lods_);
 
     // Triangulate tree
     ModelFactory factory(context_);
     factory.Initialize(DefaultVertex::GetVertexElements(), true);
-    TriangulateChildren(*node_, factory, *this);
+
+    PODVector<float> distances;
+    for (TreeLevelOfDetail* lodDesc : lods_)
+    {
+        const unsigned lodIndex = distances.Size();
+
+        distances.Push(lodDesc->GetDistance());
+        factory.SetLevel(lodIndex);
+        TriangulateChildren(*node_, factory, *this, *lodDesc);
+    }
+
     materials_ = factory.GetMaterials();
-    model_ = factory.BuildModel(materials_);
+    model_ = factory.BuildModel(materials_, distances);
 
     // Save model
     if (!destinationModelName_.Empty() && model_)
@@ -197,10 +222,10 @@ void TreeElement::ApplyAttributes()
     root->MarkNeedUpdate();
 }
 
-void TreeElement::Triangulate(ModelFactory& factory, TreeHost& host) const
+void TreeElement::Triangulate(ModelFactory& factory, TreeHost& host, TreeLevelOfDetail& lod) const
 {
-    DoTriangulate(factory, host);
-    TriangulateChildren(*node_, factory, host);
+    DoTriangulate(factory, host, lod);
+    TriangulateChildren(*node_, factory, host, lod);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -268,13 +293,12 @@ void BranchGroup::Generate(TreeHost& host)
     GenerateChildren(*node_, host);
 }
 
-void BranchGroup::DoTriangulate(ModelFactory& factory, TreeHost& host) const
+void BranchGroup::DoTriangulate(ModelFactory& factory, TreeHost& host, TreeLevelOfDetail& lod) const
 {
-    // #TODO Fixme
-    TreeLodDescription lod;
-    lod.branchTessellationQuality_.maxNumSegments_ = 100;
-    lod.branchTessellationQuality_.minNumSegments_ = 4;
-    lod.branchTessellationQuality_.minAngle_ = 10.0f;
+    TreeLodDescription lodDesc;
+    lodDesc.branchTessellationQuality_.maxNumSegments_ = lod.GetMaxBranchSegments();
+    lodDesc.branchTessellationQuality_.minNumSegments_ = lod.GetMinBranchSegments();
+    lodDesc.branchTessellationQuality_.minAngle_ = lod.GetMinAngle();
 
     factory.SetMaterial(material_);
     for (const BranchDescription& branch : branches_)
@@ -282,9 +306,9 @@ void BranchGroup::DoTriangulate(ModelFactory& factory, TreeHost& host) const
         if (!branch.fake_)
         {
             const TessellatedBranchPoints tessellatedPoints =
-                TessellateBranch(branch.positionsCurve_, branch.radiusesCurve_, lod.branchTessellationQuality_);
+                TessellateBranch(branch.positionsCurve_, branch.radiusesCurve_, lodDesc.branchTessellationQuality_);
 
-            GenerateBranchGeometry(factory, tessellatedPoints, shape_, 5u); // #TODO Fixme
+            GenerateBranchGeometry(factory, tessellatedPoints, shape_, lod.GetNumRadialSegments());
         }
     }
 }
@@ -363,7 +387,7 @@ void LeafGroup::Generate(TreeHost& host)
     }
 }
 
-void LeafGroup::DoTriangulate(ModelFactory& factory, TreeHost& host) const
+void LeafGroup::DoTriangulate(ModelFactory& factory, TreeHost& host, TreeLevelOfDetail& lod) const
 {
     factory.SetMaterial(material_);
     for (const LeafDescription& leaf : leaves_)
@@ -381,6 +405,30 @@ void LeafGroup::SetMaterialAttr(const ResourceRef& value)
 ResourceRef LeafGroup::GetMaterialAttr() const
 {
     return GetResourceRef(material_, Material::GetTypeStatic());
+}
+
+//////////////////////////////////////////////////////////////////////////
+TreeLevelOfDetail::TreeLevelOfDetail(Context* context)
+    : ProceduralComponentAgent(context)
+{
+    ResetToDefault();
+}
+
+TreeLevelOfDetail::~TreeLevelOfDetail()
+{
+}
+
+void TreeLevelOfDetail::RegisterObject(Context* context)
+{
+    context->RegisterFactory<TreeLevelOfDetail>(FLEXENGINE_CATEGORY);
+
+    URHO3D_COPY_BASE_ATTRIBUTES(ProceduralComponentAgent);
+
+    URHO3D_MEMBER_ATTRIBUTE("Distance", float, distance_, 0.0f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Max Branch Segments", unsigned, maxBranchSegments_, 100, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Min Branch Segments", unsigned, minBranchSegments_, 4, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Min Angle", float, minAngle_, 10.0f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Num Radial Segments", unsigned, numRadialSegments_, 5, AM_DEFAULT);
 }
 
 }

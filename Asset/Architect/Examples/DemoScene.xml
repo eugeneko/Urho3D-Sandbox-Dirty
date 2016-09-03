@@ -6,9 +6,9 @@
 	<attribute name="Snap Threshold" value="5" />
 	<attribute name="Elapsed Time" value="0" />
 	<attribute name="Next Replicated Node ID" value="38" />
-	<attribute name="Next Replicated Component ID" value="59" />
-	<attribute name="Next Local Node ID" value="16777291" />
-	<attribute name="Next Local Component ID" value="16778116" />
+	<attribute name="Next Replicated Component ID" value="61" />
+	<attribute name="Next Local Node ID" value="16777293" />
+	<attribute name="Next Local Component ID" value="16778140" />
 	<attribute name="Variables" />
 	<attribute name="Variable Names" value="" />
 	<component type="Octree" id="1" />
@@ -33,6 +33,11 @@
 		</component>
 		<component type="TreeHost" id="3">
 			<attribute name="Destination Model" value="Model;Objects/WhiteTree/LargeBushyTree.mdl" />
+		</component>
+		<component type="TreeLevelOfDetail" id="59" />
+		<component type="TreeLevelOfDetail" id="60">
+			<attribute name="Distance" value="10" />
+			<attribute name="Num Radial Segments" value="3" />
 		</component>
 		<node id="3">
 			<attribute name="Is Enabled" value="true" />
