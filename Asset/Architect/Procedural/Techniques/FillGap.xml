@@ -1,0 +1,3 @@
+<technique vs="Procedural" ps="Procedural" psdefines="FILLGAP">
+    <pass name="alpha" depthwrite="false" blend="alpha" />
+</technique>

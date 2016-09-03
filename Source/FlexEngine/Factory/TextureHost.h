@@ -115,6 +115,8 @@ protected:
     TextureHost* GetHostComponent();
     /// Get dependencies.
     PODVector<TextureElement*> GetDependencies() const;
+    /// Create input texture map.
+    HashMap<String, SharedPtr<Texture2D>> CreateInputTextureMap() const;
 
 private:
     /// Name of destination texture.
@@ -200,8 +202,6 @@ private:
     SharedPtr<Model> GetOrCreateModel() const;
     /// Create texture description.
     TextureDescription CreateTextureDescription() const;
-    /// Create input texture map.
-    HashMap<String, SharedPtr<Texture2D>> CreateInputTextureMap() const;
     /// Generate texture.
     virtual SharedPtr<Texture2D> DoGenerateTexture() override;
 
@@ -298,6 +298,45 @@ private:
     SharedPtr<Model> model_;
     /// Buffer for texture data.
     PODVector<float> buffer_;
+
+};
+
+/// Fill gaps texture filter.
+class FillGapFilter : public TextureElement
+{
+    URHO3D_OBJECT(FillGapFilter, TextureElement);
+public:
+    /// Construct.
+    FillGapFilter(Context* context);
+    /// Destruct.
+    virtual ~FillGapFilter();
+    /// Register object factory.
+    static void RegisterObject(Context* context);
+
+    /// Set render path attribute.
+    void SetRenderPathAttr(const ResourceRef& value);
+    /// Get render path attribute.
+    ResourceRef GetRenderPathAttr() const;
+    /// Set material attribute.
+    void SetMaterialAttr(const ResourceRef& value);
+    /// Get material attribute.
+    ResourceRef GetMaterialAttr() const;
+
+private:
+    /// Generate texture.
+    virtual SharedPtr<Texture2D> DoGenerateTexture() override;
+
+private:
+    /// Input texture.
+    unsigned inputTextureIndex_ = 0;
+    /// Render path for rendering.
+    SharedPtr<XMLFile> renderPath_;
+    /// Material.
+    SharedPtr<Material> material_;
+    /// Number of iterations.
+    unsigned depth_ = 0;
+    /// Whether to restore input alpha.
+    bool restoreAlpha_ = false;
 
 };
 

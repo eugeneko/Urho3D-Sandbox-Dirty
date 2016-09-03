@@ -308,6 +308,20 @@ PODVector<TextureElement*> TextureElement::GetDependencies() const
     return result;
 }
 
+HashMap<String, SharedPtr<Texture2D>> TextureElement::CreateInputTextureMap() const
+{
+    HashMap<String, SharedPtr<Texture2D>> result;
+    if (node_)
+    {
+        const PODVector<TextureElement*> inputs = GetDependencies();
+        for (unsigned i = 0; i < Min(maxTextureInputs, inputs.Size()); ++i)
+        {
+            result.Populate(textureInputsNames[i + 1], inputs[i]->GetGeneratedTexture());
+        }
+    }
+    return result;
+}
+
 //////////////////////////////////////////////////////////////////////////
 InputTexture::InputTexture(Context* context)
     : TextureElement(context)
@@ -489,20 +503,6 @@ TextureDescription RenderedModelTexture::CreateTextureDescription() const
     return desc;
 }
 
-HashMap<String, SharedPtr<Texture2D>> RenderedModelTexture::CreateInputTextureMap() const
-{
-    HashMap<String, SharedPtr<Texture2D>> result;
-    if (node_)
-    {
-        const PODVector<TextureElement*> inputs = GetDependencies();
-        for (unsigned i = 0; i < Min(maxTextureInputs, inputs.Size()); ++i)
-        {
-            result.Populate(textureInputsNames[i + 1], inputs[i]->GetGeneratedTexture());
-        }
-    }
-    return result;
-}
-
 SharedPtr<Texture2D> RenderedModelTexture::DoGenerateTexture()
 {
     assert(node_);
@@ -515,7 +515,6 @@ SharedPtr<Texture2D> RenderedModelTexture::DoGenerateTexture()
 //////////////////////////////////////////////////////////////////////////
 PerlinNoiseTexture::PerlinNoiseTexture(Context* context)
     : TextureElement(context)
-    , model_(GetOrCreateQuadModel(context_))
 {
     ResetToDefault();
 }
@@ -598,7 +597,7 @@ SharedPtr<Texture2D> PerlinNoiseTexture::GenerateOctaveTexture(const Vector2& sc
     desc.height_ = Max(1u, height_);
 
     GeometryDescription geometryDesc;
-    geometryDesc.model_ = model_;
+    geometryDesc.model_ = GetOrCreateQuadModel(context_);
     geometryDesc.materials_.Push(material_);
     desc.geometries_.Push(geometryDesc);
 
@@ -688,6 +687,111 @@ SharedPtr<Texture2D> PerlinNoiseTexture::DoGenerateTexture()
     SharedPtr<Texture2D> texture = MakeShared<Texture2D>(context_);
     texture->SetData(&image);
     return texture;
+}
+
+//////////////////////////////////////////////////////////////////////////
+FillGapFilter::FillGapFilter(Context* context)
+    : TextureElement(context)
+{
+    ResetToDefault();
+}
+
+FillGapFilter::~FillGapFilter()
+{
+
+}
+
+void FillGapFilter::RegisterObject(Context* context)
+{
+    context->RegisterFactory<FillGapFilter>(FLEXENGINE_CATEGORY);
+
+    URHO3D_COPY_BASE_ATTRIBUTES(TextureElement);
+
+    URHO3D_MEMBER_ENUM_ATTRIBUTE("Input Texture", unsigned, inputTextureIndex_, textureInputsNames, 0, AM_DEFAULT);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Render Path", GetRenderPathAttr, SetRenderPathAttr, ResourceRef, ResourceRef(XMLFile::GetTypeStatic()), AM_DEFAULT);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Material", GetMaterialAttr, SetMaterialAttr, ResourceRef, ResourceRef(Material::GetTypeStatic()), AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Depth", unsigned, depth_, 1, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Restore Alpha", bool, restoreAlpha_, true, AM_DEFAULT);
+}
+
+void FillGapFilter::SetRenderPathAttr(const ResourceRef& value)
+{
+    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    renderPath_ = cache->GetResource<XMLFile>(value.name_);
+}
+
+ResourceRef FillGapFilter::GetRenderPathAttr() const
+{
+    return GetResourceRef(renderPath_, XMLFile::GetTypeStatic());
+}
+
+void FillGapFilter::SetMaterialAttr(const ResourceRef& value)
+{
+    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    material_ = cache->GetResource<Material>(value.name_);
+}
+
+ResourceRef FillGapFilter::GetMaterialAttr() const
+{
+    return GetResourceRef(material_, Material::GetTypeStatic());
+}
+
+SharedPtr<Texture2D> FillGapFilter::DoGenerateTexture()
+{
+    // Try to get input
+    const PODVector<TextureElement*> inputs = GetDependencies();
+    if (!inputTextureIndex_ || inputTextureIndex_ > inputs.Size())
+    {
+        return nullptr;
+    }
+
+    const SharedPtr<Texture2D> inputTexture = inputs[inputTextureIndex_ - 1]->GetGeneratedTexture();
+    if (!inputTexture)
+    {
+        return nullptr;
+    }
+
+    // Apply filter
+    SharedPtr<Texture2D> resultTexture = inputTexture;
+    for (unsigned i = 0; i < depth_; ++i)
+    {
+        TextureDescription desc;
+        desc.renderPath_ = renderPath_;
+        desc.width_ = Max(1, resultTexture->GetWidth());
+        desc.height_ = Max(1, resultTexture->GetHeight());
+
+        GeometryDescription geometryDesc;
+        geometryDesc.model_ = GetOrCreateQuadModel(context_);
+        geometryDesc.materials_.Push(material_);
+        desc.geometries_.Push(geometryDesc);
+
+        desc.cameras_.Push(OrthoCameraDescription::Identity(desc.width_, desc.height_));
+        desc.textures_.Populate(TU_DIFFUSE, "Input");
+        desc.parameters_.Populate(inputParameterUniform[0], Vector4(1.0f / desc.width_, 1.0f / desc.height_, 0.0f, 0.0f));
+
+        const TextureMap inputMap = { MakePair(String("Input"), resultTexture) };
+        resultTexture = RenderTexture(context_, desc, inputMap);
+    }
+
+    // Restore alpha
+    if (restoreAlpha_)
+    {
+        const SharedPtr<Image> inputImage = ConvertTextureToImage(*inputTexture);
+        SharedPtr<Image> resultImage = ConvertTextureToImage(*resultTexture);
+
+        for (int y = 0; y < resultImage->GetHeight(); ++y)
+        {
+            for (int x = 0; x < resultImage->GetWidth(); ++x)
+            {
+                resultImage->SetPixel(x, y, Color(resultImage->GetPixel(x, y), inputImage->GetPixel(x, y).a_));
+            }
+        }
+
+        resultTexture = MakeShared<Texture2D>(context_);
+        resultTexture->SetData(resultImage);
+    }
+
+    return resultTexture;
 }
 
 }

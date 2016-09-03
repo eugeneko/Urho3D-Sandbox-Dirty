@@ -52,7 +52,8 @@ SharedPtr<Image> ConvertTextureToImage(const Texture2D& texture);
 /// Get number of levels of image.
 unsigned GetNumImageLevels(const Image& image);
 
-/// Adjust alpha channel of levels with formula a * k^i, where i is a number of level.
+/// Adjust alpha channel of levels using the following formula:
+/// a' = a * k^i, where i is a number of level.
 void AdjustImageLevelsAlpha(Image& image, float factor);
 
 /// Save RGBA8 image to DDS file.

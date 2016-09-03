@@ -38,6 +38,7 @@ void FlexEnginePlayer::Start()
     InputTexture::RegisterObject(context_);
     RenderedModelTexture::RegisterObject(context_);
     PerlinNoiseTexture::RegisterObject(context_);
+    FillGapFilter::RegisterObject(context_);
 
     Urho3DPlayer::Start();
 

@@ -338,7 +338,7 @@ SharedPtr<Model> CreateQuadModel(Context* context)
     for (unsigned i = 0; i < 4; ++i)
     {
         vertices[i].position_ = Vector3(positions[i], 0.5f);
-        vertices[i].uv_[0] = Vector4(positions[i].x_, positions[i].y_, 0.0f, 0.0f);
+        vertices[i].uv_[0] = Vector4(positions[i].x_, 1.0f - positions[i].y_, 0.0f, 0.0f);
         vertices[i].uv_[1] = Vector4::ONE;
     }
 

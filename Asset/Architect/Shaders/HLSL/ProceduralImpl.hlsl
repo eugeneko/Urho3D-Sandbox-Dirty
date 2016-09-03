@@ -106,4 +106,20 @@ float4 ComputeSuperMixedColor(float4 iTexCoord, float4 iColor)
     return NoiseLerp(xtex, ytex, mask.x, noise.x, 0.2);    
 }
 
+/// Compute texture with filled gaps.
+/// @param iTexCoord.xy Texture coordinates
+/// @param iColor.xy    Size of texel
+float4 ComputeFillGap(float4 iTexCoord, float4 iColor)
+{
+    float4 baseColor = Sample2D(TextureUnit0, iTexCoord.xy);
+    float2 ij;
+    for (ij.x = -1; ij.x <= 1; ++ij.x)
+        for (ij.y = -1; ij.y <= 1; ++ij.y)
+        {
+            float4 neighborColor = Sample2D(TextureUnit0, iTexCoord.xy + ij * iColor.xy);
+            baseColor = baseColor.a < 0.01 ? neighborColor : baseColor;
+        }
+    return baseColor;
+}
+
 #endif

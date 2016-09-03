@@ -82,9 +82,11 @@ void PS(
         diffColor = ComputeMixedColor(iTexCoord, inputColor);
     #elif defined(SUPERMIXCOLOR)
         diffColor = ComputeSuperMixedColor(iTexCoord, inputColor);
+    #elif defined(FILLGAP)
+        diffColor = ComputeFillGap(iTexCoord, inputColor);
     #endif
 
-    #if defined(MASK) || defined(SUPERMASK) || defined(PERLINNOISE) || defined(MASKSCALE) || defined(MASKSHARP)
+    #if defined(MASK) || defined(SUPERMASK) || defined(PERLINNOISE)
         #ifndef ADDITIVE
             diffColor.rgb = mask;
             diffColor.a = 1.0;
