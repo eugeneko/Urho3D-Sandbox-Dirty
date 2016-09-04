@@ -547,19 +547,19 @@ void GenerateLeafGeometry(ModelFactory& factory,
     DefaultVertex vers[4];
 
     vers[0].position_ = Vector3(-0.5f, 0.0f, 0.0f);
-//     vers[0].normal_ = upNormal;
+    vers[0].normal_ = Vector3::UP;
     vers[0].uv_[0] = Vector4(0, 0, 0, 0);
 
     vers[1].position_ = Vector3(0.5f, 0.0f, 0.0f);
-//     vers[0].normal_ = upNormal;
+    vers[1].normal_ = Vector3::UP;
     vers[1].uv_[0] = Vector4(1, 0, 0, 0);
 
     vers[2].position_ = Vector3(-0.5f, 0.0f, 1.0f);
-//     vers[2].normal_ = downNormal;
+    vers[2].normal_ = Vector3::ZERO;
     vers[2].uv_[0] = Vector4(0, 1, 0, 0);
 
     vers[3].position_ = Vector3(0.5f, 0.0f, 1.0f);
-//     vers[3].normal_ = downNormal;
+    vers[3].normal_ = Vector3::ZERO;
     vers[3].uv_[0] = Vector4(1, 1, 0, 0);
 
     PODVector<DefaultVertex> newVertices;
@@ -604,7 +604,9 @@ void GenerateLeafGeometry(ModelFactory& factory,
     // Compute normals
     for (DefaultVertex& vertex : newVertices)
     {
-        vertex.normal_ = (vertex.position_ - Lerp(foliageCenter, basePosition, shape.bumpNormals_)).Normalized();
+        const Vector3 newNormal = (vertex.position_ - Lerp(foliageCenter, basePosition, shape.bumpNormals_)).Normalized();
+        const float factor = vertex.normal_.Length();
+        vertex.normal_ = Lerp(newNormal, vertex.normal_, factor);
     }
 
     factory.Push(newVertices, newIndices, true);
