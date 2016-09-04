@@ -260,8 +260,8 @@ void BranchGroup::RegisterObject(Context* context)
 void BranchGroup::Generate(TreeHost& host)
 {
     // Initialize transform
-    distribution_.position_ = node_->GetWorldPosition();
-    distribution_.direction_ = node_->GetWorldRotation() * Vector3::UP;
+    distribution_.position_ = node_->GetPosition();
+    distribution_.direction_ = node_->GetRotation() * Vector3::UP;
 
     // Generate this level
     branches_.Clear();

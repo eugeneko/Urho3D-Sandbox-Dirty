@@ -104,6 +104,8 @@ public:
     void SetLevel(unsigned level);
     /// Set current material for further data write operations.
     void SetMaterial(SharedPtr<Material> material);
+    /// Push nothing. This call just creates empty geometry.
+    void PushNothing();
     /// Push vertex and index data.
     void Push(const void* vertexData, unsigned numVertices, const void* indexData, unsigned numIndices, bool adjustIndices);
     /// Push vertex and index data.

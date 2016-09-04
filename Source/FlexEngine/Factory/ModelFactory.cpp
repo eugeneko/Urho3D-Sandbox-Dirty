@@ -137,15 +137,20 @@ void ModelFactory::SetMaterial(SharedPtr<Material> material)
     currentMaterial_ = material;
 }
 
-void ModelFactory::Push(const void* vertexData, unsigned numVertices, const void* indexData, unsigned numIndices, bool adjustIndices)
+void ModelFactory::PushNothing()
 {
-    // Get destination buffers
     Vector<ModelGeometryBuffer>& perLevelGeometry = geometry_[currentMaterial_];
     if (currentLevel_ >= perLevelGeometry.Size())
     {
         perLevelGeometry.Resize(currentLevel_ + 1);
     }
-    ModelGeometryBuffer& geometryBuffer = perLevelGeometry[currentLevel_];
+}
+
+void ModelFactory::Push(const void* vertexData, unsigned numVertices, const void* indexData, unsigned numIndices, bool adjustIndices)
+{
+    // Get destination buffers
+    PushNothing();
+    ModelGeometryBuffer& geometryBuffer = geometry_[currentMaterial_][currentLevel_];
 
     // Copy vertex data
     geometryBuffer.vertexData.Insert(geometryBuffer.vertexData.End(),
