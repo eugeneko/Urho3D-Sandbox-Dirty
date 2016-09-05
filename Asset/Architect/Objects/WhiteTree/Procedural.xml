@@ -1,0 +1,32 @@
+<procedural>
+    <material>
+        <uniforms name="main">
+            <uniform name="Dithering"        value="200 200"/>
+            <uniform name="BranchMagnitude"  value="0.1 0.1"/>
+            <uniform name="BranchTurbulence" value="0.666"/>
+            <uniform name="BranchPhaseScale" value="0.2"/>
+            <uniform name="EdgeMagnitude"    value="0.0175 0.0056"/>
+            <uniform name="TrunkMagnitude"   value="0.5"/>
+        </uniforms>
+        <uniforms name="proxy">
+            <uniform name="Dithering"        value="200 200"/>
+            <uniform name="FadeBegin"        value="0.88 0.70 0.65"/>
+            <uniform name="FadeEnd"          value="0.93 0.80 0.75"/>
+            <uniform name="TrunkMagnitude"   value="0.5"/>
+            <uniform name="ShadowDepthPad"   value="0.5"/>
+        </uniforms>
+        <material uniforms="main" source="@/BlackBarkMaterial.xml"    dest="@/LargeBushyTreeBark.xml"/>
+        <material uniforms="main" source="@/LargeFoliageMaterial.xml" dest="@/LargeBushyTreeFoliage.xml"/>
+    </material>
+    <texture force="true">
+        <texture width="2048" height="1024">
+            <variation name="ProxyDiffuse" renderpath="Procedural/RenderPaths/BakeDiffuse.xml"/>
+            <variation name="ProxyNormal"  renderpath="Procedural/RenderPaths/BakeNormal.xml"/>
+            <camera type="cylinderProxy" numSurfaces="8" numVertSegments="3" diagonalAngle="45"/>
+            <geometry model="@/LargeBushyTree.mdl" materials="@/BlackBarkMaterial.xml;@/LargeFoliageMaterial.xml"/>
+        </texture>
+        <output name="ProxyDiffuse" file="@/LargeBushyTreeProxyDiffuse.png"/>
+        <output name="ProxyNormal"  file="@/LargeBushyTreeProxyNormal.png"/>
+    </texture>
+
+</procedural>

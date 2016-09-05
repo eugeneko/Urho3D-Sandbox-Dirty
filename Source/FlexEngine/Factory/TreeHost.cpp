@@ -2,9 +2,12 @@
 
 #include <FlexEngine/Core/Attribute.h>
 #include <FlexEngine/Factory/ModelFactory.h>
+#include <FlexEngine/Factory/ProxyGeometryFactory.h>
+#include <FlexEngine/Factory/TextureFactory.h>
 #include <FlexEngine/Resource/ResourceCacheHelpers.h>
 
 #include <Urho3D/Core/Context.h>
+#include <Urho3D/Graphics/Geometry.h>
 #include <Urho3D/Graphics/Material.h>
 #include <Urho3D/Graphics/StaticModel.h>
 #include <Urho3D/IO/Log.h>
@@ -74,6 +77,8 @@ void TreeHost::RegisterObject(Context* context)
     URHO3D_COPY_BASE_ATTRIBUTES(ProceduralComponent);
 
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Destination Model", GetDestinationModelAttr, SetDestinationModelAttr, ResourceRef, ResourceRef(Model::GetTypeStatic()), AM_DEFAULT);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Proxy Material", GetProxyMaterialAttr, SetProxyMaterialAttr, ResourceRef, ResourceRef(Material::GetTypeStatic()), AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Proxy LOD Distance", float, proxyLodDistance_, 10.0f, AM_DEFAULT);
 }
 
 void TreeHost::OnBranchGenerated(const BranchDescription& /*branch*/, const BranchShapeSettings& /*shape*/)
@@ -95,6 +100,17 @@ void TreeHost::SetDestinationModelAttr(const ResourceRef& value)
 ResourceRef TreeHost::GetDestinationModelAttr() const
 {
     return ResourceRef(Model::GetTypeStatic(), destinationModelName_);
+}
+
+void TreeHost::SetProxyMaterialAttr(const ResourceRef& value)
+{
+    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    proxyMaterial_ = cache->GetResource<Material>(value.name_);
+}
+
+ResourceRef TreeHost::GetProxyMaterialAttr() const
+{
+    return GetResourceRef(proxyMaterial_, Material::GetTypeStatic());
 }
 
 void TreeHost::UpdateViews()
@@ -141,17 +157,50 @@ void TreeHost::DoUpdate()
     factory.Initialize(DefaultVertex::GetVertexElements(), true);
 
     PODVector<float> distances;
+    unsigned currentLod = 0;
     for (TreeLevelOfDetail* lodDesc : lods_)
     {
-        const unsigned lodIndex = distances.Size();
-
         distances.Push(lodDesc->GetDistance());
-        factory.SetLevel(lodIndex);
+        factory.SetLevel(currentLod);
         TriangulateChildren(*node_, factory, *this, *lodDesc);
+        ++currentLod;
+    }
+
+    if (proxyMaterial_)
+    {
+        // Get bounding box
+        const SharedPtr<Model> tempModel = factory.BuildModel(factory.GetMaterials(), distances);
+        const BoundingBox boundingBox = tempModel ? tempModel->GetBoundingBox() : BoundingBox();
+
+        // For each geometry material create empty geometry
+        distances.Push(proxyLodDistance_);
+        factory.SetLevel(currentLod);
+        for (SharedPtr<Material> geometryMaterial : factory.GetMaterials())
+        {
+            factory.SetMaterial(geometryMaterial);
+            factory.PushNothing();
+        }
+
+        // Create proxy geometry
+        factory.SetLevel(currentLod);
+        factory.SetMaterial(proxyMaterial_);
+
+        CylinderProxyParameters proxyParam;
+        proxyParam.numSurfaces_ = 8;
+        proxyParam.numVertSegments_ = 3;
+        proxyParam.diagonalAngle_ = 45.0f;
+
+        Vector<OrthoCameraDescription> cameras;
+        PODVector<DefaultVertex> vertices;
+        PODVector<unsigned> indices;
+        GenerateCylinderProxy(boundingBox, proxyParam, 2048, 1024, cameras, vertices, indices);
+
+        factory.Push(vertices, indices, true);
     }
 
     materials_ = factory.GetMaterials();
     model_ = factory.BuildModel(materials_, distances);
+//     model_->GetGeometry(materials_.Size() - 1, currentLod)->SetLodDistance(proxyLodDistance_);
 
     // Save model
     if (!destinationModelName_.Empty() && model_)

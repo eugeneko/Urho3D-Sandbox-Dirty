@@ -47,6 +47,11 @@ public:
     /// Get destination model attribute.
     ResourceRef GetDestinationModelAttr() const;
 
+    /// Set proxy material attribute.
+    void SetProxyMaterialAttr(const ResourceRef& value);
+    /// Get proxy material attribute.
+    ResourceRef GetProxyMaterialAttr() const;
+
 private:
     /// Generate tree topology and invariants.
     void GenerateTreeTopology();
@@ -63,6 +68,10 @@ protected:
     SharedPtr<Model> model_;
     /// Tree model materials.
     Vector<SharedPtr<Material>> materials_;
+    /// Proxy material.
+    SharedPtr<Material> proxyMaterial_;
+    /// Proxy LOD distance.
+    float proxyLodDistance_ = 0.0f;
 
     /// Positions of leaves.
     PODVector<Vector3> leavesPositions_;

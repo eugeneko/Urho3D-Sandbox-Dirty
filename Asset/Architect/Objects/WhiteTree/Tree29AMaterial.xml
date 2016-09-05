@@ -1,0 +1,6 @@
+<material>
+    <technique name="Techniques/DiffAlphaMask.xml" />
+    <texture unit="diffuse" name="Objects/WhiteTree/LargeBushyTreeProxyDiffuse.png" />
+    <texture unit="normal" name="Objects/WhiteTree/LargeBushyTreeProxyNormal.png" />
+    <cull value="none" />
+</material>
