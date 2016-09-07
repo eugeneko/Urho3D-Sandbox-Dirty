@@ -1,4 +1,4 @@
-#include "Procedural/Scripts/ModelFactoryWrapper.as"
+#include "Scripts/ModelFactoryWrapper.as"
 
 class FoliageDesc
 {

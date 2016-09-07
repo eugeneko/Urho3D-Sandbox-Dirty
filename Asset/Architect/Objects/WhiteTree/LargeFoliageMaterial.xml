@@ -1,5 +1,6 @@
 <material>
-    <technique name="Techniques/DiffAlphaMask.xml" />
+    <technique name="Techniques/Diff.xml" />
+    <shader psdefines="ALPHAMASK" />
     <texture unit="diffuse" name="Objects/WhiteTree/FoliageDiffuse.dds" />
     <cull value="none" />
 </material>

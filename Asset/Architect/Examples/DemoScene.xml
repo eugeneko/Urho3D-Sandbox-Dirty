@@ -27,12 +27,12 @@
 		<attribute name="Scale" value="1 1 1" />
 		<attribute name="Variables" />
 		<component type="StaticModel" id="4">
-			<attribute name="Model" value="Model;Objects/WhiteTree/LargeBushyTree.mdl" />
+			<attribute name="Model" value="Model;Objects/WhiteTree/Tree29A.mdl" />
 			<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml" />
 			<attribute name="Cast Shadows" value="true" />
 		</component>
 		<component type="TreeHost" id="3">
-			<attribute name="Destination Model" value="Model;Objects/WhiteTree/LargeBushyTree.mdl" />
+			<attribute name="Destination Model" value="Model;Objects/WhiteTree/Tree29A.mdl" />
 		</component>
 		<component type="TreeLevelOfDetail" id="59" />
 		<component type="TreeLevelOfDetail" id="60">
@@ -186,7 +186,7 @@
 		<attribute name="Scale" value="1 1 1" />
 		<attribute name="Variables" />
 		<component type="TextureHost" id="34">
-			<attribute name="Preview Material" value="Material;Procedural/Materials/TexturePreview.xml" />
+			<attribute name="Preview Material" value="Material;Materials/TexturePreview.xml" />
 		</component>
 		<component type="StaticModel" id="35">
 			<attribute name="Model" value="Model;Models/Box.mdl" />
@@ -204,8 +204,8 @@
 				<attribute name="Destination Texture" value="Texture2D;Objects/WhiteTree/FoliageDiffuse.dds" />
 				<attribute name="Adjust Alpha" value="1.16" />
 				<attribute name="Input Texture" value="Input 0" />
-				<attribute name="Render Path" value="XMLFile;Procedural/RenderPaths/BakeTransparent.xml" />
-				<attribute name="Material" value="Material;Procedural/Materials/FillGap.xml" />
+				<attribute name="Render Path" value="XMLFile;RenderPaths/BakeTransparent.xml" />
+				<attribute name="Material" value="Material;Materials/Procedural/FillGap.xml" />
 				<attribute name="Depth" value="16" />
 			</component>
 			<node id="17">
@@ -219,8 +219,8 @@
 				<component type="RenderedModelTexture" id="26">
 					<attribute name="Width" value="1024" />
 					<attribute name="Height" value="1024" />
-					<attribute name="Render Path" value="XMLFile;Procedural/RenderPaths/BakeTransparent.xml" />
-					<attribute name="Materials" value="Material;Procedural/Materials/MixColor.xml" />
+					<attribute name="Render Path" value="XMLFile;RenderPaths/BakeTransparent.xml" />
+					<attribute name="Materials" value="Material;Materials/Procedural/MixColor.xml" />
 					<attribute name="Input 0" value="Input 0" />
 					<attribute name="Input 1" value="Input 1" />
 					<attribute name="Input 2" value="Input 2" />
@@ -237,10 +237,10 @@
 					<component type="RenderedModelTexture" id="24">
 						<attribute name="Width" value="1024" />
 						<attribute name="Height" value="1024" />
-						<attribute name="Render Path" value="XMLFile;Procedural/RenderPaths/BakeOpaque.xml" />
+						<attribute name="Render Path" value="XMLFile;RenderPaths/BakeOpaque.xml" />
 						<attribute name="Model Script" value="ScriptFile;Objects/WhiteTree/ProceduralFoliage.as" />
 						<attribute name="Entry Point" value="MainFoliageMask" />
-						<attribute name="Materials" value="Material;Procedural/Materials/SuperMask.xml" />
+						<attribute name="Materials" value="Material;Materials/Procedural/SuperMask.xml" />
 						<attribute name="Model Position" value="0.5 0 0.5" />
 						<attribute name="Input 0" value="Input 0" />
 					</component>
@@ -255,10 +255,10 @@
 						<component type="RenderedModelTexture" id="22">
 							<attribute name="Width" value="64" />
 							<attribute name="Height" value="64" />
-							<attribute name="Render Path" value="XMLFile;Procedural/RenderPaths/BakeOpaque.xml" />
+							<attribute name="Render Path" value="XMLFile;RenderPaths/BakeOpaque.xml" />
 							<attribute name="Model Script" value="ScriptFile;Objects/WhiteTree/ProceduralFoliage.as" />
 							<attribute name="Entry Point" value="MainLeafMask" />
-							<attribute name="Materials" value="Material;Procedural/Materials/MaskAdd.xml" />
+							<attribute name="Materials" value="Material;Materials/Procedural/MaskAdd.xml" />
 							<attribute name="Model Position" value="0.5 0 0.5" />
 						</component>
 					</node>
@@ -314,7 +314,7 @@
 		<attribute name="Scale" value="1 4 1" />
 		<attribute name="Variables" />
 		<component type="TextureHost" id="37">
-			<attribute name="Preview Material" value="Material;Procedural/Materials/TexturePreview.xml" />
+			<attribute name="Preview Material" value="Material;Materials/TexturePreview.xml" />
 		</component>
 		<component type="StaticModel" id="36">
 			<attribute name="Model" value="Model;Models/Box.mdl" />
@@ -332,8 +332,8 @@
 				<attribute name="Destination Texture" value="Texture2D;Objects/WhiteTree/BlackBarkDiffuse.dds" />
 				<attribute name="Width" value="256" />
 				<attribute name="Height" value="1024" />
-				<attribute name="Render Path" value="XMLFile;Procedural/RenderPaths/BakeOpaque.xml" />
-				<attribute name="Materials" value="Material;Procedural/Materials/SuperMixColor.xml" />
+				<attribute name="Render Path" value="XMLFile;RenderPaths/BakeOpaque.xml" />
+				<attribute name="Materials" value="Material;Materials/Procedural/SuperMixColor.xml" />
 				<attribute name="Input 0" value="Input 0" />
 				<attribute name="Input 1" value="Input 1" />
 				<attribute name="Input 2" value="Input 2" />
@@ -350,8 +350,8 @@
 				<component type="PerlinNoiseTexture" id="46">
 					<attribute name="Width" value="256" />
 					<attribute name="Height" value="1024" />
-					<attribute name="Render Path" value="XMLFile;Procedural/RenderPaths/BakeTransparent.xml" />
-					<attribute name="Material" value="Material;Procedural/Materials/PerlinNoise.xml" />
+					<attribute name="Render Path" value="XMLFile;RenderPaths/BakeTransparent.xml" />
+					<attribute name="Material" value="Material;Materials/Procedural/PerlinNoise.xml" />
 					<attribute name="Base Scale" value="4 8" />
 					<attribute name="Contrast" value="-1" />
 					<attribute name="Number of Octaves" value="4" />
@@ -374,8 +374,8 @@
 				<component type="RenderedModelTexture" id="54">
 					<attribute name="Width" value="256" />
 					<attribute name="Height" value="1024" />
-					<attribute name="Render Path" value="XMLFile;Procedural/RenderPaths/BakeOpaque.xml" />
-					<attribute name="Materials" value="Material;Procedural/Materials/MixColor.xml" />
+					<attribute name="Render Path" value="XMLFile;RenderPaths/BakeOpaque.xml" />
+					<attribute name="Materials" value="Material;Materials/Procedural/MixColor.xml" />
 					<attribute name="Input 0" value="Input 0" />
 					<attribute name="Input 1" value="Input 1" />
 					<attribute name="Input 2" value="Input 2" />
@@ -392,8 +392,8 @@
 					<component type="PerlinNoiseTexture" id="44">
 						<attribute name="Width" value="256" />
 						<attribute name="Height" value="1024" />
-						<attribute name="Render Path" value="XMLFile;Procedural/RenderPaths/BakeTransparent.xml" />
-						<attribute name="Material" value="Material;Procedural/Materials/PerlinNoise.xml" />
+						<attribute name="Render Path" value="XMLFile;RenderPaths/BakeTransparent.xml" />
+						<attribute name="Material" value="Material;Materials/Procedural/PerlinNoise.xml" />
 						<attribute name="Base Scale" value="8 64" />
 						<attribute name="Range" value="-0.5 1" />
 						<attribute name="Contrast" value="2" />
@@ -415,8 +415,8 @@
 					<component type="PerlinNoiseTexture" id="50">
 						<attribute name="Width" value="256" />
 						<attribute name="Height" value="1024" />
-						<attribute name="Render Path" value="XMLFile;Procedural/RenderPaths/BakeOpaque.xml" />
-						<attribute name="Material" value="Material;Procedural/Materials/PerlinNoise.xml" />
+						<attribute name="Render Path" value="XMLFile;RenderPaths/BakeOpaque.xml" />
+						<attribute name="Material" value="Material;Materials/Procedural/PerlinNoise.xml" />
 						<attribute name="Color 1" value="0.941 0.941 0.941 1" />
 						<attribute name="Color 2" value="0.816 0.816 0.816 1" />
 						<attribute name="Base Scale" value="4 4" />
@@ -452,8 +452,8 @@
 				<component type="PerlinNoiseTexture" id="52">
 					<attribute name="Width" value="256" />
 					<attribute name="Height" value="1025" />
-					<attribute name="Render Path" value="XMLFile;Procedural/RenderPaths/BakeOpaque.xml" />
-					<attribute name="Material" value="Material;Procedural/Materials/PerlinNoise.xml" />
+					<attribute name="Render Path" value="XMLFile;RenderPaths/BakeOpaque.xml" />
+					<attribute name="Material" value="Material;Materials/Procedural/PerlinNoise.xml" />
 					<attribute name="Color 2" value="0.126 0.106 0.09 1" />
 					<attribute name="Base Scale" value="32 8" />
 					<attribute name="Number of Octaves" value="3" />
@@ -475,8 +475,8 @@
 				<component type="PerlinNoiseTexture" id="56">
 					<attribute name="Width" value="256" />
 					<attribute name="Height" value="1024" />
-					<attribute name="Render Path" value="XMLFile;Procedural/RenderPaths/BakeOpaque.xml" />
-					<attribute name="Material" value="Material;Procedural/Materials/PerlinNoise.xml" />
+					<attribute name="Render Path" value="XMLFile;RenderPaths/BakeOpaque.xml" />
+					<attribute name="Material" value="Material;Materials/Procedural/PerlinNoise.xml" />
 					<attribute name="Base Scale" value="32 16" />
 					<attribute name="Number of Octaves" value="4" />
 					<attribute name="Octaves">

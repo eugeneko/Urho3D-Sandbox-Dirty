@@ -46,7 +46,4 @@ void FlexEnginePlayer::Start()
     Script* scriptSubsystem = GetSubsystem<Script>();
     asIScriptEngine* scriptEngine = scriptSubsystem->GetScriptEngine();
     RegisterAPI(scriptEngine);
-
-    SharedPtr<XMLFile> xmlFile(resourceCache->GetResource<XMLFile>("Procedural.xml"));
-    GenerateResourcesFromXML(*xmlFile, false, 0);
 }
