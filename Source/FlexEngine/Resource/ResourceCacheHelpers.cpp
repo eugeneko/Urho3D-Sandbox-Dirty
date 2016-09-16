@@ -1,6 +1,9 @@
 #include <FlexEngine/Resource/ResourceCacheHelpers.h>
 
+#include <Urho3D/IO/File.h>
 #include <Urho3D/IO/FileSystem.h>
+#include <Urho3D/IO/Log.h>
+#include <Urho3D/Resource/Resource.h>
 #include <Urho3D/Resource/ResourceCache.h>
 
 namespace FlexEngine
@@ -34,6 +37,47 @@ void CreateDirectoriesToFile(ResourceCache& resourceCache, const String& fileNam
     {
         CreateDirectoriesToFile(*fileSystem, fileName);
     }
+}
+
+bool SaveResource(Resource& resource, bool reloadAfter)
+{
+    // Check name
+    const String& resourceName = resource.GetName();
+    if (resourceName.Empty())
+    {
+        URHO3D_LOGERROR("Resource name mustn't be empty");
+        return false;
+    }
+
+    // Check cache
+    ResourceCache* cache = resource.GetSubsystem<ResourceCache>();
+    if (!cache)
+    {
+        URHO3D_LOGERROR("Resource cache must be initialized");
+        return false;
+    }
+
+    // Create directories
+    const String& outputFileName = GetOutputResourceCacheDir(*cache) + resourceName;
+    CreateDirectoriesToFile(*cache, outputFileName);
+
+    // Save file
+    File file(resource.GetContext(), outputFileName, FILE_WRITE);
+    if (file.IsOpen())
+    {
+        if (resource.Save(file))
+        {
+            // Reload resource
+            if (reloadAfter)
+            {
+                file.Close();
+                cache->ReloadResourceWithDependencies(resourceName);
+            }
+
+            return true;
+        }
+    }
+    return false;
 }
 
 }

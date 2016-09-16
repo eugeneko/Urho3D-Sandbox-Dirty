@@ -20,6 +20,10 @@ struct OrthoCameraDescription;
 /// Parameters of cylinder proxy geometry.
 struct CylinderProxyParameters
 {
+    /// Whether to generate diagonal slices.
+    bool generateDiagonal_;
+    /// Whether to reset all positions to the center of cylinder.
+    bool centerPositions_;
     /// Number of vertical surfaces of proxy geometry, front and back are considered as different surfaces.
     unsigned numSurfaces_;
     /// Number of vertical segments of each surface.

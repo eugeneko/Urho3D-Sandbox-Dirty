@@ -58,7 +58,10 @@ void DynamicComponent::Update(bool forceUpdate /*= true*/)
 
 void DynamicComponent::OnUpdate(bool)
 {
-    Update();
+    if (node_)
+    {
+        Update();
+    }
 }
 
 void DynamicComponent::HandleUpdate(StringHash eventType, VariantMap& eventData)

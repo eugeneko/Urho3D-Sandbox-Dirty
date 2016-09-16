@@ -335,8 +335,8 @@ private:
     SharedPtr<Material> material_;
     /// Number of iterations.
     unsigned depth_ = 0;
-    /// Whether to restore input alpha.
-    bool restoreAlpha_ = false;
+    /// Whether input image is transparent.
+    bool isTransparent_ = false;
 
 };
 

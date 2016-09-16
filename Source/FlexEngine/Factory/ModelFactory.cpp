@@ -11,6 +11,7 @@
 // 
 // #include <Urho3D/AngelScript/ScriptFile.h>
 #include <Urho3D/AngelScript/ScriptFile.h>
+#include <Urho3D/Core/Context.h>
 #include <Urho3D/Graphics/Geometry.h>
 #include <Urho3D/Graphics/IndexBuffer.h>
 #include <Urho3D/Graphics/Model.h>
@@ -76,6 +77,10 @@ DefaultVertex LerpVertices(const DefaultVertex& lhs, const DefaultVertex& rhs, f
     for (unsigned i = 0; i < MAX_VERTEX_TEXCOORD; ++i)
     {
         result.uv_[i] = Lerp(lhs.uv_[i], rhs.uv_[i], factor);
+    }
+    for (unsigned i = 0; i < MAX_VERTEX_COLOR; ++i)
+    {
+        result.colors_[i] = Lerp(lhs.colors_[i], rhs.colors_[i], factor);
     }
     for (unsigned i = 0; i < MAX_VERTEX_BONES; ++i)
     {
@@ -189,7 +194,7 @@ unsigned ModelFactory::GetNumVerticesInBucket() const
     return geometryBuffer.vertexData.Size() / vertexSize_;
 }
 
-SharedPtr<Model> ModelFactory::BuildModel(const Vector<SharedPtr<Material>>& materials, const PODVector<float>& distances /*= {}*/) const
+SharedPtr<Model> ModelFactory::BuildModel(const Vector<SharedPtr<Material>>& materials) const
 {
     // Prepare buffers for accumulated geometry data
     SharedPtr<VertexBuffer> vertexBuffer = MakeShared<VertexBuffer>(context_);
@@ -249,7 +254,6 @@ SharedPtr<Model> ModelFactory::BuildModel(const Vector<SharedPtr<Material>>& mat
             SharedPtr<Geometry> geometry = MakeShared<Geometry>(context_);
             geometry->SetVertexBuffer(0, vertexBuffer);
             geometry->SetIndexBuffer(indexBuffer);
-            geometry->SetLodDistance(j < distances.Size() ? distances[j] : 0.0f);
             model->SetGeometry(i, j, geometry);
         }
     }
@@ -352,6 +356,81 @@ SharedPtr<Model> CreateQuadModel(Context* context)
     factory.Initialize(DefaultVertex::GetVertexElements(), true);
     factory.Push(vertices, indices, true);
     return factory.BuildModel(factory.GetMaterials());
+}
+
+SharedPtr<Model> GetOrCreateQuadModel(Context* context)
+{
+    static const String modelName = "DefaultRenderTargetModel";
+    const Variant& var = context->GetGlobalVar(modelName);
+
+    // Get existing
+    if (var.GetType() == VAR_PTR)
+    {
+        if (Object* object = dynamic_cast<Object*>(var.GetPtr()))
+        {
+            if (Model* model = dynamic_cast<Model*>(object))
+            {
+                return SharedPtr<Model>(model);
+            }
+        }
+    }
+
+    // Create new
+    const SharedPtr<Model> model = CreateQuadModel(context);
+    context->SetGlobalVar(modelName, var);
+    return model;
+}
+
+void AppendModelGeometries(Model& dest, const Model& source)
+{
+    const unsigned numGeometries = dest.GetNumGeometries();
+
+    // Append vertex buffers
+    Vector<SharedPtr<VertexBuffer>> vertexBuffers = dest.GetVertexBuffers();
+    vertexBuffers += source.GetVertexBuffers();
+
+    PODVector<unsigned> morphRangeStarts;
+    PODVector<unsigned> morphRangeCounts;
+    for (unsigned i = 0; i < dest.GetVertexBuffers().Size(); ++i)
+    {
+        morphRangeStarts.Push(dest.GetMorphRangeStart(i));
+        morphRangeCounts.Push(dest.GetMorphRangeCount(i));
+    }
+    for (unsigned i = 0; i < source.GetVertexBuffers().Size(); ++i)
+    {
+        morphRangeStarts.Push(source.GetMorphRangeStart(i));
+        morphRangeCounts.Push(source.GetMorphRangeCount(i));
+    }
+    dest.SetVertexBuffers(vertexBuffers, morphRangeStarts, morphRangeCounts);
+
+    // Append index buffers
+    Vector<SharedPtr<IndexBuffer>> indexBuffers = dest.GetIndexBuffers();
+    indexBuffers += source.GetIndexBuffers();
+    dest.SetIndexBuffers(indexBuffers);
+
+    // Append geometries
+    dest.SetNumGeometries(numGeometries + source.GetNumGeometries());
+    for (unsigned i = 0; i < source.GetNumGeometries(); ++i)
+    {
+        dest.SetNumGeometryLodLevels(numGeometries + i, source.GetNumGeometryLodLevels(i));
+        for (unsigned j = 0; j < source.GetNumGeometryLodLevels(i); ++j)
+        {
+            dest.SetGeometry(numGeometries + i, j, source.GetGeometry(i, j));
+        }
+    }
+}
+
+void AppendEmptyLOD(Model& model, float distance)
+{
+    for (unsigned i = 0; i < model.GetNumGeometries(); ++i)
+    {
+        const unsigned num = model.GetNumGeometryLodLevels(i);
+        model.SetNumGeometryLodLevels(i, num + 1);
+
+        SharedPtr<Geometry> geometry = MakeShared<Geometry>(model.GetContext());
+        geometry->SetLodDistance(distance);
+        model.SetGeometry(i, num, geometry);
+    }
 }
 
 }

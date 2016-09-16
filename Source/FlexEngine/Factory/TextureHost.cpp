@@ -49,32 +49,9 @@ static const char* textureInputsNames[] =
 
 static_assert(sizeof(textureInputsNames) / sizeof(textureInputsNames[0]) == maxTextureInputs + 2, "Mismatch of texture inputs count");
 
-static const char* inputParameterUniform[] = { "MatDiffColor" };
-
-SharedPtr<Model> GetOrCreateQuadModel(Context* context)
-{
-    static const String modelName = "ProceduralTextureDefaultQuadModel";
-    const Variant& var = context->GetGlobalVar(modelName);
-
-    // Get existing
-    if (var.GetType() == VAR_PTR)
-    {
-        if (Object* object = dynamic_cast<Object*>(var.GetPtr()))
-        {
-            if (Model* model = dynamic_cast<Model*>(object))
-            {
-                return SharedPtr<Model>(model);
-            }
-        }
-    }
-
-    // Create new
-    const SharedPtr<Model> model = CreateQuadModel(context);
-    context->SetGlobalVar(modelName, var);
-    return model;
 }
 
-}
+const char* inputParameterUniform[] = { "MatDiffColor" };
 
 TextureHost::TextureHost(Context* context)
     : ProceduralComponent(context)
@@ -270,7 +247,7 @@ void TextureElement::GenerateTexture()
     {
         // Write texture to file and re-load it
         generatedTexture_->SetName(destinationTextureName_);
-        SharedPtr<Image> image = ConvertTextureToImage(*generatedTexture_);
+        SharedPtr<Image> image = ConvertTextureToImage(generatedTexture_);
         image->PrecalculateLevels();
         AdjustImageLevelsAlpha(*image, adjustAlpha_);
 
@@ -623,7 +600,7 @@ void PerlinNoiseTexture::AddOctaveToBuffer(unsigned i, PODVector<float>& buffer,
 
     // Generate texture
     const SharedPtr<Texture2D> texture = GenerateOctaveTexture(scale * textureScale * baseScale_, seed);
-    const SharedPtr<Image> image = texture ? ConvertTextureToImage(*texture) : nullptr;
+    const SharedPtr<Image> image = texture ? ConvertTextureToImage(texture) : nullptr;
     if (!image)
     {
         return;
@@ -711,7 +688,7 @@ void FillGapFilter::RegisterObject(Context* context)
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Render Path", GetRenderPathAttr, SetRenderPathAttr, ResourceRef, ResourceRef(XMLFile::GetTypeStatic()), AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Material", GetMaterialAttr, SetMaterialAttr, ResourceRef, ResourceRef(Material::GetTypeStatic()), AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Depth", unsigned, depth_, 1, AM_DEFAULT);
-    URHO3D_MEMBER_ATTRIBUTE("Restore Alpha", bool, restoreAlpha_, true, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Is Transparent", bool, isTransparent_, true, AM_DEFAULT);
 }
 
 void FillGapFilter::SetRenderPathAttr(const ResourceRef& value)
@@ -751,47 +728,10 @@ SharedPtr<Texture2D> FillGapFilter::DoGenerateTexture()
         return nullptr;
     }
 
-    // Apply filter
-    SharedPtr<Texture2D> resultTexture = inputTexture;
-    for (unsigned i = 0; i < depth_; ++i)
-    {
-        TextureDescription desc;
-        desc.renderPath_ = renderPath_;
-        desc.width_ = Max(1, resultTexture->GetWidth());
-        desc.height_ = Max(1, resultTexture->GetHeight());
-
-        GeometryDescription geometryDesc;
-        geometryDesc.model_ = GetOrCreateQuadModel(context_);
-        geometryDesc.materials_.Push(material_);
-        desc.geometries_.Push(geometryDesc);
-
-        desc.cameras_.Push(OrthoCameraDescription::Identity(desc.width_, desc.height_));
-        desc.textures_.Populate(TU_DIFFUSE, "Input");
-        desc.parameters_.Populate(inputParameterUniform[0], Vector4(1.0f / desc.width_, 1.0f / desc.height_, 0.0f, 0.0f));
-
-        const TextureMap inputMap = { MakePair(String("Input"), resultTexture) };
-        resultTexture = RenderTexture(context_, desc, inputMap);
-    }
-
-    // Restore alpha
-    if (restoreAlpha_)
-    {
-        const SharedPtr<Image> inputImage = ConvertTextureToImage(*inputTexture);
-        SharedPtr<Image> resultImage = ConvertTextureToImage(*resultTexture);
-
-        for (int y = 0; y < resultImage->GetHeight(); ++y)
-        {
-            for (int x = 0; x < resultImage->GetWidth(); ++x)
-            {
-                resultImage->SetPixel(x, y, Color(resultImage->GetPixel(x, y), inputImage->GetPixel(x, y).a_));
-            }
-        }
-
-        resultTexture = MakeShared<Texture2D>(context_);
-        resultTexture->SetData(resultImage);
-    }
-
-    return resultTexture;
+    // Fill gaps
+    SharedPtr<Model> model = GetOrCreateQuadModel(context_);
+    return ConvertImageToTexture(FillTextureGaps(ConvertTextureToImage(inputTexture), depth_, isTransparent_,
+        renderPath_, model, material_, inputParameterUniform[0]));
 }
 
 }

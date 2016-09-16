@@ -52,20 +52,21 @@ void GenerateCylinderProxy(const BoundingBox& boundingBox, const CylinderProxyPa
     Vector<OrthoCameraDescription>& cameras, PODVector<DefaultVertex>& vertices, PODVector<unsigned>& indices)
 {
     // Compute extents of bounding box
-    const Vector3 boxSize = boundingBox.Size();
-    const float boxWidth  = Max(boxSize.x_, boxSize.z_);
-    const float boxHeight = Max(boxWidth, boxSize.y_);
+    const Vector3 boxCenter = boundingBox.Center();
+    const Vector3 boxSize   = boundingBox.Size();
+    const float   boxWidth  = Max(boxSize.x_, boxSize.z_);
+    const float   boxHeight = Max(boxWidth, boxSize.y_);
 
     // Compute dimensions
     const float boxDiagonalHeight = ComputeDiagonalHeight(boxWidth, boxHeight, param.diagonalAngle_);
-    const Vector2 totalSize = Vector2(boxWidth * param.numSurfaces_, boxHeight + boxDiagonalHeight);
+    const Vector2 totalSize = Vector2(boxWidth * param.numSurfaces_, boxHeight + (param.generateDiagonal_ ? boxDiagonalHeight : 0.0f));
     const float aspectRatio = totalSize.x_ / totalSize.y_;
     const IntVector2 dimensions = IntVector2(static_cast<int>(width), static_cast<int>(height));
     const float textureScale = static_cast<float>(width) / height;
     const Vector2 fixedTotalSize = ExpandRegionToMeetRatio(totalSize, textureScale);
 
     // Generate vertical slices
-    for (unsigned isDiagonal = 0; isDiagonal < 2; ++isDiagonal)
+    for (unsigned isDiagonal = 0; isDiagonal < (param.generateDiagonal_ ? 2u : 1u); ++isDiagonal)
     {
         // Size of slice
         const float boxSliceHeight = !isDiagonal ? boxHeight : boxDiagonalHeight;
@@ -74,7 +75,7 @@ void GenerateCylinderProxy(const BoundingBox& boundingBox, const CylinderProxyPa
         const float boxHalfDepth = Vector2(boxHalfWidth, boxHalfHeight).Length();
 
         // UV base
-        const float baseV = !isDiagonal ? boxDiagonalHeight : 0.0f;
+        const float baseV = (!isDiagonal && param.generateDiagonal_) ? boxDiagonalHeight : 0.0f;
 
         // Rotation around X axis
         const float angleX = !isDiagonal ? 0.0f : param.diagonalAngle_;
@@ -97,27 +98,50 @@ void GenerateCylinderProxy(const BoundingBox& boundingBox, const CylinderProxyPa
             // Compute camera
             OrthoCameraDescription cameraDesc;
             cameraDesc.rotation_ = Quaternion(axisX, axisY, axisZ);
-            cameraDesc.position_ = boundingBox.Center() - axisZ * boxHalfDepth;
+            cameraDesc.position_ = boxCenter - axisZ * boxHalfDepth;
             cameraDesc.farClip_  = 2.0f * boxHalfDepth;
             cameraDesc.size_     = 2.0f * Vector2(boxHalfWidth, boxHalfHeight);
             cameraDesc.viewport_ = IntRect(viewportBegin.x_, viewportBegin.y_, viewportEnd.x_, viewportEnd.y_);
             cameras.Push(cameraDesc);
 
+            // Compute positions
+            const Vector3 basePosition = param.generateDiagonal_ ? boxCenter : Vector3(boxCenter.x_, boundingBox.min_.y_, boxCenter.z_);
+            const Vector2 rectBegin = Vector2(-boxHalfWidth, param.generateDiagonal_ ? -boxHalfHeight : 0);
+            const Vector2 rectEnd = Vector2(boxHalfWidth, boxHalfHeight * (param.generateDiagonal_ ? 1 : 2));
+
             // Compute normal
-            const Vector3 normal = cameraDesc.rotation_.Inverse().RotationMatrix() * Vector3(0.0f, 0.0f, -1.0f);
+            const Vector3 normal = cameraDesc.rotation_.RotationMatrix() * Vector3::BACK;
+            const Vector3 tangent = axisX;
+            const Vector3 binormal = axisY;
 
             // Generate geometry data
             DefaultVertex verts[4];
 
-            verts[0].position_ = boundingBox.Center() - axisX * boxHalfWidth - axisY * boxHalfHeight;
-            verts[1].position_ = boundingBox.Center() + axisX * boxHalfWidth - axisY * boxHalfHeight;
-            verts[2].position_ = boundingBox.Center() - axisX * boxHalfWidth + axisY * boxHalfHeight;
-            verts[3].position_ = boundingBox.Center() + axisX * boxHalfWidth + axisY * boxHalfHeight;
+            const Vector2 halfSize(boxHalfWidth, boxHalfHeight);
+            if (param.centerPositions_)
+            {
+                verts[0].position_ = basePosition;
+                verts[1].position_ = basePosition;
+                verts[2].position_ = basePosition;
+                verts[3].position_ = basePosition;
+            }
+            else
+            {
+                verts[0].position_ = basePosition + axisX * rectBegin.x_ + axisY * rectBegin.y_;
+                verts[1].position_ = basePosition + axisX * rectEnd.x_   + axisY * rectBegin.y_;
+                verts[2].position_ = basePosition + axisX * rectBegin.x_ + axisY * rectEnd.y_;
+                verts[3].position_ = basePosition + axisX * rectEnd.x_   + axisY * rectEnd.y_;
+            }
 
             verts[0].uv_[0] = Vector4(textureBegin.x_, textureEnd.y_,   0, 0);
             verts[1].uv_[0] = Vector4(textureEnd.x_,   textureEnd.y_,   0, 0);
             verts[2].uv_[0] = Vector4(textureBegin.x_, textureBegin.y_, 0, 0);
             verts[3].uv_[0] = Vector4(textureEnd.x_,   textureBegin.y_, 0, 0);
+
+            verts[0].uv_[1] = Vector4(rectBegin.x_, rectBegin.y_, 0, 0);
+            verts[1].uv_[1] = Vector4(rectEnd.x_,   rectBegin.y_, 1, 0);
+            verts[2].uv_[1] = Vector4(rectBegin.x_, rectEnd.y_,   0, 1);
+            verts[3].uv_[1] = Vector4(rectEnd.x_,   rectEnd.y_,   1, 1);
 
             for (DefaultVertex& v : verts)
             {
@@ -125,8 +149,9 @@ void GenerateCylinderProxy(const BoundingBox& boundingBox, const CylinderProxyPa
 //                 v.branchAdherence_ = 0.0f;
 //                 v.phase_ = 0.0f;
 //                 v.edgeOscillation_ = 0.0f;
-
                 v.normal_ = normal;
+                v.tangent_ = tangent;
+                v.binormal_ = binormal;
             }
 
             // Generate quads

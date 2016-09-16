@@ -152,7 +152,7 @@ public:
     unsigned GetNumVerticesInBucket() const;
 
     /// Build model from stored data.
-    SharedPtr<Model> BuildModel(const Vector<SharedPtr<Material>>& materials, const PODVector<float>& distances = {}) const;
+    SharedPtr<Model> BuildModel(const Vector<SharedPtr<Material>>& materials) const;
 
     /// Get vertex size.
     unsigned GetVertexSize() const { return vertexSize_; }
@@ -181,7 +181,16 @@ private:
 /// Create model from script.
 SharedPtr<ModelFactory> CreateModelFromScript(ScriptFile& scriptFile, const String& entryPoint);
 
-/// Create quad model.
+/// Create default quad model.
 SharedPtr<Model> CreateQuadModel(Context* context);
+
+/// Create default quad model or get it from global context variable 'DefaultRenderTargetModel'.
+SharedPtr<Model> GetOrCreateQuadModel(Context* context);
+
+/// Append one model geometries to another.
+void AppendModelGeometries(Model& dest, const Model& source);
+
+/// Add empty LOD level for each model geometry.
+void AppendEmptyLOD(Model& model, float distance);
 
 }

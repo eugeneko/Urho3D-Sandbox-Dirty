@@ -10,6 +10,7 @@ namespace Urho3D
 {
 
 class Material;
+class XMLFile;
 
 }
 
@@ -68,8 +69,6 @@ protected:
     PODVector<Vector3> leavesPositions_;
     /// Center of leaves.
     Vector3 foliageCenter_;
-    /// Levels of detail.
-    PODVector<TreeLevelOfDetail*> lods_;
 
 };
 
@@ -85,9 +84,6 @@ public:
     virtual ~TreeElement();
     /// Register object factory.
     static void RegisterObject(Context* context);
-
-    /// Apply attribute changes that can not be applied immediately. Called after scene load or a network update.
-    virtual void ApplyAttributes() override;
 
     /// Generate.
     virtual void Generate(TreeHost& host) = 0;
@@ -212,6 +208,91 @@ protected:
     /// Number of radial segments.
     unsigned numRadialSegments_ = 0;
 
+};
+
+/// Tree proxy component. Proxy is the last level of detail. Each tree could have no more than one such component.
+class TreeProxy : public ProceduralComponentAgent
+{
+    URHO3D_OBJECT(TreeProxy, ProceduralComponentAgent);
+
+public:
+    /// Construct.
+    TreeProxy(Context* context);
+    /// Destruct.
+    virtual ~TreeProxy();
+    /// Register object factory.
+    static void RegisterObject(Context* context);
+
+    /// Generate proxy model and textures.
+    SharedPtr<Model> Generate(SharedPtr<Model> model, const Vector<SharedPtr<Material>>& materials) const;
+
+    /// Set LOD distance.
+    void SetDistance(float distance) { distance_ = distance; }
+    /// Get LOD distance.
+    float GetDistance() const { return distance_; }
+    /// Set proxy material.
+    void SetProxyMaterial(SharedPtr<Material> material) { proxyMaterial_ = material; }
+    /// Get proxy material.
+    SharedPtr<Material> GetProxyMaterial() const { return proxyMaterial_; }
+
+    /// Set destination proxy diffuse texture attribute.
+    void SetDestinationProxyDiffuseAttr(const ResourceRef& value);
+    /// Get destination proxy diffuse texture attribute.
+    ResourceRef GetDestinationProxyDiffuseAttr() const;
+    /// Set destination proxy normal texture attribute.
+    void SetDestinationProxyNormalAttr(const ResourceRef& value);
+    /// Get destination proxy normal texture attribute.
+    ResourceRef GetDestinationProxyNormalAttr() const;
+    /// Set proxy material attribute.
+    void SetProxyMaterialAttr(const ResourceRef& value);
+    /// Get proxy material attribute.
+    ResourceRef GetProxyMaterialAttr() const;
+    /// Set diffuse render path attribute.
+    void SetDiffuseRenderPathAttr(const ResourceRef& value);
+    /// Get diffuse render path attribute.
+    ResourceRef GetDiffuseRenderPathAttr() const;
+    /// Set normal render path attribute.
+    void SetNormalRenderPathAttr(const ResourceRef& value);
+    /// Get normal render path attribute.
+    ResourceRef GetNormalRenderPathAttr() const;
+    /// Set fill gap path attribute.
+    void SetFillGapPathAttr(const ResourceRef& value);
+    /// Get fill gap path attribute.
+    ResourceRef GetFillGapPathAttr() const;
+    /// Set fill gap material attribute.
+    void SetFillGapMaterialAttr(const ResourceRef& value);
+    /// Get fill gap material attribute.
+    ResourceRef GetFillGapMaterialAttr() const;
+
+private:
+    /// Proxy LOD distance.
+    float distance_ = 0.0f;
+    /// Number of slices.
+    unsigned numPlanes_ = 0;
+    /// Number of vertical segments.
+    unsigned numVerticalSegments_ = 0;
+
+    /// Proxy texture width.
+    unsigned proxyTextureWidth_ = 0;
+    /// Proxy texture height.
+    unsigned proxyTextureHeight_ = 0;
+    /// Destination proxy diffuse map.
+    String destinationProxyDiffuseName_;
+    /// Destination proxy normal map.
+    String destinationProxyNormalName_;
+    /// Proxy material.
+    SharedPtr<Material> proxyMaterial_;
+    /// Diffuse render path.
+    SharedPtr<XMLFile> diffuseRenderPath_;
+    /// Normal render path.
+    SharedPtr<XMLFile> normalRenderPath_;
+
+    /// Fill gap render path.
+    SharedPtr<XMLFile> fillGapRenderPath_;
+    /// Fill gap material.
+    SharedPtr<Material> fillGapMaterial_;
+    /// Fill gap depth.
+    unsigned fillGapDepth_ = 0;
 };
 
 }

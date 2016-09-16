@@ -2,13 +2,18 @@
 
 #include <FlexEngine/Core/Attribute.h>
 #include <FlexEngine/Factory/ModelFactory.h>
+#include <FlexEngine/Factory/TextureFactory.h>
+#include <FlexEngine/Factory/ProxyGeometryFactory.h>
 #include <FlexEngine/Resource/ResourceCacheHelpers.h>
 
 #include <Urho3D/Core/Context.h>
+#include <Urho3D/Graphics/Geometry.h>
 #include <Urho3D/Graphics/Material.h>
 #include <Urho3D/Graphics/StaticModel.h>
 #include <Urho3D/IO/Log.h>
+#include <Urho3D/Resource/Image.h>
 #include <Urho3D/Resource/ResourceCache.h>
+#include <Urho3D/Resource/XMLFile.h>
 #include <Urho3D/Scene/Node.h>
 
 namespace FlexEngine
@@ -57,10 +62,13 @@ void TriangulateChildren(Node& node, ModelFactory& factory, TreeHost& host, Tree
 
 }
 
+extern const char* inputParameterUniform[];
+
 //////////////////////////////////////////////////////////////////////////
 TreeHost::TreeHost(Context* context)
     : ProceduralComponent(context)
 {
+    ResetToDefault();
 }
 
 TreeHost::~TreeHost()
@@ -74,6 +82,7 @@ void TreeHost::RegisterObject(Context* context)
     URHO3D_COPY_BASE_ATTRIBUTES(ProceduralComponent);
 
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Destination Model", GetDestinationModelAttr, SetDestinationModelAttr, ResourceRef, ResourceRef(Model::GetTypeStatic()), AM_DEFAULT);
+
 }
 
 void TreeHost::OnBranchGenerated(const BranchDescription& /*branch*/, const BranchShapeSettings& /*shape*/)
@@ -133,44 +142,56 @@ void TreeHost::DoUpdate()
     GenerateTreeTopology();
 
     // Update list of LODs
-    lods_.Clear();
-    GetComponents(lods_);
+    PODVector<TreeLevelOfDetail*> lods;
+    GetComponents(lods);
 
     // Triangulate tree
     ModelFactory factory(context_);
     factory.Initialize(DefaultVertex::GetVertexElements(), true);
 
-    PODVector<float> distances;
-    for (TreeLevelOfDetail* lodDesc : lods_)
+    for (unsigned i = 0; i < lods.Size(); ++i)
     {
-        const unsigned lodIndex = distances.Size();
-
-        distances.Push(lodDesc->GetDistance());
-        factory.SetLevel(lodIndex);
-        TriangulateChildren(*node_, factory, *this, *lodDesc);
+        factory.SetLevel(i);
+        TriangulateChildren(*node_, factory, *this, *lods[i]);
     }
 
     materials_ = factory.GetMaterials();
-    model_ = factory.BuildModel(materials_, distances);
+    model_ = factory.BuildModel(materials_);
+    for (unsigned i = 0; i < lods.Size(); ++i)
+    {
+        for (unsigned j = 0; j < model_->GetNumGeometries(); ++j)
+        {
+            if (Geometry* geometry = model_->GetGeometry(j, i))
+            {
+                geometry->SetLodDistance(lods[i]->GetDistance());
+            }
+        }
+    }
+
+    // Get proxy component
+    PODVector<TreeProxy*> proxies;
+    GetComponents(proxies);
+
+    if (!proxies.Empty())
+    {
+        if (proxies.Size() > 1)
+        {
+            URHO3D_LOGWARNING("Tree must have at most one proxy level");
+        }
+
+        // Append proxy
+        TreeProxy& treeProxy = *proxies[0];
+        AppendEmptyLOD(*model_, treeProxy.GetDistance());
+        AppendModelGeometries(*model_, *treeProxy.Generate(model_, materials_));
+        materials_.Push(treeProxy.GetProxyMaterial());
+    }
 
     // Save model
     if (!destinationModelName_.Empty() && model_)
     {
         // Write texture to file and re-load it
         model_->SetName(destinationModelName_);
-
-        // Create directories
-        // #TODO Move to function
-        ResourceCache* cache = GetSubsystem<ResourceCache>();
-        const String& outputFileName = GetOutputResourceCacheDir(*cache) + destinationModelName_;
-        CreateDirectoriesToFile(*cache, outputFileName);
-
-        File file(context_, outputFileName, FILE_WRITE);
-        if (file.IsOpen() && model_->Save(file))
-        {
-            file.Close();
-            cache->ReloadResourceWithDependencies(destinationModelName_);
-        }
+        SaveResource(*model_);
     }
 
     // Update model and materials
@@ -207,19 +228,6 @@ void TreeElement::RegisterObject(Context* context)
     URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Growth Angle", Vector2, distribution_.growthAngle_, GetResultRange, SetResultRange, Vector2::ZERO, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Growth Angle Curve", String, distribution_.growthAngle_, GetCurveString, SetCurveString, "linear", AM_DEFAULT);
 
-}
-
-void TreeElement::ApplyAttributes()
-{
-    // Mark host as dirty
-    TreeHost* root = node_->GetParentComponent<TreeHost>(true);
-    if (!root)
-    {
-        URHO3D_LOGERROR("BranchGroup must have parent TreeHost");
-        return;
-    }
-
-    root->MarkNeedUpdate();
 }
 
 void TreeElement::Triangulate(ModelFactory& factory, TreeHost& host, TreeLevelOfDetail& lod) const
@@ -429,6 +437,193 @@ void TreeLevelOfDetail::RegisterObject(Context* context)
     URHO3D_MEMBER_ATTRIBUTE("Min Branch Segments", unsigned, minBranchSegments_, 4, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Min Angle", float, minAngle_, 10.0f, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Num Radial Segments", unsigned, numRadialSegments_, 5, AM_DEFAULT);
+}
+
+//////////////////////////////////////////////////////////////////////////
+TreeProxy::TreeProxy(Context* context)
+    : ProceduralComponentAgent(context)
+{
+    ResetToDefault();
+}
+
+TreeProxy::~TreeProxy()
+{
+
+}
+
+void TreeProxy::RegisterObject(Context* context)
+{
+    context->RegisterFactory<TreeProxy>(FLEXENGINE_CATEGORY);
+
+    URHO3D_ACCESSOR_ATTRIBUTE("Distance", GetDistance, SetDistance, float, 0.0f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Number of Planes", unsigned, numPlanes_, 8, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Number of Segments", unsigned, numVerticalSegments_, 3, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Proxy Width", unsigned, proxyTextureWidth_, 1024, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Proxy Height", unsigned, proxyTextureHeight_, 256, AM_DEFAULT);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Proxy Diffuse", GetDestinationProxyDiffuseAttr, SetDestinationProxyDiffuseAttr, ResourceRef, ResourceRef(Texture2D::GetTypeStatic()), AM_DEFAULT);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Proxy Normal", GetDestinationProxyNormalAttr, SetDestinationProxyNormalAttr, ResourceRef, ResourceRef(Texture2D::GetTypeStatic()), AM_DEFAULT);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Proxy Material", GetProxyMaterialAttr, SetProxyMaterialAttr, ResourceRef, ResourceRef(Material::GetTypeStatic()), AM_DEFAULT);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("RP Diffuse", GetDiffuseRenderPathAttr, SetDiffuseRenderPathAttr, ResourceRef, ResourceRef(XMLFile::GetTypeStatic()), AM_DEFAULT);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("RP Normal", GetNormalRenderPathAttr, SetNormalRenderPathAttr, ResourceRef, ResourceRef(XMLFile::GetTypeStatic()), AM_DEFAULT);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Fill Gap RP", GetFillGapPathAttr, SetFillGapPathAttr, ResourceRef, ResourceRef(XMLFile::GetTypeStatic()), AM_DEFAULT);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Fill Gap Material", GetFillGapMaterialAttr, SetFillGapMaterialAttr, ResourceRef, ResourceRef(Material::GetTypeStatic()), AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Fill Gap Depth", unsigned, fillGapDepth_, 0, AM_DEFAULT);
+}
+
+SharedPtr<Model> TreeProxy::Generate(SharedPtr<Model> model, const Vector<SharedPtr<Material>>& materials) const
+{
+    ModelFactory factory(context_);
+    factory.Initialize(DefaultVertex::GetVertexElements(), true);
+    factory.SetMaterial(proxyMaterial_);
+
+    // Add empty geometry to hide proxy LOD at small distances
+    factory.SetLevel(0);
+    factory.PushNothing();
+
+    // Add actual proxy geometry
+    factory.SetLevel(1);
+
+    // Setup parameters
+    CylinderProxyParameters param;
+    param.centerPositions_ = true;
+    param.generateDiagonal_ = false;
+    param.diagonalAngle_ = 0;
+    param.numSurfaces_ = numPlanes_;
+    param.numVertSegments_ = numVerticalSegments_;
+
+    // Generate proxy geometry
+    Vector<OrthoCameraDescription> cameras;
+    PODVector<DefaultVertex> vertices;
+    PODVector<unsigned> indices;
+    const BoundingBox boundingBox = model->GetBoundingBox();
+    GenerateCylinderProxy(boundingBox, param, Max(1u, proxyTextureWidth_), Max(1u, proxyTextureHeight_), cameras, vertices, indices);
+
+    // Fill parameters
+    for (unsigned i = 0; i < numPlanes_; ++i)
+    {
+        unsigned numVertices = vertices.Size() / numPlanes_;
+        for (unsigned j = 0; j < numVertices; ++j)
+        {
+            const float sign = i % 2 ? 1.0f : -1.0f;
+            DefaultVertex& vertex = vertices[numVertices * i + j];
+            vertex.uv_[2].x_ = Cos(180.0f / numPlanes_ + 1.0f);
+            vertex.uv_[2].y_ = 0.05f;
+            vertex.uv_[2].z_ = sign;
+            vertex.uv_[2].w_ = 50;
+        }
+    }
+
+    // Fill parameters
+    factory.Push(vertices, indices, false);
+
+    // Update bounding box and set LOD distance
+    SharedPtr<Model> proxyModel = factory.BuildModel(factory.GetMaterials());
+    proxyModel->SetBoundingBox(boundingBox);
+    proxyModel->GetGeometry(0, 1)->SetLodDistance(distance_);
+
+    // Render proxy textures
+    TextureDescription desc;
+    desc.width_ = Max(1u, proxyTextureWidth_);
+    desc.height_ = Max(1u, proxyTextureHeight_);
+    GeometryDescription geometryDesc;
+    geometryDesc.model_ = model;
+    geometryDesc.materials_ = materials;
+    desc.geometries_.Push(geometryDesc);
+    desc.cameras_.Push(cameras);
+
+    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    desc.renderPath_ = diffuseRenderPath_;
+    SharedPtr<Texture2D> diffuseTexture = RenderTexture(context_, desc, TextureMap());
+    diffuseTexture->SetName(destinationProxyDiffuseName_);
+    SharedPtr<Image> diffuseImage = ConvertTextureToImage(diffuseTexture);
+    diffuseImage = FillTextureGaps(diffuseImage, fillGapDepth_, true, fillGapRenderPath_, GetOrCreateQuadModel(context_), fillGapMaterial_, inputParameterUniform[0]);
+    diffuseImage->PrecalculateLevels();
+    SaveImage(cache, *diffuseImage);
+
+    desc.renderPath_ = normalRenderPath_;
+    SharedPtr<Texture2D> normalTexture = RenderTexture(context_, desc, TextureMap());
+    normalTexture->SetName(destinationProxyNormalName_);
+    SharedPtr<Image> normalImage = ConvertTextureToImage(normalTexture);
+    normalImage = FillTextureGaps(normalImage, fillGapDepth_, false, fillGapRenderPath_, GetOrCreateQuadModel(context_), fillGapMaterial_, inputParameterUniform[0]);
+    normalImage->PrecalculateLevels();
+    SaveImage(cache, *normalImage);
+
+    return proxyModel;
+}
+
+void TreeProxy::SetDestinationProxyDiffuseAttr(const ResourceRef& value)
+{
+    destinationProxyDiffuseName_ = value.name_;
+}
+
+ResourceRef TreeProxy::GetDestinationProxyDiffuseAttr() const
+{
+    return ResourceRef(Texture2D::GetTypeStatic(), destinationProxyDiffuseName_);
+}
+
+void TreeProxy::SetDestinationProxyNormalAttr(const ResourceRef& value)
+{
+    destinationProxyNormalName_ = value.name_;
+}
+
+ResourceRef TreeProxy::GetDestinationProxyNormalAttr() const
+{
+    return ResourceRef(Texture2D::GetTypeStatic(), destinationProxyNormalName_);
+}
+
+void TreeProxy::SetProxyMaterialAttr(const ResourceRef& value)
+{
+    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    proxyMaterial_ = cache->GetResource<Material>(value.name_);
+}
+
+ResourceRef TreeProxy::GetProxyMaterialAttr() const
+{
+    return GetResourceRef(proxyMaterial_, Material::GetTypeStatic());
+}
+
+void TreeProxy::SetDiffuseRenderPathAttr(const ResourceRef& value)
+{
+    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    diffuseRenderPath_ = cache->GetResource<XMLFile>(value.name_);
+}
+
+ResourceRef TreeProxy::GetDiffuseRenderPathAttr() const
+{
+    return GetResourceRef(diffuseRenderPath_, XMLFile::GetTypeStatic());
+}
+
+void TreeProxy::SetNormalRenderPathAttr(const ResourceRef& value)
+{
+    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    normalRenderPath_ = cache->GetResource<XMLFile>(value.name_);
+}
+
+ResourceRef TreeProxy::GetNormalRenderPathAttr() const
+{
+    return GetResourceRef(normalRenderPath_, XMLFile::GetTypeStatic());
+}
+
+void TreeProxy::SetFillGapPathAttr(const ResourceRef& value)
+{
+    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    fillGapRenderPath_ = cache->GetResource<XMLFile>(value.name_);
+}
+
+ResourceRef TreeProxy::GetFillGapPathAttr() const
+{
+    return GetResourceRef(fillGapRenderPath_, XMLFile::GetTypeStatic());
+}
+
+void TreeProxy::SetFillGapMaterialAttr(const ResourceRef& value)
+{
+    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    fillGapMaterial_ = cache->GetResource<Material>(value.name_);
+}
+
+ResourceRef TreeProxy::GetFillGapMaterialAttr() const
+{
+    return GetResourceRef(fillGapMaterial_, Material::GetTypeStatic());
 }
 
 }

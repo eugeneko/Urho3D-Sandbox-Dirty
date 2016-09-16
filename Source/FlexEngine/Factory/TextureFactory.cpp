@@ -237,24 +237,93 @@ SharedPtr<Texture2D> RenderViews(Context* context, unsigned width, unsigned heig
     return texture;
 }
 
-SharedPtr<Image> ConvertTextureToImage(const Texture2D& texture)
+SharedPtr<Image> ConvertTextureToImage(SharedPtr<Texture2D> texture)
 {
-    const unsigned width = texture.GetWidth();
-    const unsigned height = texture.GetHeight();
-    const unsigned dataSize = texture.GetDataSize(width, height);
-    if (texture.GetFormat() != Graphics::GetRGBAFormat())
+    if (!texture)
+    {
+        URHO3D_LOGERROR("Texture mustn't be null");
+        return nullptr;
+    }
+
+    const unsigned width = texture->GetWidth();
+    const unsigned height = texture->GetHeight();
+    const unsigned dataSize = texture->GetDataSize(width, height);
+    if (texture->GetFormat() != Graphics::GetRGBAFormat())
     {
         URHO3D_LOGERROR("Texture must have RGBA8 format");
         return nullptr;
     }
     
     PODVector<unsigned char> buffer(dataSize);
-    texture.GetData(0, buffer.Buffer());
-    SharedPtr<Image> image = MakeShared<Image>(texture.GetContext());
-    image->SetSize(width, height, texture.GetComponents());
+    texture->GetData(0, buffer.Buffer());
+    SharedPtr<Image> image = MakeShared<Image>(texture->GetContext());
+    image->SetSize(width, height, texture->GetComponents());
     image->SetData(buffer.Buffer());
-    image->SetName(texture.GetName());
+    image->SetName(texture->GetName());
     return image;
+}
+
+SharedPtr<Texture2D> ConvertImageToTexture(SharedPtr<Image> image)
+{
+    if (!image)
+    {
+        URHO3D_LOGERROR("Image mustn't be null");
+        return nullptr;
+    }
+
+    SharedPtr<Texture2D> texture = MakeShared<Texture2D>(image->GetContext());
+    texture->SetData(image);
+    return texture;
+}
+
+SharedPtr<Image> ConvertColorKeyToAlpha(SharedPtr<Image> image, const Color& colorKey)
+{
+    if (!image)
+    {
+        URHO3D_LOGERROR("Image mustn't be null");
+        return nullptr;
+    }
+
+    SharedPtr<Image> transparentImage = MakeShared<Image>(image->GetContext());
+    transparentImage->SetSize(image->GetWidth(), image->GetHeight(), image->GetDepth(), 4);
+    for (int y = 0; y < image->GetHeight(); ++y)
+    {
+        for (int x = 0; x < image->GetWidth(); ++x)
+        {
+            const Color color = image->GetPixel(x, y);
+            if (Abs((colorKey - color).Luma()) < M_LARGE_EPSILON)
+            {
+                transparentImage->SetPixel(x, y, Color::TRANSPARENT);
+            }
+            else
+            {
+                transparentImage->SetPixel(x, y, Color(color, 1.0f));
+            }
+        }
+    }
+    return transparentImage;
+}
+
+void CopyImageAlpha(SharedPtr<Image> destImage, SharedPtr<Image> sourceAlpha)
+{
+    for (int y = 0; y < destImage->GetHeight(); ++y)
+    {
+        for (int x = 0; x < destImage->GetWidth(); ++x)
+        {
+            destImage->SetPixel(x, y, Color(destImage->GetPixel(x, y), sourceAlpha->GetPixel(x, y).a_));
+        }
+    }
+}
+
+void ResetImageAlpha(SharedPtr<Image> image, float alpha /*= 1.0f*/)
+{
+    for (int y = 0; y < image->GetHeight(); ++y)
+    {
+        for (int x = 0; x < image->GetWidth(); ++x)
+        {
+            image->SetPixel(x, y, Color(image->GetPixel(x, y), alpha));
+        }
+    }
 }
 
 unsigned GetNumImageLevels(const Image& image)
@@ -312,10 +381,10 @@ bool SaveImageToDDS(const Image& image, const String& fileName)
     // Enumerate levels
     const unsigned numLevels = Texture::CheckMaxLevels(image.GetWidth(), image.GetHeight(), 0);
     const Image* level = &image;
-    Vector<const Image*> levels(numLevels);
+    Vector<const Image*> levels;
     for (unsigned i = 0; i < numLevels; ++i)
     {
-        levels[i] = level;
+        levels.Push(level);
         level = i + 1 == numLevels ? nullptr : level->GetNextLevel();
     }
 
@@ -501,6 +570,48 @@ SharedPtr<Texture2D> RenderTexture(Context* context, const TextureDescription& d
         const Vector<ViewDescription> views = ConstructViewsForTexture(context, desc, textures);
         return RenderViews(context, desc.width_, desc.height_, views);
     }
+}
+
+SharedPtr<Image> FillTextureGaps(SharedPtr<Image> image, unsigned depth, bool isTransparent,
+    SharedPtr<XMLFile> renderPath, SharedPtr<Model> model, SharedPtr<Material> material, const String& sizeUniform)
+{
+    // First iteration is input texture, convert image to transparent if needed
+    SharedPtr<Texture2D> resultTexture = ConvertImageToTexture(
+        isTransparent ? image : ConvertColorKeyToAlpha(image, Color::BLACK));
+
+    // Apply filter
+    for (unsigned i = 0; i < depth; ++i)
+    {
+        TextureDescription desc;
+        desc.renderPath_ = renderPath;
+        desc.width_ = Max(1, resultTexture->GetWidth());
+        desc.height_ = Max(1, resultTexture->GetHeight());
+
+        GeometryDescription geometryDesc;
+        geometryDesc.model_ = model;
+        geometryDesc.materials_.Push(material);
+        desc.geometries_.Push(geometryDesc);
+
+        desc.cameras_.Push(OrthoCameraDescription::Identity(desc.width_, desc.height_));
+        desc.textures_.Populate(TU_DIFFUSE, "Input");
+        desc.parameters_.Populate(sizeUniform, Vector4(1.0f / desc.width_, 1.0f / desc.height_, 0.0f, 0.0f));
+
+        const TextureMap inputMap = { MakePair(String("Input"), resultTexture) };
+        resultTexture = RenderTexture(image->GetContext(), desc, inputMap);
+    }
+
+    // Restore original alpha channel
+    SharedPtr<Image> resultImage = ConvertTextureToImage(resultTexture);
+    if (isTransparent)
+    {
+        CopyImageAlpha(resultImage, image);
+    }
+    else
+    {
+        ResetImageAlpha(resultImage);
+    }
+    resultImage->SetName(image->GetName());
+    return resultImage;
 }
 
 void GenerateTexturesFromXML(XMLElement& node, ResourceCache& resourceCache, const FactoryContext& factoryContext)
@@ -834,7 +945,7 @@ bool TextureFactory::Save(const String& outputDirectory)
         // Save
         const String& outputFileName = outputDirectory + outputName;
         CreateDirectoriesToFile(*resourceCache_, outputFileName);
-        const SharedPtr<Image> image = ConvertTextureToImage(*texture);
+        const SharedPtr<Image> image = ConvertTextureToImage(texture);
         if (image->SavePNG(outputFileName))
         {
             resourceCache_->ReloadResourceWithDependencies(outputName);

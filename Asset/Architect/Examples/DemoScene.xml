@@ -6,9 +6,9 @@
 	<attribute name="Snap Threshold" value="5" />
 	<attribute name="Elapsed Time" value="0" />
 	<attribute name="Next Replicated Node ID" value="38" />
-	<attribute name="Next Replicated Component ID" value="61" />
-	<attribute name="Next Local Node ID" value="16777295" />
-	<attribute name="Next Local Component ID" value="16778164" />
+	<attribute name="Next Replicated Component ID" value="62" />
+	<attribute name="Next Local Node ID" value="16777308" />
+	<attribute name="Next Local Component ID" value="16778320" />
 	<attribute name="Variables" />
 	<attribute name="Variable Names" value="" />
 	<component type="Octree" id="1" />
@@ -28,7 +28,7 @@
 		<attribute name="Variables" />
 		<component type="StaticModel" id="4">
 			<attribute name="Model" value="Model;Objects/WhiteTree/Tree29A.mdl" />
-			<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml" />
+			<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree29AMaterial.xml" />
 			<attribute name="Cast Shadows" value="true" />
 		</component>
 		<component type="TreeHost" id="3">
@@ -36,8 +36,21 @@
 		</component>
 		<component type="TreeLevelOfDetail" id="59" />
 		<component type="TreeLevelOfDetail" id="60">
-			<attribute name="Distance" value="10" />
+			<attribute name="Distance" value="1" />
 			<attribute name="Num Radial Segments" value="3" />
+		</component>
+		<component type="TreeProxy" id="61">
+			<attribute name="Distance" value="4" />
+			<attribute name="Proxy Width" value="2048" />
+			<attribute name="Proxy Height" value="512" />
+			<attribute name="Proxy Diffuse" value="Texture2D;Objects/WhiteTree/Tree29ADiffuse.dds" />
+			<attribute name="Proxy Normal" value="Texture2D;Objects/WhiteTree/Tree29ANormal.dds" />
+			<attribute name="Proxy Material" value="Material;Objects/WhiteTree/Tree29AMaterial.xml" />
+			<attribute name="RP Diffuse" value="XMLFile;RenderPaths/BakeDiffuse.xml" />
+			<attribute name="RP Normal" value="XMLFile;RenderPaths/BakeNormal.xml" />
+			<attribute name="Fill Gap RP" value="XMLFile;RenderPaths/BakeTransparent.xml" />
+			<attribute name="Fill Gap Material" value="Material;Materials/Procedural/FillGap.xml" />
+			<attribute name="Fill Gap Depth" value="16" />
 		</component>
 		<node id="3">
 			<attribute name="Is Enabled" value="true" />
@@ -181,9 +194,9 @@
 		<attribute name="Is Enabled" value="true" />
 		<attribute name="Name" value="WhiteTree_foliage" />
 		<attribute name="Tags" />
-		<attribute name="Position" value="0 0.5 -15" />
+		<attribute name="Position" value="-2 2 -15" />
 		<attribute name="Rotation" value="1 0 0 0" />
-		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Scale" value="4 4 4" />
 		<attribute name="Variables" />
 		<component type="TextureHost" id="34">
 			<attribute name="Preview Material" value="Material;Materials/TexturePreview.xml" />
@@ -202,7 +215,7 @@
 			<attribute name="Variables" />
 			<component type="FillGapFilter" id="58">
 				<attribute name="Destination Texture" value="Texture2D;Objects/WhiteTree/FoliageDiffuse.dds" />
-				<attribute name="Adjust Alpha" value="1.16" />
+				<attribute name="Adjust Alpha" value="1.165" />
 				<attribute name="Input Texture" value="Input 0" />
 				<attribute name="Render Path" value="XMLFile;RenderPaths/BakeTransparent.xml" />
 				<attribute name="Material" value="Material;Materials/Procedural/FillGap.xml" />

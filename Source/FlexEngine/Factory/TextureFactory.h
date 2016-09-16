@@ -47,7 +47,19 @@ struct ViewDescription
 SharedPtr<Texture2D> RenderViews(Context* context, unsigned width, unsigned height, const Vector<ViewDescription>& views);
 
 /// Convert RGBA8 texture to image.
-SharedPtr<Image> ConvertTextureToImage(const Texture2D& texture);
+SharedPtr<Image> ConvertTextureToImage(SharedPtr<Texture2D> texture);
+
+/// Convert image to texture.
+SharedPtr<Texture2D> ConvertImageToTexture(SharedPtr<Image> image);
+
+/// Convert color key transparency to alpha transparency.
+SharedPtr<Image> ConvertColorKeyToAlpha(SharedPtr<Image> image, const Color& colorKey);
+
+/// Copy alpha channel from one image to another.
+void CopyImageAlpha(SharedPtr<Image> destImage, SharedPtr<Image> sourceAlpha);
+
+/// Reset alpha channel of image.
+void ResetImageAlpha(SharedPtr<Image> image, float alpha = 1.0f);
 
 /// Get number of levels of image.
 unsigned GetNumImageLevels(const Image& image);
@@ -117,6 +129,14 @@ Vector<ViewDescription> ConstructViewsForTexture(Context* context, const Texture
 
 /// Render texture using description.
 SharedPtr<Texture2D> RenderTexture(Context* context, const TextureDescription& desc, const TextureMap& textures);
+
+/// Apply fill gap filter that replaces transparent or black texture pixels with neighbor colors.
+/// @pre Render path shall have transparent background color.
+/// @pre Model shall be the standard quad model.
+/// @pre Fill gap shader shall fill transparent pixels with neighbor colors within 3x3 rectangle.
+/// @pre Size uniform shall be the name of shader uniform that consumes size of pixel in relative coordinates, i.e. (1/w, 1/h, 0, 0)
+SharedPtr<Image> FillTextureGaps(SharedPtr<Image> image, unsigned depth, bool isTransparent,
+    SharedPtr<XMLFile> renderPath, SharedPtr<Model> model, SharedPtr<Material> material, const String& sizeUniform);
 
 /// Texture factory.
 class URHO3D_API TextureFactory : public Resource

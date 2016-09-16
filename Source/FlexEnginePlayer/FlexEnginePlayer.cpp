@@ -1,5 +1,8 @@
 #include "FlexEnginePlayer.h"
 
+// #TODO Fix me
+#undef TRANSPARENT
+
 #include <FlexEngine/AngelScript/ScriptAPI.h>
 #include <FlexEngine/Component/Procedural.h>
 #include <FlexEngine/Factory/ProceduralComponent.h>
@@ -34,6 +37,7 @@ void FlexEnginePlayer::Start()
     BranchGroup::RegisterObject(context_);
     LeafGroup::RegisterObject(context_);
     TreeLevelOfDetail::RegisterObject(context_);
+    TreeProxy::RegisterObject(context_);
     TextureHost::RegisterObject(context_);
     TextureElement::RegisterObject(context_);
     InputTexture::RegisterObject(context_);
