@@ -379,14 +379,8 @@ bool SaveImageToDDS(const Image& image, const String& fileName)
     }
 
     // Enumerate levels
-    const unsigned numLevels = Texture::CheckMaxLevels(image.GetWidth(), image.GetHeight(), 0);
-    const Image* level = &image;
-    Vector<const Image*> levels;
-    for (unsigned i = 0; i < numLevels; ++i)
-    {
-        levels.Push(level);
-        level = i + 1 == numLevels ? nullptr : level->GetNextLevel();
-    }
+    PODVector<const Image*> levels;
+    image.GetLevels(levels);
 
     // Write image
     outFile.WriteFileID("DDS ");

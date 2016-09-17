@@ -24,19 +24,24 @@ float DotProjected(float3 iFirst, float3 iSecond, float3 iNormal)
 }
 
 #ifdef COMPILEVS
-    float3 GetProxyWorldPosition(float4 iPos, float2 iSize, float4x3 modelMatrix)
+    float3 GetProxyWorldPosition(float4 iPos, float2 iSize, float3 iEye, float3 iModelUp, float4x3 iModelMatrix)
     {
-        // TODO Optimize multiplications
-        float3 modelPosition = mul(float4(0, 0, 0, 1), modelMatrix);
-        float3 modelUp = mul(float4(0, 1, 0, 0), modelMatrix);
-        float3 eye = cCameraPos - modelPosition;
-
-        float4 right = float4(normalize(cross(eye, modelUp)), 0);
-        float4 up = float4(normalize(lerp(modelUp, normalize(cross(right.xyz, eye)), 0.3)), 0);
-        //return mul(iPos + right * iSize.x + up * iSize.y, modelMatrix);
-        //return mul(iPos + iSize.x * float4(1, 0, 0, 0) + iSize.y * float4(0, 1, 0, 0), modelMatrix);
-        return mul(iPos + iSize.x * right + iSize.y * up, modelMatrix);
+        float4 right = float4(normalize(cross(iEye, iModelUp)), 0);
+        float4 up = float4(normalize(lerp(iModelUp, normalize(cross(right.xyz, iEye)), 0.3)), 0);
+        return mul(iPos + iSize.x * right + iSize.y * up, iModelMatrix);
     }
+    float GetProxyFadeFactor(float3 iNormal, float iEdge, float iThreshold, bool iReverse, float3 iEye, float3 iModelUp)
+    {
+        float normalDot = DotProjected(iEye, iNormal, iModelUp);
+        float opacity = UnLerp(normalDot, iEdge - iThreshold, iEdge + iThreshold);
+        return iReverse ? 2 - opacity : opacity;
+    }
+#endif
+
+#ifdef OBJECTPROXY
+    #ifndef NORMALMAP
+        #error OBJECTPROXY requires NORMALMAP
+    #endif
 #endif
 
 void VS(float4 iPos : POSITION,
@@ -52,7 +57,7 @@ void VS(float4 iPos : POSITION,
     #if defined(LIGHTMAP) || defined(AO)
         float2 iTexCoord2 : TEXCOORD1,
     #endif
-    #if defined(NORMALMAP) || defined(TRAILFACECAM) || defined(TRAILBONE) || defined(OBJECTPROXY)
+    #if defined(NORMALMAP) || defined(TRAILFACECAM) || defined(TRAILBONE)
         float4 iTangent : TANGENT,
     #endif
     #ifdef SKINNED
@@ -65,7 +70,7 @@ void VS(float4 iPos : POSITION,
     #if defined(BILLBOARD) || defined(DIRBILLBOARD)
         float2 iSize : TEXCOORD1,
     #endif
-    #if defined(OBJECTPROXY)
+    #ifdef OBJECTPROXY
         float4 iSize : TEXCOORD1,
         float4 iProxyParam : TEXCOORD2,
     #endif
@@ -111,32 +116,34 @@ void VS(float4 iPos : POSITION,
         float2 iTexCoord = float2(0.0, 0.0);
     #endif
     
-    // Compute normal
+    // Get matrix and vectors
     float4x3 modelMatrix = iModelMatrix;
-    float3 modelPosition = iModelMatrix._m30_m31_m32;
+    #ifdef OBJECTPROXY
+        float3 modelPosition = iModelMatrix._m30_m31_m32;
+        float3 modelUp = normalize(iModelMatrix._m10_m11_m12);
+        float3 eye = normalize(cCameraPos - modelPosition);
+    #endif
+
+    // Compute normal
     oNormal = GetWorldNormal(modelMatrix);
 
-    float proxyFadeEdge = iProxyParam.x;
-    const float proxyFadeDelta = iProxyParam.y;
-
-    float3 eye = normalize(cCameraPos - modelPosition);
-
-    float3 modelUp = normalize(mul(float4(0, 1, 0, 0), modelMatrix));
-    float normalDot = DotProjected(eye, oNormal, modelUp);
-    float opacity = UnLerp(normalDot, proxyFadeEdge - proxyFadeDelta, proxyFadeEdge + proxyFadeDelta);
-    
+    // Get fade factor
     oFade.x = 1.0;
-    oFade.y = iProxyParam.z > 0.0 ? 2 - opacity : opacity;
-    oFade.zw = iSize.zw * iProxyParam.w;
-    
-    #ifndef OBJECTPROXY
-        float3 worldPos = GetWorldPos(modelMatrix);
-        oPos = GetClipPos(worldPos);
+    #ifdef OBJECTPROXY
+        oFade.y = GetProxyFadeFactor(oNormal, iProxyParam.x, iProxyParam.y, iProxyParam.z > 0.0, eye, modelUp);
+        oFade.zw = iSize.zw * iProxyParam.w;
     #else
-        float3 worldPos = oFade.y > 0 ? GetProxyWorldPosition(iPos, iSize.xy, modelMatrix) : 0.0;
-        oPos = GetClipPos(worldPos);
-        oNormal = float3(0, 0, 1);
+        oFade.y = 1.0;
+        oFade.zw = 1.0;
     #endif
+
+    // Compute position
+    #ifdef OBJECTPROXY
+        float3 worldPos = oFade.y > 0 ? GetProxyWorldPosition(iPos, iSize.xy, eye, modelUp, modelMatrix) : 0.0;
+    #else
+        float3 worldPos = GetWorldPos(modelMatrix);
+    #endif
+    oPos = GetClipPos(worldPos);
     oWorldPos = float4(worldPos, GetDepth(oPos));
 
     #if defined(D3D11) && defined(CLIPPLANE)
@@ -148,8 +155,16 @@ void VS(float4 iPos : POSITION,
     #endif
 
     #ifdef NORMALMAP
-        float3 tangent = float3(1, 0, 0);//GetWorldTangent(modelMatrix);
-        float3 bitangent = float3(0, 1, 0);//cross(tangent, oNormal) * iTangent.w;
+        // Object proxy always have world-space normals
+        #ifdef OBJECTPROXY
+            float3 tangent = float3(1, 0, 0);
+            float3 bitangent = float3(0, 1, 0);
+            oNormal = float3(0, 0, 1);
+        #else
+            float3 tangent = GetWorldTangent(modelMatrix);
+            float3 bitangent = cross(tangent, oNormal) * iTangent.w;
+        #endif
+
         oTexCoord = float4(GetTexCoord(iTexCoord), bitangent.xy);
         oTangent = float4(tangent, bitangent.z);
     #else
@@ -248,9 +263,11 @@ void PS(
     #endif
     out float4 oColor : OUTCOLOR0)
 {
-    float noiseTexCoord = Random(floor(iFade.zw));
-    if (noiseTexCoord > iFade.y || noiseTexCoord + 1.0 < iFade.y)
-        discard;
+    #ifdef OBJECTPROXY
+        float noiseTexCoord = Random(floor(iFade.zw));
+        if (noiseTexCoord > iFade.y || noiseTexCoord + 1.0 < iFade.y)
+            discard;
+    #endif
     
     //float noiseFragPos = Random(floor(iFragPos.xy));
     //if (screenSpaceFade > iFade.x || screenSpaceFade + 1.0 < iFade.x)
