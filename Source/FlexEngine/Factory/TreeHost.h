@@ -65,6 +65,13 @@ protected:
     /// Tree model materials.
     Vector<SharedPtr<Material>> materials_;
 
+    /// Magnitude of deformations caused by main wind flow.
+    float windMainMagnitude_ = 0.0f;
+    /// Magnitude of deformations caused by turbulence wind.
+    float windTurbulenceMagnitude_ = 0.0f;
+    /// Magnitude of foliage oscillation.
+    float windOscillationMagnitude_ = 0.0f;
+
     /// Positions of leaves.
     PODVector<Vector3> leavesPositions_;
     /// Center of leaves.

@@ -47,9 +47,9 @@ void RegisterAPI(asIScriptEngine* engine)
     engine->RegisterObjectType("ModelFactory", sizeof(ModelFactory), asOBJ_REF);
     engine->RegisterObjectBehaviour("ModelFactory", asBEHAVE_ADDREF, "void f()", asFUNCTION(FakeAddRef), asCALL_CDECL_OBJLAST);
     engine->RegisterObjectBehaviour("ModelFactory", asBEHAVE_RELEASE, "void f()", asFUNCTION(FakeReleaseRef), asCALL_CDECL_OBJLAST);
-    engine->RegisterObjectMethod("ModelFactory", "void PushVertex(DefaultVertex &in vertex)", asMETHOD(ModelFactory, PushVertex), asCALL_THISCALL);
-    engine->RegisterObjectMethod("ModelFactory", "void PushIndex(uint index)", asMETHOD(ModelFactory, PushIndex), asCALL_THISCALL);
-    engine->RegisterObjectMethod("ModelFactory", "uint GetNumVerticesInBucket() const", asMETHOD(ModelFactory, GetNumVerticesInBucket), asCALL_THISCALL);
+    engine->RegisterObjectMethod("ModelFactory", "void PushVertex(DefaultVertex &in vertex)", asMETHOD(ModelFactory, AddVertex), asCALL_THISCALL);
+    engine->RegisterObjectMethod("ModelFactory", "void PushIndex(uint index)", asMETHOD(ModelFactory, AddIndex), asCALL_THISCALL);
+    engine->RegisterObjectMethod("ModelFactory", "uint GetNumVerticesInBucket() const", asMETHOD(ModelFactory, GetCurrentNumVertices), asCALL_THISCALL);
 }
 
 }

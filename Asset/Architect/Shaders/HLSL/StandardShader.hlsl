@@ -5,38 +5,8 @@
 #include "ScreenPos.hlsl"
 #include "Lighting.hlsl"
 #include "Fog.hlsl"
-
-float Random(float2 iTexCoord)
-{
-    return frac(sin(dot(iTexCoord.xy, float2(12.9898,78.233))) * 43758.5453);
-}
-float UnLerp(float iValue, float iMin, float iMax)
-{
-    return clamp((iValue - iMin) / (iMax - iMin), 0, 1);
-}
-float3 ProjectVectorOnPlane(float3 iVec, float3 iNormal)
-{
-    return normalize(iVec - iNormal * dot(iNormal, iVec));
-}
-float DotProjected(float3 iFirst, float3 iSecond, float3 iNormal)
-{
-    return dot(ProjectVectorOnPlane(iFirst, iNormal), ProjectVectorOnPlane(iSecond, iNormal));
-}
-
-#ifdef COMPILEVS
-    float3 GetProxyWorldPosition(float4 iPos, float2 iSize, float3 iEye, float3 iModelUp, float4x3 iModelMatrix)
-    {
-        float4 right = float4(normalize(cross(iEye, iModelUp)), 0);
-        float4 up = float4(normalize(lerp(iModelUp, normalize(cross(right.xyz, iEye)), 0.3)), 0);
-        return mul(iPos + iSize.x * right + iSize.y * up, iModelMatrix);
-    }
-    float GetProxyFadeFactor(float3 iNormal, float iEdge, float iThreshold, bool iReverse, float3 iEye, float3 iModelUp)
-    {
-        float normalDot = DotProjected(iEye, iNormal, iModelUp);
-        float opacity = UnLerp(normalDot, iEdge - iThreshold, iEdge + iThreshold);
-        return iReverse ? 2 - opacity : opacity;
-    }
-#endif
+#include "Math.hlsl"
+#include "VegetationWind.hlsl"
 
 #ifdef OBJECTPROXY
     #ifndef NORMALMAP
@@ -53,6 +23,9 @@ void VS(float4 iPos : POSITION,
     #endif
     #ifdef VERTEXCOLOR
         float4 iColor : COLOR0,
+    #endif
+    #ifdef WIND
+        float4 iWind : COLOR0,
     #endif
     #if defined(LIGHTMAP) || defined(AO)
         float2 iTexCoord2 : TEXCOORD1,
@@ -118,8 +91,8 @@ void VS(float4 iPos : POSITION,
     
     // Get matrix and vectors
     float4x3 modelMatrix = iModelMatrix;
+    float3 modelPosition = iModelMatrix._m30_m31_m32;
     #ifdef OBJECTPROXY
-        float3 modelPosition = iModelMatrix._m30_m31_m32;
         float3 modelUp = normalize(iModelMatrix._m10_m11_m12);
         float3 eye = normalize(cCameraPos - modelPosition);
     #endif
@@ -139,10 +112,59 @@ void VS(float4 iPos : POSITION,
 
     // Compute position
     #ifdef OBJECTPROXY
-        float3 worldPos = oFade.y > 0 ? GetProxyWorldPosition(iPos, iSize.xy, eye, modelUp, modelMatrix) : 0.0;
+        float3 worldPos = oFade.y > 0 ? GetProxyWorldPosition(iPos, iSize.xy, eye, modelUp, modelMatrix, 0.3) : 0.0;
     #else
         float3 worldPos = GetWorldPos(modelMatrix);
     #endif
+
+    // Apply wind
+    #ifdef WIND
+        const float3 vWindDirection = float3(1, 0, 0);
+        // half windMain; ///< Wind main strength
+        // half windPulseMagnitude; ///< Wind pulse magnitude
+        // half windPulseFrequency; ///< Wind pulse frequency
+        // half windTurbulence; ///< Wind turbulence
+        const float cfTrunkMagnitude = 0.5;
+        const float cfEdgeMainMagnitude = 0.0175;
+        const float cfEdgeTurbulenceMagnitude = 0.0056;
+        const float cfEdgeFrequency = 1.0;
+        const float cfBranchMainMagnitude = 0.1;
+        const float cfBranchTurbulenceMagnitude = 0.1;
+        const float cfBranchPhaseModifier = 0.0;
+        const float cfBranchFrequency = 0.666;
+
+        //const float4 inWindParam = float4(0, 0.1, 0.1, 0.1); // Calm
+        //const float4 inWindParam = float4(2.5, 0.5, 0.2f, 0.4); // Weak
+        //const float4 inWindParam = float4(10.0, 3.0, 0.25, 3.5); // Strong
+        const float4 inWindParam = float4(20.0, 10.0, 0.3, 5.0); // Storm
+
+        const float4 inWind = iWind;
+
+        float2 vEdgeMagnitude = inWindParam.xw * float2(cfEdgeMainMagnitude, cfEdgeTurbulenceMagnitude);
+        worldPos.xyz = FrondEdgeWind(
+            modelPosition, worldPos.xyz, oNormal,
+            inWind.w * max(inWindParam.x, inWindParam.y),
+            cfEdgeFrequency,
+            cElapsedTime);
+        worldPos.xyz = GlobalWind(
+            modelPosition, worldPos.xyz, oNormal,
+            inWind.x * cfTrunkMagnitude,
+            inWind.y * cfBranchMainMagnitude,
+            inWindParam.x,
+            inWindParam.y,
+            inWindParam.z,
+            inWind.z * cfBranchPhaseModifier,
+            cElapsedTime,
+            vWindDirection);
+        worldPos.xyz = BranchTurbulenceWind(
+            modelPosition, float3(0, 1, 0), worldPos.xyz,
+            inWind.y * cfBranchTurbulenceMagnitude * inWindParam.w,
+            cfBranchFrequency,
+            inWind.z,
+            cElapsedTime,
+            vWindDirection);
+    #endif
+
     oPos = GetClipPos(worldPos);
     oWorldPos = float4(worldPos, GetDepth(oPos));
 

@@ -437,7 +437,7 @@ SharedPtr<Model> RenderedModelTexture::GetOrCreateModel() const
         {
             if (SharedPtr<ModelFactory> factory = CreateModelFromScript(*script_, entryPoint_))
             {
-                model = factory->BuildModel(factory->GetMaterials());
+                model = factory->BuildModel();
                 if (!model)
                 {
                     URHO3D_LOGERROR("Failed to create procedural model");

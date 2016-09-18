@@ -114,8 +114,8 @@ void ModelFactory::Reset()
     vertexElements_.Clear();
     vertexSize_ = 0;
     largeIndices_ = false;
+    currentGeometry_ = 0;
     currentLevel_ = 0;
-    currentMaterial_ = nullptr;
     geometry_.Clear();
 }
 
@@ -137,25 +137,44 @@ void ModelFactory::SetLevel(unsigned level)
     currentLevel_ = level;
 }
 
-void ModelFactory::SetMaterial(SharedPtr<Material> material)
+void ModelFactory::AddGeometry(SharedPtr<Material> material, bool allowReuse /*= true*/)
 {
-    currentMaterial_ = material;
-}
+    // Find existing
+    const Vector<SharedPtr<Material>>::Iterator it = materials_.Find(material);
 
-void ModelFactory::PushNothing()
-{
-    Vector<ModelGeometryBuffer>& perLevelGeometry = geometry_[currentMaterial_];
-    if (currentLevel_ >= perLevelGeometry.Size())
+    // Add new
+    if (it == materials_.End() || !allowReuse)
     {
-        perLevelGeometry.Resize(currentLevel_ + 1);
+        currentGeometry_ = materials_.Size();
+        materials_.Push(material);
+        geometry_.Push(Vector<ModelGeometryBuffer>());
+    }
+    else
+    {
+        currentGeometry_ = it - materials_.Begin();
     }
 }
 
-void ModelFactory::Push(const void* vertexData, unsigned numVertices, const void* indexData, unsigned numIndices, bool adjustIndices)
+void ModelFactory::AddEmpty()
+{
+    const unsigned numGeometries = geometry_.Size();
+    if (currentGeometry_ >= numGeometries)
+    {
+        geometry_.Resize(numGeometries + 1);
+    }
+
+    const unsigned numLevels = geometry_[currentGeometry_].Size();
+    if (currentLevel_ >= numLevels)
+    {
+        geometry_[currentGeometry_].Resize(numLevels + 1);
+    }
+}
+
+void ModelFactory::AddPrimitives(const void* vertexData, unsigned numVertices, const void* indexData, unsigned numIndices, bool adjustIndices)
 {
     // Get destination buffers
-    PushNothing();
-    ModelGeometryBuffer& geometryBuffer = geometry_[currentMaterial_][currentLevel_];
+    AddEmpty();
+    ModelGeometryBuffer& geometryBuffer = geometry_[currentGeometry_][currentLevel_];
 
     // Copy vertex data
     geometryBuffer.vertexData.Insert(geometryBuffer.vertexData.End(),
@@ -176,25 +195,47 @@ void ModelFactory::Push(const void* vertexData, unsigned numVertices, const void
     }
 }
 
-unsigned ModelFactory::GetNumVerticesInBucket() const
+unsigned ModelFactory::GetCurrentNumVertices() const
 {
-    // Get destination buffers
-    Vector<ModelGeometryBuffer>* perLevelGeometry = geometry_[currentMaterial_];
-    if (!perLevelGeometry)
-    {
-        return 0;
-    }
-
-    if (currentLevel_ >= perLevelGeometry->Size())
-    {
-        return 0;
-    }
-
-    ModelGeometryBuffer& geometryBuffer = perLevelGeometry->At(currentLevel_);
-    return geometryBuffer.vertexData.Size() / vertexSize_;
+    return GetNumVertices(currentGeometry_, currentLevel_);
 }
 
-SharedPtr<Model> ModelFactory::BuildModel(const Vector<SharedPtr<Material>>& materials) const
+unsigned ModelFactory::GetNumGeometries() const
+{
+    return geometry_.Size();
+}
+
+unsigned ModelFactory::GetNumGeometryLevels(unsigned geometry) const
+{
+    return geometry < GetNumGeometries() ? geometry_[geometry].Size() : 0;
+}
+
+unsigned ModelFactory::GetNumVertices(unsigned geometry, unsigned level) const
+{
+    return level < GetNumGeometryLevels(geometry) ? geometry_[geometry][level].vertexData.Size() / GetVertexSize() : 0;
+}
+
+unsigned ModelFactory::GetNumIndices(unsigned geometry, unsigned level) const
+{
+    return level < GetNumGeometryLevels(geometry) ? geometry_[geometry][level].indexData.Size() / GetIndexSize() : 0;
+}
+
+const void* ModelFactory::GetVertices(unsigned geometry, unsigned level) const
+{
+    return level < GetNumGeometryLevels(geometry) ? geometry_[geometry][level].vertexData.Buffer() : nullptr;
+}
+
+const void* ModelFactory::GetIndices(unsigned geometry, unsigned level) const
+{
+    return level < GetNumGeometryLevels(geometry) ? geometry_[geometry][level].indexData.Buffer() : nullptr;
+}
+
+const Vector<SharedPtr<Material>>& ModelFactory::GetMaterials() const
+{
+    return materials_;
+}
+
+SharedPtr<Model> ModelFactory::BuildModel() const
 {
     // Prepare buffers for accumulated geometry data
     SharedPtr<VertexBuffer> vertexBuffer = MakeShared<VertexBuffer>(context_);
@@ -208,17 +249,10 @@ SharedPtr<Model> ModelFactory::BuildModel(const Vector<SharedPtr<Material>>& mat
     model->SetIndexBuffers({ indexBuffer });
 
     // Number of geometries is equal to number of materials
-    model->SetNumGeometries(materials.Size());
-
-    for (unsigned i = 0; i < materials.Size(); ++i)
+    model->SetNumGeometries(geometry_.Size());
+    for (unsigned i = 0; i < geometry_.Size(); ++i)
     {
-        Vector<ModelGeometryBuffer>* perLodGeometry = geometry_[materials[i]];
-        if (!perLodGeometry)
-        {
-            continue;
-        }
-
-        model->SetNumGeometryLodLevels(i, perLodGeometry->Size());
+        model->SetNumGeometryLodLevels(i, geometry_[i].Size());
     }
 
     // Merge all arrays into one
@@ -227,17 +261,11 @@ SharedPtr<Model> ModelFactory::BuildModel(const Vector<SharedPtr<Material>>& mat
     PODVector<unsigned> geometryIndexOffset;
     PODVector<unsigned> geometryIndexCount;
 
-    for (unsigned i = 0; i < materials.Size(); ++i)
+    for (unsigned i = 0; i < geometry_.Size(); ++i)
     {
-        Vector<ModelGeometryBuffer>* perLodGeometry = geometry_[materials[i]];
-        if (!perLodGeometry)
+        for (unsigned j = 0; j < geometry_[i].Size(); ++j)
         {
-            continue;
-        }
-
-        for (unsigned j = 0; j < perLodGeometry->Size(); ++j)
-        {
-            const ModelGeometryBuffer& geometryBuffer = perLodGeometry->At(j);
+            const ModelGeometryBuffer& geometryBuffer = geometry_[i][j];
 
             // Merge buffers
             geometryIndexOffset.Push(indexData.Size() / GetIndexSize());
@@ -266,14 +294,9 @@ SharedPtr<Model> ModelFactory::BuildModel(const Vector<SharedPtr<Material>>& mat
 
     // Setup ranges
     unsigned group = 0;
-    for (unsigned i = 0; i < materials.Size(); ++i)
+    for (unsigned i = 0; i < geometry_.Size(); ++i)
     {
-        Vector<ModelGeometryBuffer>* perLodGeometry = geometry_[materials[i]];
-        if (!perLodGeometry)
-        {
-            continue;
-        }
-        for (unsigned lod = 0; lod < perLodGeometry->Size(); ++lod)
+        for (unsigned lod = 0; lod < geometry_[i].Size(); ++lod)
         {
             model->GetGeometry(i, lod)->SetDrawRange(TRIANGLE_LIST, geometryIndexOffset[group], geometryIndexCount[group]);
             ++group;
@@ -315,16 +338,6 @@ SharedPtr<Model> ModelFactory::BuildModel(const Vector<SharedPtr<Material>>& mat
     return model;
 }
 
-Vector<SharedPtr<Material>> ModelFactory::GetMaterials() const
-{
-    Vector<SharedPtr<Material>> result;
-    for (const GeometryBufferMap::KeyValue& geometry : geometry_)
-    {
-        result.Push(geometry.first_);
-    }
-    return result;
-}
-
 //////////////////////////////////////////////////////////////////////////
 SharedPtr<ModelFactory> CreateModelFromScript(ScriptFile& scriptFile, const String& entryPoint)
 {
@@ -354,8 +367,8 @@ SharedPtr<Model> CreateQuadModel(Context* context)
 
     ModelFactory factory(context);
     factory.Initialize(DefaultVertex::GetVertexElements(), true);
-    factory.Push(vertices, indices, true);
-    return factory.BuildModel(factory.GetMaterials());
+    factory.AddPrimitives(vertices, indices, true);
+    return factory.BuildModel();
 }
 
 SharedPtr<Model> GetOrCreateQuadModel(Context* context)

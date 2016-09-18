@@ -727,7 +727,7 @@ bool TextureFactory::Load(const XMLElement& source)
                     return false;
                 }
                 SharedPtr<ModelFactory> factory = CreateModelFromScript(*script, entryPoint);
-                geometryDesc.model_ = factory->BuildModel(factory->GetMaterials());
+                geometryDesc.model_ = factory->BuildModel();
             }
 
             // Load bounding box

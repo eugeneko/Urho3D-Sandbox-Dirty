@@ -100,17 +100,18 @@ public:
     void Reset();
     /// Initialize model factory. Vertex and index format must be the same for whole model.
     void Initialize(const PODVector<VertexElement>& vertexElements, bool largeIndices);
+
+    /// Add new geometry and set current material for further data write operations.
+    void AddGeometry(SharedPtr<Material> material, bool allowReuse = true);
     /// Set current level for further data write operations.
     void SetLevel(unsigned level);
-    /// Set current material for further data write operations.
-    void SetMaterial(SharedPtr<Material> material);
-    /// Push nothing. This call just creates empty geometry.
-    void PushNothing();
-    /// Push vertex and index data.
-    void Push(const void* vertexData, unsigned numVertices, const void* indexData, unsigned numIndices, bool adjustIndices);
-    /// Push vertex and index data.
+    /// Add nothing. This call just creates empty geometry level.
+    void AddEmpty();
+    /// Add vertex and index data.
+    void AddPrimitives(const void* vertexData, unsigned numVertices, const void* indexData, unsigned numIndices, bool adjustIndices);
+    /// Add vertex and index data.
     template <class T, class U>
-    void Push(const PODVector<T>& vertices, const PODVector<U>& indices, bool adjustIndices)
+    void AddPrimitives(const PODVector<T>& vertices, const PODVector<U>& indices, bool adjustIndices)
     {
         if (sizeof(T) != GetVertexSize())
         {
@@ -124,11 +125,11 @@ public:
             return;
         }
 
-        Push(vertices.Buffer(), vertices.Size(), indices.Buffer(), indices.Size(), adjustIndices);
+        AddPrimitives(vertices.Buffer(), vertices.Size(), indices.Buffer(), indices.Size(), adjustIndices);
     }
-    /// Push vertex and index data.
+    /// Add vertex and index data.
     template <class T, unsigned N, class U, unsigned M>
-    void Push(const T (&vertices)[N], const U (&indices)[M], bool adjustIndices)
+    void AddPrimitives(const T (&vertices)[N], const U (&indices)[M], bool adjustIndices)
     {
         if (sizeof(T) != GetVertexSize())
         {
@@ -142,24 +143,59 @@ public:
             return;
         }
 
-        Push(vertices, N, indices, M, adjustIndices);
+        AddPrimitives(vertices, N, indices, M, adjustIndices);
     }
-    /// Push vertex.
-    void PushVertex(const DefaultVertex& vertex) { Push(&vertex, 1, nullptr, 0, false); }
-    /// Push index.
-    void PushIndex(unsigned index) { Push(nullptr, 0, &index, 1, false); };
-    /// Get number of vertices for current level and material.
-    unsigned GetNumVerticesInBucket() const;
-
-    /// Build model from stored data.
-    SharedPtr<Model> BuildModel(const Vector<SharedPtr<Material>>& materials) const;
+    /// Add vertex.
+    void AddVertex(const DefaultVertex& vertex) { AddPrimitives(&vertex, 1, nullptr, 0, false); }
+    /// Add index.
+    void AddIndex(unsigned index) { AddPrimitives(nullptr, 0, &index, 1, false); };
+    /// Iterate over vertices.
+    template <class T, class U>
+    void ForEachVertex(U function)
+    {
+        for (unsigned i = 0; i < GetNumGeometries(); ++i)
+        {
+            for (unsigned j = 0; j < GetNumGeometryLevels(i); ++j)
+            {
+                const unsigned n = GetNumVertices(i, j);
+                T* vertices = GetVertices<T>(i, j);
+                for (unsigned k = 0; k < n; ++k)
+                {
+                    function(i, j, k, vertices[k]);
+                }
+            }
+        }
+    }
 
     /// Get vertex size.
     unsigned GetVertexSize() const { return vertexSize_; }
     /// Get index size.
     unsigned GetIndexSize() const { return largeIndices_ ? 4 : 2; }
+    /// Get number of geometries.
+    unsigned GetNumGeometries() const;
+    /// Get number of levels.
+    unsigned GetNumGeometryLevels(unsigned geometry) const;
+    /// Get number of vertices.
+    unsigned GetNumVertices(unsigned geometry, unsigned level) const;
+    /// Get number of indices.
+    unsigned GetNumIndices(unsigned geometry, unsigned level) const;
+    /// Get vertex data.
+    const void* GetVertices(unsigned geometry, unsigned level) const;
+    /// Get index data.
+    const void* GetIndices(unsigned geometry, unsigned level) const;
+    /// Get vertex data.
+    template <class T>
+    T* GetVertices(unsigned geometry, unsigned level) { return const_cast<T*>(const_cast<const ModelFactory*>(this)->GetVertices<T>(geometry, level)); }
+    /// Get vertex data.
+    template <class T>
+    const T* GetVertices(unsigned geometry, unsigned level) const { assert(sizeof(T) == GetVertexSize()); return static_cast<const T*>(GetVertices(geometry, level)); }
+    /// Get number of vertices for current level and material.
+    unsigned GetCurrentNumVertices() const;
     /// Get materials.
-    Vector<SharedPtr<Material>> GetMaterials() const;
+    const Vector<SharedPtr<Material>>& GetMaterials() const;
+
+    /// Build model from stored data.
+    SharedPtr<Model> BuildModel() const;
 
 private:
     /// Vertex elements.
@@ -168,14 +204,15 @@ private:
     unsigned vertexSize_ = 0;
     /// Set to use 32-bit indices.
     bool largeIndices_ = false;
+
+    /// Current geometry.
+    unsigned currentGeometry_ = 0;
     /// Current level.
     unsigned currentLevel_ = 0;
-    /// Current material.
-    SharedPtr<Material> currentMaterial_;
-    /// Geometry container.
-    using GeometryBufferMap = HashMap<SharedPtr<Material>, Vector<ModelGeometryBuffer>>;
     /// Geometry data grouped by material and levels.
-    GeometryBufferMap geometry_;
+    Vector<Vector<ModelGeometryBuffer>> geometry_;
+    /// Materials of geometries.
+    Vector<SharedPtr<Material>> materials_;
 };
 
 /// Create model from script.

@@ -73,10 +73,17 @@ struct BranchShapeSettings
     /// Radius of the branch.
     CubicCurveWrapper radius_;
 
+    /// Controls branch geometry bending caused by external force. Should be in range [0, 1).
+    /// 0 is the linear deformation of the branch without geometry bending.
+    float resistance_ = 0.0f;
     /// Intensity of deformation caused by gravity.
     float gravityIntensity_ = 0.0f;
-    /// Measure of geometry bending caused by gravity. Should be in range (0, 1].
-    float gravityResistance_ = 0.0f;
+    /// Value of deformations caused by main wind flow.
+    float windMainMagnitude_ = 0.0f;
+    /// Value of deformations caused by turbulence wind.
+    float windTurbulenceMagnitude_ = 0.0f;
+    /// Wind oscillation phase offset.
+    float windPhaseOffset_ = 0.0f;
 };
 
 /// Branch description.
@@ -88,19 +95,33 @@ struct BranchDescription
     unsigned index_ = 0;
     /// Positions of branch knots.
     PODVector<Vector3> positions_;
-    /// Bezier curve for positions.
-    BezierCurve3D positionsCurve_;
     /// Radiuses of branch knots.
     PODVector<float> radiuses_;
-    /// Bezier curve for radiuses.
-    BezierCurve1D radiusesCurve_;
+    /// Adherences of branch knots.
+    PODVector<Vector2> adherences_;
     /// Branch length.
     float length_ = 0.0f;
+    /// Branch oscillation phase.
+    float phase_ = 0.0f;
+
+    /// Generate curves.
+    void GenerateCurves()
+    {
+        positionsCurve_ = CreateBezierCurve(positions_);
+        radiusesCurve_ = CreateBezierCurve(radiuses_);
+        adherencesCurve_ = CreateBezierCurve(adherences_);
+    }
+    /// Bezier curve for positions.
+    BezierCurve3D positionsCurve_;
+    /// Bezier curve for radiuses.
+    BezierCurve1D radiusesCurve_;
+    /// Bezier curve for adherences.
+    BezierCurve2D adherencesCurve_;
 };
 
 /// Generate branch using specified parameters. Return Bezier curve knots. Number of knots is computed automatically.
-BranchDescription GenerateBranch(const Vector3& initialPosition, const Vector3& initialDirection, float length, float baseRadius,
-    const BranchShapeSettings& shape, unsigned minNumKnots);
+BranchDescription GenerateBranch(const Vector3& initialPosition, const Vector3& initialDirection, const Vector2& initialAdherence,
+    float length, float baseRadius, const BranchShapeSettings& shape, unsigned minNumKnots);
 
 /// Branch tessellation quality parameters.
 struct BranchTessellationQualityParameters 
@@ -122,24 +143,26 @@ struct TessellatedBranchPoint
     float radius_;
     /// Position.
     Vector3 position_;
+    /// Adherence.
+    Vector2 adherence_;
 };
 
 /// Tessellated branch points.
 using TessellatedBranchPoints = PODVector<TessellatedBranchPoint>;
 
 /// Tessellate branch with specified quality. Return array of points with position on curve in w component.
-TessellatedBranchPoints TessellateBranch(const BezierCurve3D& positions, const BezierCurve1D& radiuses,
-    const BranchTessellationQualityParameters& quality);
+TessellatedBranchPoints TessellateBranch(const BranchDescription& branch,
+    const float multiplier, const BranchTessellationQualityParameters& quality);
 
 /// Generate branch geometry vertices.
-PODVector<DefaultVertex> GenerateBranchVertices(const TessellatedBranchPoints& points,
+PODVector<DefaultVertex> GenerateBranchVertices(const BranchDescription& branch, const TessellatedBranchPoints& points,
     const BranchShapeSettings& shape, unsigned numRadialSegments);
 
 /// Generate branch geometry vertices.
 PODVector<unsigned> GenerateBranchIndices(const PODVector<unsigned>& numRadialSegments, unsigned maxVertices);
 
 /// Generate branch geometry.
-void GenerateBranchGeometry(ModelFactory& factory, const TessellatedBranchPoints& points,
+void GenerateBranchGeometry(ModelFactory& factory, const BranchDescription& branch, const TessellatedBranchPoints& points,
     const BranchShapeSettings& shape, unsigned numRadialSegments);
 
 /// Tree element distribution settings.
@@ -183,6 +206,10 @@ struct TreeElementLocation
     float location_;
     /// Position of element.
     Vector3 position_;
+    /// Base adherence.
+    Vector2 adherence_;
+    /// Phase.
+    float phase_;
     /// Rotation of element.
     Quaternion rotation_;
     /// Parent (base) radius.
@@ -220,6 +247,12 @@ struct LeafShapeSettings
     Vector3 gravityResistance_ = Vector3::ONE;
     /// Adjusts intensity of bumping fake leaf normals.
     float bumpNormals_ = 0.0f;
+    /// Value of deformations caused by main wind flow, minimum and maximum values.
+    Vector2 windMainMagnitude_ = Vector2::ZERO;
+    /// Value of deformations caused by turbulence wind, minimum and maximum values.
+    Vector2 windTurbulenceMagnitude_ = Vector2::ZERO;
+    /// Value of foliage oscillations, minimum and maximum values.
+    Vector2 windOscillationMagnitude_ = Vector2::ZERO;
 };
 
 /// Leaf description.

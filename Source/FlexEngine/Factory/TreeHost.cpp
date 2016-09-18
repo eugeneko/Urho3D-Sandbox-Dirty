@@ -82,7 +82,9 @@ void TreeHost::RegisterObject(Context* context)
     URHO3D_COPY_BASE_ATTRIBUTES(ProceduralComponent);
 
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Destination Model", GetDestinationModelAttr, SetDestinationModelAttr, ResourceRef, ResourceRef(Model::GetTypeStatic()), AM_DEFAULT);
-
+    URHO3D_MEMBER_ATTRIBUTE("Wind Main", float, windMainMagnitude_, 1.0f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Wind Turbulence", float, windTurbulenceMagnitude_, 1.0f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Wind Oscillation", float, windOscillationMagnitude_, 1.0f, AM_DEFAULT);
 }
 
 void TreeHost::OnBranchGenerated(const BranchDescription& /*branch*/, const BranchShapeSettings& /*shape*/)
@@ -155,8 +157,26 @@ void TreeHost::DoUpdate()
         TriangulateChildren(*node_, factory, *this, *lods[i]);
     }
 
+    // Update ground adherence
+    float maxMainAdherence = M_LARGE_EPSILON;
+    float maxTurbulenceAdherence = M_LARGE_EPSILON;
+    factory.ForEachVertex<DefaultVertex>(
+        [&maxMainAdherence, &maxTurbulenceAdherence](unsigned, unsigned, unsigned, DefaultVertex& vertex)
+    {
+        maxMainAdherence = Max(maxMainAdherence, vertex.colors_[0].r_);
+        maxTurbulenceAdherence = Max(maxTurbulenceAdherence, vertex.colors_[0].g_);
+    });
+    factory.ForEachVertex<DefaultVertex>(
+        [&maxMainAdherence, &maxTurbulenceAdherence, this](unsigned, unsigned, unsigned, DefaultVertex& vertex)
+    {
+        vertex.colors_[0].r_ *= windMainMagnitude_ / maxMainAdherence;
+        vertex.colors_[0].g_ *= windTurbulenceMagnitude_ / maxTurbulenceAdherence;
+        vertex.colors_[0].a_ *= windOscillationMagnitude_;
+    });
+
+    // Generate and setup
     materials_ = factory.GetMaterials();
-    model_ = factory.BuildModel(materials_);
+    model_ = factory.BuildModel();
     for (unsigned i = 0; i < lods.Size(); ++i)
     {
         for (unsigned j = 0; j < model_->GetNumGeometries(); ++j)
@@ -261,8 +281,11 @@ void BranchGroup::RegisterObject(Context* context)
     URHO3D_MEMBER_ATTRIBUTE("Fake Ending", bool, shape_.fakeEnding_, false, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Radius", Vector2, shape_.radius_, GetResultRange, SetResultRange, Vector2(0.5f, 0.1f), AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Radius Curve", String, shape_.radius_, GetCurveString, SetCurveString, "linear", AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Resistance", float, shape_.resistance_, 0.5f, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Gravity Intensity", float, shape_.gravityIntensity_, 0.0f, AM_DEFAULT);
-    URHO3D_MEMBER_ATTRIBUTE("Gravity Resistance", float, shape_.gravityResistance_, 0.5f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Wind Main", float, shape_.windMainMagnitude_, 0.0f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Wind Turbulence", float, shape_.windTurbulenceMagnitude_, 0.0f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Wind Phase", float, shape_.windPhaseOffset_, 0.0f, AM_DEFAULT);
 }
 
 void BranchGroup::Generate(TreeHost& host)
@@ -308,15 +331,15 @@ void BranchGroup::DoTriangulate(ModelFactory& factory, TreeHost& host, TreeLevel
     lodDesc.branchTessellationQuality_.minNumSegments_ = lod.GetMinBranchSegments();
     lodDesc.branchTessellationQuality_.minAngle_ = lod.GetMinAngle();
 
-    factory.SetMaterial(material_);
+    factory.AddGeometry(material_);
     for (const BranchDescription& branch : branches_)
     {
         if (!branch.fake_)
         {
             const TessellatedBranchPoints tessellatedPoints =
-                TessellateBranch(branch.positionsCurve_, branch.radiusesCurve_, lodDesc.branchTessellationQuality_);
+                TessellateBranch(branch, shape_.quality_, lodDesc.branchTessellationQuality_);
 
-            GenerateBranchGeometry(factory, tessellatedPoints, shape_, lod.GetNumRadialSegments());
+            GenerateBranchGeometry(factory, branch, tessellatedPoints, shape_, lod.GetNumRadialSegments());
         }
     }
 }
@@ -360,6 +383,9 @@ void LeafGroup::RegisterObject(Context* context)
     URHO3D_MEMBER_ATTRIBUTE("Gravity Intensity", Vector3, shape_.gravityIntensity_, Vector3::ZERO, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Gravity Resistance", Vector3, shape_.gravityResistance_, Vector3::ONE * 0.5f, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Bump Normals", float, shape_.bumpNormals_, 0.0f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Wind Main", Vector2, shape_.windMainMagnitude_, Vector2::ZERO, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Wind Turbulence", Vector2, shape_.windTurbulenceMagnitude_, Vector2::ZERO, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Wind Oscillation", Vector2, shape_.windOscillationMagnitude_, Vector2::ZERO, AM_DEFAULT);
 }
 
 void LeafGroup::Generate(TreeHost& host)
@@ -397,7 +423,7 @@ void LeafGroup::Generate(TreeHost& host)
 
 void LeafGroup::DoTriangulate(ModelFactory& factory, TreeHost& host, TreeLevelOfDetail& lod) const
 {
-    factory.SetMaterial(material_);
+    factory.AddGeometry(material_);
     for (const LeafDescription& leaf : leaves_)
     {
         GenerateLeafGeometry(factory, shape_, leaf.location_, host.GetFoliageCenter());
@@ -474,11 +500,11 @@ SharedPtr<Model> TreeProxy::Generate(SharedPtr<Model> model, const Vector<Shared
 {
     ModelFactory factory(context_);
     factory.Initialize(DefaultVertex::GetVertexElements(), true);
-    factory.SetMaterial(proxyMaterial_);
+    factory.AddGeometry(proxyMaterial_);
 
     // Add empty geometry to hide proxy LOD at small distances
     factory.SetLevel(0);
-    factory.PushNothing();
+    factory.AddEmpty();
 
     // Add actual proxy geometry
     factory.SetLevel(1);
@@ -514,10 +540,10 @@ SharedPtr<Model> TreeProxy::Generate(SharedPtr<Model> model, const Vector<Shared
     }
 
     // Fill parameters
-    factory.Push(vertices, indices, false);
+    factory.AddPrimitives(vertices, indices, false);
 
     // Update bounding box and set LOD distance
-    SharedPtr<Model> proxyModel = factory.BuildModel(factory.GetMaterials());
+    SharedPtr<Model> proxyModel = factory.BuildModel();
     proxyModel->SetBoundingBox(boundingBox);
     proxyModel->GetGeometry(0, 1)->SetLodDistance(distance_);
 

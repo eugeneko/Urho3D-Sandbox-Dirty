@@ -62,7 +62,7 @@ void GenerateTempGeometryFromXML(XMLElement& node, ResourceCache& resourceCache,
     }
 
     // Build model
-    SharedPtr<Model> model = factory->BuildModel(factory->GetMaterials());
+    SharedPtr<Model> model = factory->BuildModel();
 
     // Save model
     // #TODO Add some checks

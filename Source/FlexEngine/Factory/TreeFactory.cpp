@@ -132,8 +132,8 @@ PODVector<VertexElement> VegetationVertex::Format()
 }
 
 //////////////////////////////////////////////////////////////////////////
-BranchDescription GenerateBranch(const Vector3& initialPosition, const Vector3& initialDirection, float length, float baseRadius,
-    const BranchShapeSettings& shape, unsigned minNumKnots)
+BranchDescription GenerateBranch(const Vector3& initialPosition, const Vector3& initialDirection, const Vector2& initialAdherence,
+    float length, float baseRadius, const BranchShapeSettings& shape, unsigned minNumKnots)
 {
     // Compute parameters
     const unsigned numKnots = minNumKnots;
@@ -148,28 +148,34 @@ BranchDescription GenerateBranch(const Vector3& initialPosition, const Vector3& 
     {
         result.positions_.Push(position);
         result.radiuses_.Push(shape.radius_.ComputeValue(i / (numKnots - 1.0f)) * baseRadius);
+        result.adherences_.Push(initialAdherence);
 
         direction = direction.Normalized();
         position += direction * step;
     }
 
-    // Apply gravity and restore shape
     for (unsigned i = 0; i < numKnots; ++i)
     {
         const float factor = static_cast<float>(i) / (numKnots + 1);
+        float degree = Pow(factor, 1.0f / (1.0f - shape.resistance_));
+
+        // Apply gravity and restore shape
         const float len = (result.positions_[i] - initialPosition).Length();
-        result.positions_[i].y_ -= shape.gravityIntensity_ * Pow(factor, 1.0f / shape.gravityResistance_);
+        result.positions_[i].y_ -= shape.gravityIntensity_ * degree;
         result.positions_[i] = (result.positions_[i] - initialPosition).Normalized() * len + initialPosition;
+
+        // Update adherence
+        result.adherences_[i].x_ += shape.windMainMagnitude_ * degree;
+        result.adherences_[i].y_ += shape.windTurbulenceMagnitude_ * degree;
     }
 
     result.length_ = length;
-    result.radiusesCurve_ = CreateBezierCurve(result.radiuses_);
-    result.positionsCurve_ = CreateBezierCurve(result.positions_);
+    result.GenerateCurves();
     return result;
 }
 
-TessellatedBranchPoints TessellateBranch(const BezierCurve3D& positions, const BezierCurve1D& radiuses,
-    const BranchTessellationQualityParameters& quality)
+TessellatedBranchPoints TessellateBranch(const BranchDescription& branch,
+    const float multiplier, const BranchTessellationQualityParameters& quality)
 {
     TessellatedBranchPoints result;
     if (quality.maxNumSegments_ < 5)
@@ -190,30 +196,35 @@ TessellatedBranchPoints TessellateBranch(const BezierCurve3D& positions, const B
         return result;
     }
 
-    const unsigned numSegments = positions.xcoef_.Size();
+    const unsigned numSegments = branch.positionsCurve_.xcoef_.Size();
+    const unsigned minNumSegments = Max(1u, static_cast<unsigned>(quality.minNumSegments_ * multiplier));
+    const float minAngle = Clamp(quality.minAngle_ / multiplier, 1.0f, 90.0f);
     // Point is forcedly committed after specified number of skipped points
-    const unsigned maxNumSkipped = (quality.maxNumSegments_ + quality.minNumSegments_ - 1) / quality.minNumSegments_ - 1;
+    const unsigned maxNumSkipped = (quality.maxNumSegments_ + minNumSegments - 1) / minNumSegments - 1;
 
     Vector3 prevDirection;
     unsigned prevIndex = 0;
     for (unsigned i = 0; i <= quality.maxNumSegments_; ++i)
     {
         const float t = static_cast<float>(i) / quality.maxNumSegments_;
-        const Vector3 curDirection = SampleBezierCurveDerivative(positions, t);
+        const Vector3 curDirection = SampleBezierCurveDerivative(branch.positionsCurve_, t);
         if (i == 0 || i == quality.maxNumSegments_ || i - prevIndex == maxNumSkipped
-            || AngleBetween(curDirection, prevDirection) >= quality.minAngle_)
+            || AngleBetween(curDirection, prevDirection) >= minAngle)
         {
             prevIndex = i;
-            prevDirection = SampleBezierCurveDerivative(positions, t);
-            const float radius = SampleBezierCurve(radiuses, t);
-            const Vector3 position = SampleBezierCurve(positions, t);
-            result.Push({ t, radius, position });
+            prevDirection = SampleBezierCurveDerivative(branch.positionsCurve_, t);
+
+            TessellatedBranchPoint point;
+            point.position_ = SampleBezierCurve(branch.positionsCurve_, t);
+            point.radius_ = SampleBezierCurve(branch.radiusesCurve_, t);
+            point.adherence_ = SampleBezierCurve(branch.adherencesCurve_, t);
+            result.Push(point);
         }
     }
     return result;
 }
 
-PODVector<DefaultVertex> GenerateBranchVertices(const TessellatedBranchPoints& points,
+PODVector<DefaultVertex> GenerateBranchVertices(const TessellatedBranchPoints& points, const BranchDescription& branch,
     const BranchShapeSettings& shape, unsigned numRadialSegments)
 {
     PODVector<DefaultVertex> result;
@@ -272,6 +283,10 @@ PODVector<DefaultVertex> GenerateBranchVertices(const TessellatedBranchPoints& p
             vertex.tangent_ = zAxis;
             vertex.binormal_ = CrossProduct(vertex.normal_, vertex.tangent_);
             vertex.uv_[0] = Vector4(factor / shape.textureScale_.x_, relativeDistance / shape.textureScale_.y_, 0, 0);
+            vertex.colors_[0].r_ = points[i].adherence_.x_;
+            vertex.colors_[0].g_ = points[i].adherence_.y_;
+            vertex.colors_[0].b_ = branch.phase_;
+            vertex.colors_[0].a_ = 0.0f;
 //             vertex.branchAdherence_ = param.windAdherence_;
 //             vertex.phase_ = param.windPhase_;
 //             vertex.edgeOscillation_ = 0.0f;
@@ -336,15 +351,15 @@ PODVector<unsigned> GenerateBranchIndices(const PODVector<unsigned>& numRadialSe
     return result;
 }
 
-void GenerateBranchGeometry(ModelFactory& factory, const TessellatedBranchPoints& points,
+void GenerateBranchGeometry(ModelFactory& factory, const BranchDescription& branch, const TessellatedBranchPoints& points,
     const BranchShapeSettings& shape, unsigned numRadialSegments)
 {
     numRadialSegments = Max(3u, static_cast<unsigned>(numRadialSegments * shape.quality_));
     const PODVector<DefaultVertex> tempVertices =
-        GenerateBranchVertices(points, shape, numRadialSegments);
+        GenerateBranchVertices(points, branch, shape, numRadialSegments);
     const PODVector<unsigned> tempIndices =
         GenerateBranchIndices(ConstructPODVector(points.Size(), numRadialSegments), tempVertices.Size());
-    factory.Push(tempVertices, tempIndices, true);
+    factory.AddPrimitives(tempVertices, tempIndices, true);
 }
 
 PODVector<TreeElementLocation> DistributeElementsOverParent(const BranchDescription& parent, const TreeElementDistribution& distrib)
@@ -361,6 +376,8 @@ PODVector<TreeElementLocation> DistributeElementsOverParent(const BranchDescript
         elem.seed_ = seed;
         elem.location_ = 0.5f;
         elem.position_ = distrib.position_;
+        elem.adherence_ = Vector2(0.0, 0.0);
+        elem.phase_ = 0.0f;
         elem.rotation_ = MakeBasisFromDirection(distrib.direction_);
         elem.baseRadius_ = 1.0f;
         elem.noise_ = random.Vector4From01();
@@ -395,6 +412,8 @@ PODVector<TreeElementLocation> DistributeElementsOverParent(const BranchDescript
             elem.seed_ = random.Random();
             elem.location_ = location;
             elem.position_ = position;
+            elem.adherence_ = SampleBezierCurve(parent.adherencesCurve_, location);
+            elem.phase_ = parent.phase_;
             elem.rotation_ = MakeBasisFromDirection(direction);
             elem.baseRadius_ = SampleBezierCurve(parent.radiusesCurve_, location);
             elem.noise_ = random.Vector4From01();
@@ -443,12 +462,12 @@ Vector<BranchDescription> InstantiateBranchGroup(const BranchDescription& parent
     for (unsigned i = 0; i < elements.Size(); ++i)
     {
         const TreeElementLocation& element = elements[i];
-        const Vector3 position = element.position_;
         const Vector3 direction = GetBasisZ(element.rotation_.RotationMatrix());
         const float length = parentLength * // #TODO Move this code to DistributeElementsOverParent
             lengthRange.Get(element.noise_.w_) * distribution.growthScale_.ComputeValue(element.location_);
         BranchDescription branch = GenerateBranch(
-            position, direction, length, element.baseRadius_, shape, minNumKnots);
+            element.position_, direction, element.adherence_, length, element.baseRadius_, shape, minNumKnots);
+        branch.phase_ = element.phase_ + element.noise_.w_ * shape.windPhaseOffset_;
         branch.index_ = i;
         result.Push(branch);
     }
@@ -463,6 +482,7 @@ Vector<BranchDescription> InstantiateBranchGroup(const BranchDescription& parent
         const float location = elements.Empty() ? 0.0f : elements.Back().location_;
         branch.index_ = elements.Size();
         branch.length_ = parentLength * (1.0f - location);
+        branch.phase_ = parent.phase_;
 
         // Compute number of knots
         const unsigned numKnots = Max(minNumKnots, static_cast<unsigned>((1.0f - location) * branch.positions_.Size()));
@@ -473,10 +493,9 @@ Vector<BranchDescription> InstantiateBranchGroup(const BranchDescription& parent
             const float t = Lerp(location, 1.0f, i / (numKnots - 1.0f));
             branch.positions_.Push(SampleBezierCurve(parent.positionsCurve_, t));
             branch.radiuses_.Push(SampleBezierCurve(parent.radiusesCurve_, t));
+            branch.adherences_.Push(SampleBezierCurve(parent.adherencesCurve_, t));
         }
-
-        branch.positionsCurve_ = CreateBezierCurve(branch.positions_);
-        branch.radiusesCurve_ = CreateBezierCurve(branch.radiuses_);
+        branch.GenerateCurves();
 
         branch.fake_ = true;
         result.Push(branch);
@@ -549,18 +568,34 @@ void GenerateLeafGeometry(ModelFactory& factory,
     vers[0].position_ = Vector3(-0.5f, 0.0f, 0.0f);
     vers[0].normal_ = Vector3::UP;
     vers[0].uv_[0] = Vector4(0, 0, 0, 0);
+    vers[0].colors_[0].r_ = location.adherence_.x_ + shape.windMainMagnitude_.x_;
+    vers[0].colors_[0].g_ = location.adherence_.y_ + shape.windTurbulenceMagnitude_.x_;
+    vers[0].colors_[0].b_ = location.phase_;
+    vers[0].colors_[0].a_ = shape.windOscillationMagnitude_.x_;
 
     vers[1].position_ = Vector3(0.5f, 0.0f, 0.0f);
     vers[1].normal_ = Vector3::UP;
     vers[1].uv_[0] = Vector4(1, 0, 0, 0);
+    vers[1].colors_[0].r_ = location.adherence_.x_ + shape.windMainMagnitude_.x_;
+    vers[1].colors_[0].g_ = location.adherence_.y_ + shape.windTurbulenceMagnitude_.x_;
+    vers[1].colors_[0].b_ = location.phase_;
+    vers[1].colors_[0].a_ = shape.windOscillationMagnitude_.x_;
 
     vers[2].position_ = Vector3(-0.5f, 0.0f, 1.0f);
     vers[2].normal_ = Vector3::ZERO;
     vers[2].uv_[0] = Vector4(0, 1, 0, 0);
+    vers[2].colors_[0].r_ = location.adherence_.x_ + shape.windMainMagnitude_.y_;
+    vers[2].colors_[0].g_ = location.adherence_.y_ + shape.windTurbulenceMagnitude_.y_;
+    vers[2].colors_[0].b_ = location.phase_;
+    vers[2].colors_[0].a_ = shape.windOscillationMagnitude_.x_;
 
     vers[3].position_ = Vector3(0.5f, 0.0f, 1.0f);
     vers[3].normal_ = Vector3::ZERO;
     vers[3].uv_[0] = Vector4(1, 1, 0, 0);
+    vers[3].colors_[0].r_ = location.adherence_.x_ + shape.windMainMagnitude_.y_;
+    vers[3].colors_[0].g_ = location.adherence_.y_ + shape.windTurbulenceMagnitude_.y_;
+    vers[3].colors_[0].b_ = location.phase_;
+    vers[3].colors_[0].a_ = shape.windOscillationMagnitude_.x_;
 
     PODVector<DefaultVertex> newVertices;
     PODVector<unsigned> newIndices;
@@ -594,11 +629,6 @@ void GenerateLeafGeometry(ModelFactory& factory,
 
         // Restore shape
         vertex.position_ = (vertex.position_ - position).Normalized() * len + position;
-
-        // Apply wind parameters
-//         vertex.edgeOscillation_ = 0;
-//         vertex.branchAdherence_ = location.branchAdherence;
-//         vertex.phase_ = location.phase;
     }
 
     // Compute normals
@@ -609,7 +639,7 @@ void GenerateLeafGeometry(ModelFactory& factory,
         vertex.normal_ = Lerp(newNormal, vertex.normal_, factor);
     }
 
-    factory.Push(newVertices, newIndices, true);
+    factory.AddPrimitives(newVertices, newIndices, true);
 }
 // 
 // //////////////////////////////////////////////////////////////////////////
