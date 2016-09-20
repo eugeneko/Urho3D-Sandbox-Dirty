@@ -1,13 +1,11 @@
+
 float3 GlobalWind(
     float3 vModelPosition, 
     float3 vPosition,
-    float3 vNormal,
     float fMainAdherence,
-    float fBranchAdherence,
     float fWindMain,
     float fWindPulseMagnitude,
     float fWindPulseFrequency,
-    float fBranchPhase,
     float fTime, 
     float3 vWindDirection)
 {
@@ -15,15 +13,13 @@ float3 GlobalWind(
     float fPositionLength = length(vPosition);
                         
     // Primary oscillation
-    float2 vPhases = float2(fBranchPhase, 0.0);
     float2 fScaledTime = fTime * fWindPulseFrequency * float2(1.0, 0.8);
-    float4 vOscillations = SmoothTriangleWave(vModelPosition.xyxy + fScaledTime.xyxy + vPhases.xxyy);
-    float2 vOsc = vOscillations.xz + vOscillations.yw * vOscillations.yw;
-    float2 vPulse = vOsc * fWindPulseMagnitude * 0.5;
-    float fMoveAmount = vPulse.x * fBranchAdherence + (fWindMain + vPulse.y) * fMainAdherence;
+    float4 vWaves = SmoothTriangleWave(vModelPosition.xyxy + fScaledTime.xxyy);
+    float2 vOsc = vWaves.xy + vWaves.zw * vWaves.zw;
+    float vPulse = dot(vOsc, 0.5) * fWindPulseMagnitude;
 
     // Move xz component
-    vPosition.xz += vWindDirection.xz * fMoveAmount;
+    vPosition.xz += vWindDirection.xz * (fWindMain + vPulse) * fMainAdherence;
         
     // Restore position
     return normalize(vPosition) * fPositionLength;
@@ -31,7 +27,6 @@ float3 GlobalWind(
 
 float3 BranchTurbulenceWind(
     float3 vModelPosition, 
-    float3 vModelUp,
     float3 vPosition,
     float fTurbulence,
     float fFrequency,
@@ -43,8 +38,7 @@ float3 BranchTurbulenceWind(
     float4 vWavesIn = fTime * fFrequency + fObjectPhase + fBranchPhase;
     float4 vWaves = SmoothTriangleWave(vWavesIn) * 0.5 + 0.5;
         
-    vPosition += vModelUp * vWaves.x * fTurbulence;
-    //vPosition += vWindDirection * vWaves.x * fTurbulence;
+    vPosition.y += vWaves.x * fTurbulence;
     return vPosition;
 }
 

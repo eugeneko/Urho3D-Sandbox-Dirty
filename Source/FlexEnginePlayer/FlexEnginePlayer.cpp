@@ -9,6 +9,8 @@
 #include <FlexEngine/Factory/ProceduralFactory.h>
 #include <FlexEngine/Factory/TextureHost.h>
 #include <FlexEngine/Factory/TreeHost.h>
+#include <FlexEngine/Graphics/StaticModelEx.h>
+#include <FlexEngine/Graphics/Wind.h>
 #include <FlexEngine/Scene/DynamicComponent.h>
 
 #include <Urho3D/DebugNew.h>
@@ -44,6 +46,9 @@ void FlexEnginePlayer::Start()
     RenderedModelTexture::RegisterObject(context_);
     PerlinNoiseTexture::RegisterObject(context_);
     FillGapFilter::RegisterObject(context_);
+    StaticModelEx::RegisterObject(context_);
+    WindSystem::RegisterObject(context_);
+    WindZone::RegisterObject(context_);
 
     Urho3DPlayer::Start();
 

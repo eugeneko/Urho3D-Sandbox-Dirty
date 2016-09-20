@@ -110,7 +110,7 @@ ResourceRef TreeHost::GetDestinationModelAttr() const
 
 void TreeHost::UpdateViews()
 {
-    StaticModel* staticModel = node_->GetComponent<StaticModel>();
+    StaticModel* staticModel = node_->GetDerivedComponent<StaticModel>();
     if (staticModel)
     {
         staticModel->SetModel(model_);

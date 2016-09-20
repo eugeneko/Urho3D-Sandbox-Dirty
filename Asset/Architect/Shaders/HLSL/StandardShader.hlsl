@@ -8,6 +8,19 @@
 #include "Math.hlsl"
 #include "VegetationWind.hlsl"
 
+#ifndef D3D11
+    // D3D9 uniforms
+    uniform float4 cWindDirection;
+    uniform float4 cWindParam;
+#else
+    // D3D11 constant buffer
+    cbuffer WindVS : register(b6)
+    {
+        float4 cWindDirection;
+        float4 cWindParam;
+    }
+#endif
+
 #ifdef OBJECTPROXY
     #ifndef NORMALMAP
         #error OBJECTPROXY requires NORMALMAP
@@ -119,46 +132,40 @@ void VS(float4 iPos : POSITION,
 
     // Apply wind
     #ifdef WIND
-        const float3 vWindDirection = float3(1, 0, 0);
+        //const float3 vWindDirection = float3(1, 0, 0);
+        const float3 vWindDirection = cWindDirection;
         // half windMain; ///< Wind main strength
         // half windPulseMagnitude; ///< Wind pulse magnitude
         // half windPulseFrequency; ///< Wind pulse frequency
         // half windTurbulence; ///< Wind turbulence
-        const float cfTrunkMagnitude = 0.5;
-        const float cfEdgeMainMagnitude = 0.0175;
-        const float cfEdgeTurbulenceMagnitude = 0.0056;
         const float cfEdgeFrequency = 1.0;
-        const float cfBranchMainMagnitude = 0.1;
-        const float cfBranchTurbulenceMagnitude = 0.1;
-        const float cfBranchPhaseModifier = 0.0;
         const float cfBranchFrequency = 0.666;
 
         //const float4 inWindParam = float4(0, 0.1, 0.1, 0.1); // Calm
         //const float4 inWindParam = float4(2.5, 0.5, 0.2f, 0.4); // Weak
         //const float4 inWindParam = float4(10.0, 3.0, 0.25, 3.5); // Strong
-        const float4 inWindParam = float4(20.0, 10.0, 0.3, 5.0); // Storm
+        //const float4 inWindParam = float4(20.0, 10.0, 0.3, 5.0); // Storm
+        // x->x y->z z->w w->y
+        const float4 inWindParam = cWindParam;
 
         const float4 inWind = iWind;
 
-        float2 vEdgeMagnitude = inWindParam.xw * float2(cfEdgeMainMagnitude, cfEdgeTurbulenceMagnitude);
         worldPos.xyz = FrondEdgeWind(
             modelPosition, worldPos.xyz, oNormal,
-            inWind.w * max(inWindParam.x, inWindParam.y),
+            inWind.w * max(inWindParam.x, inWindParam.z),
             cfEdgeFrequency,
             cElapsedTime);
         worldPos.xyz = GlobalWind(
-            modelPosition, worldPos.xyz, oNormal,
-            inWind.x * cfTrunkMagnitude,
-            inWind.y * cfBranchMainMagnitude,
+            modelPosition, worldPos.xyz,
+            inWind.x,
             inWindParam.x,
-            inWindParam.y,
             inWindParam.z,
-            inWind.z * cfBranchPhaseModifier,
+            inWindParam.w,
             cElapsedTime,
             vWindDirection);
         worldPos.xyz = BranchTurbulenceWind(
-            modelPosition, float3(0, 1, 0), worldPos.xyz,
-            inWind.y * cfBranchTurbulenceMagnitude * inWindParam.w,
+            modelPosition, worldPos.xyz,
+            inWind.y * inWindParam.y,
             cfBranchFrequency,
             inWind.z,
             cElapsedTime,
