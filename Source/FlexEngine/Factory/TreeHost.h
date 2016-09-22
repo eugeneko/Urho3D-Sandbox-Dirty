@@ -65,12 +65,16 @@ protected:
     /// Tree model materials.
     Vector<SharedPtr<Material>> materials_;
 
-    /// Magnitude of deformations caused by main wind flow.
+    /// Magnitude of deformations caused by main wind.
     float windMainMagnitude_ = 0.0f;
-    /// Magnitude of deformations caused by turbulence wind.
+    /// Magnitude of deformations caused by turbulence.
     float windTurbulenceMagnitude_ = 0.0f;
     /// Magnitude of foliage oscillation.
     float windOscillationMagnitude_ = 0.0f;
+    /// Frequency of deformations caused by turbulence.
+    float windTurbulenceFrequency_ = 0.0f;
+    /// Frequency of foliage oscillation.
+    float windOscillationFrequency_ = 0.0f;
 
     /// Positions of leaves.
     PODVector<Vector3> leavesPositions_;
@@ -278,6 +282,11 @@ private:
     unsigned numPlanes_ = 0;
     /// Number of vertical segments.
     unsigned numVerticalSegments_ = 0;
+    /// Controls tree proxy bending caused by external force. Should be in range [0, 1).
+    /// 0 is the linear deformation of the branch without geometry bending.
+    float resistance_ = 0.0f;
+    /// Value of deformations caused by main wind.
+    float windMagnitude_ = 0.0f;
 
     /// Proxy texture width.
     unsigned proxyTextureWidth_ = 0;

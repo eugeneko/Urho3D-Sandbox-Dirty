@@ -39,6 +39,8 @@ struct DefaultVertex
     Vector3 binormal_;
     /// Normal, Z axis.
     Vector3 normal_;
+    /// Normal or real geometry.
+    Vector3 geometryNormal_;
 
     /// Texture coordinates.
     Vector4 uv_[MAX_VERTEX_TEXCOORD];

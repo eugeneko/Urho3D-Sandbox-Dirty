@@ -78,9 +78,9 @@ struct BranchShapeSettings
     float resistance_ = 0.0f;
     /// Intensity of deformation caused by gravity.
     float gravityIntensity_ = 0.0f;
-    /// Value of deformations caused by main wind flow.
+    /// Value of deformations caused by main wind.
     float windMainMagnitude_ = 0.0f;
-    /// Value of deformations caused by turbulence wind.
+    /// Value of deformations caused by turbulence.
     float windTurbulenceMagnitude_ = 0.0f;
     /// Wind oscillation phase offset.
     float windPhaseOffset_ = 0.0f;
@@ -247,9 +247,9 @@ struct LeafShapeSettings
     Vector3 gravityResistance_ = Vector3::ONE;
     /// Adjusts intensity of bumping fake leaf normals.
     float bumpNormals_ = 0.0f;
-    /// Value of deformations caused by main wind flow, minimum and maximum values.
+    /// Value of deformations caused by main wind, minimum and maximum values.
     Vector2 windMainMagnitude_ = Vector2::ZERO;
-    /// Value of deformations caused by turbulence wind, minimum and maximum values.
+    /// Value of deformations caused by turbulence, minimum and maximum values.
     Vector2 windTurbulenceMagnitude_ = Vector2::ZERO;
     /// Value of foliage oscillations, minimum and maximum values.
     Vector2 windOscillationMagnitude_ = Vector2::ZERO;

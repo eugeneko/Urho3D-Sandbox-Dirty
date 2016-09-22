@@ -279,6 +279,7 @@ PODVector<DefaultVertex> GenerateBranchVertices(const TessellatedBranchPoints& p
 
             DefaultVertex vertex;
             vertex.position_ = position + radius * normal;
+            vertex.geometryNormal_ = normal;
             vertex.normal_ = normal;
             vertex.tangent_ = zAxis;
             vertex.binormal_ = CrossProduct(vertex.normal_, vertex.tangent_);
@@ -631,7 +632,8 @@ void GenerateLeafGeometry(ModelFactory& factory,
         vertex.position_ = (vertex.position_ - position).Normalized() * len + position;
     }
 
-    // Compute normals
+    // Compute real and fake normals
+    CalculateNormals(newVertices.Buffer(), newVertices.Size(), newIndices.Buffer(), newIndices.Size() / 3);
     for (DefaultVertex& vertex : newVertices)
     {
         const Vector3 newNormal = (vertex.position_ - Lerp(foliageCenter, basePosition, shape.bumpNormals_)).Normalized();

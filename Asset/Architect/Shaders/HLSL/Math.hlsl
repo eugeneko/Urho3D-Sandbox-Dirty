@@ -37,7 +37,7 @@ float4 TriangleWave(float4 iVec)
 /// Smoothed triangle wave generator.
 float4 SmoothTriangleWave(float4 iVec)
 {
-    return (CubicSmooth(TriangleWave(iVec)) - 0.5) * 2.0;
+    return CubicSmooth(TriangleWave(iVec));
 }
 
 /// Get world position of proxy vertex.

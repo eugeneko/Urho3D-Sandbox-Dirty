@@ -31,15 +31,15 @@ void CalculateNormals(DefaultVertex vertices[], unsigned numVertices, const unsi
         const Vector3 pos3 = vertices[a3].position_;
         const Vector3 normal = CrossProduct(pos2 - pos1, pos3 - pos1).Normalized();
 
-        vertices[a1].normal_ += normal;
-        vertices[a2].normal_ += normal;
-        vertices[a3].normal_ += normal;
+        vertices[a1].geometryNormal_ += normal;
+        vertices[a2].geometryNormal_ += normal;
+        vertices[a3].geometryNormal_ += normal;
     }
 
     // Normalize normals
     for (unsigned i = 0; i < numVertices; ++i)
     {
-        vertices[i].normal_.Normalize();
+        vertices[i].geometryNormal_.Normalize();
     }
 }
 

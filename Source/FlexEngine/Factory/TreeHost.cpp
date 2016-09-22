@@ -4,6 +4,7 @@
 #include <FlexEngine/Factory/ModelFactory.h>
 #include <FlexEngine/Factory/TextureFactory.h>
 #include <FlexEngine/Factory/ProxyGeometryFactory.h>
+#include <FlexEngine/Graphics/Wind.h>
 #include <FlexEngine/Resource/ResourceCacheHelpers.h>
 
 #include <Urho3D/Core/Context.h>
@@ -82,9 +83,11 @@ void TreeHost::RegisterObject(Context* context)
     URHO3D_COPY_BASE_ATTRIBUTES(ProceduralComponent);
 
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Destination Model", GetDestinationModelAttr, SetDestinationModelAttr, ResourceRef, ResourceRef(Model::GetTypeStatic()), AM_DEFAULT);
-    URHO3D_MEMBER_ATTRIBUTE("Wind Main", float, windMainMagnitude_, 1.0f, AM_DEFAULT);
-    URHO3D_MEMBER_ATTRIBUTE("Wind Turbulence", float, windTurbulenceMagnitude_, 1.0f, AM_DEFAULT);
-    URHO3D_MEMBER_ATTRIBUTE("Wind Oscillation", float, windOscillationMagnitude_, 1.0f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Main Wind", float, windMainMagnitude_, 1.0f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Turbulence Magnitude", float, windTurbulenceMagnitude_, 1.0f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Oscillation Magnitude", float, windOscillationMagnitude_, 1.0f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Turbulence Frequency", float, windTurbulenceFrequency_, 1.0f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Oscillation Frequency", float, windOscillationFrequency_, 1.0f, AM_DEFAULT);
 }
 
 void TreeHost::OnBranchGenerated(const BranchDescription& /*branch*/, const BranchShapeSettings& /*shape*/)
@@ -110,7 +113,7 @@ ResourceRef TreeHost::GetDestinationModelAttr() const
 
 void TreeHost::UpdateViews()
 {
-    StaticModel* staticModel = node_->GetComponent<StaticModel>();
+    StaticModel* staticModel = node_->GetDerivedComponent<StaticModel>();
     if (staticModel)
     {
         staticModel->SetModel(model_);
@@ -172,6 +175,11 @@ void TreeHost::DoUpdate()
         vertex.colors_[0].r_ *= windMainMagnitude_ / maxMainAdherence;
         vertex.colors_[0].g_ *= windTurbulenceMagnitude_ / maxTurbulenceAdherence;
         vertex.colors_[0].a_ *= windOscillationMagnitude_;
+        vertex.colors_[1].r_ = windTurbulenceFrequency_;
+        vertex.colors_[1].g_ = windOscillationFrequency_;
+        vertex.colors_[2].r_ = vertex.geometryNormal_.x_;
+        vertex.colors_[2].g_ = vertex.geometryNormal_.y_;
+        vertex.colors_[2].b_ = vertex.geometryNormal_.z_;
     });
 
     // Generate and setup
@@ -484,6 +492,8 @@ void TreeProxy::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Distance", GetDistance, SetDistance, float, 0.0f, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Number of Planes", unsigned, numPlanes_, 8, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Number of Segments", unsigned, numVerticalSegments_, 3, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Resistance", float, resistance_, 0.0f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Wind Magnitude", float, windMagnitude_, 0.0f, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Proxy Width", unsigned, proxyTextureWidth_, 1024, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Proxy Height", unsigned, proxyTextureHeight_, 256, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Proxy Diffuse", GetDestinationProxyDiffuseAttr, SetDestinationProxyDiffuseAttr, ResourceRef, ResourceRef(Texture2D::GetTypeStatic()), AM_DEFAULT);
@@ -525,6 +535,9 @@ SharedPtr<Model> TreeProxy::Generate(SharedPtr<Model> model, const Vector<Shared
     GenerateCylinderProxy(boundingBox, param, Max(1u, proxyTextureWidth_), Max(1u, proxyTextureHeight_), cameras, vertices, indices);
 
     // Fill parameters
+    float maxHeight = 0.0f;
+    for (unsigned i = 0; i < vertices.Size(); ++i)
+        maxHeight = Max(maxHeight, (vertices[i].position_.y_ + vertices[i].uv_[1].y_));
     for (unsigned i = 0; i < numPlanes_; ++i)
     {
         unsigned numVertices = vertices.Size() / numPlanes_;
@@ -536,6 +549,8 @@ SharedPtr<Model> TreeProxy::Generate(SharedPtr<Model> model, const Vector<Shared
             vertex.uv_[2].y_ = 0.05f;
             vertex.uv_[2].z_ = sign;
             vertex.uv_[2].w_ = 50;
+            const float relativeHeight = Clamp((vertex.position_.y_+ vertex.uv_[1].y_) / maxHeight, 0.0f, 1.0f);
+            vertex.colors_[0].r_ = windMagnitude_ * Pow(relativeHeight, 1.0f / (1.0f - resistance_));
         }
     }
 
@@ -556,6 +571,8 @@ SharedPtr<Model> TreeProxy::Generate(SharedPtr<Model> model, const Vector<Shared
     geometryDesc.materials_ = materials;
     desc.geometries_.Push(geometryDesc);
     desc.cameras_.Push(cameras);
+    desc.parameters_.Populate(VSP_WINDDIRECTION, Vector4::ZERO);
+    desc.parameters_.Populate(VSP_WINDPARAM, Vector4::ZERO);
 
     ResourceCache* cache = GetSubsystem<ResourceCache>();
     desc.renderPath_ = diffuseRenderPath_;

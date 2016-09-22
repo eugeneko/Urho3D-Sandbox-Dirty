@@ -8,6 +8,19 @@
 #include "Math.hlsl"
 #include "VegetationWind.hlsl"
 
+#ifndef D3D11
+    // D3D9 uniforms
+    uniform float4 cWindDirection;
+    uniform float4 cWindParam;
+#else
+    // D3D11 constant buffer
+    cbuffer WindVS : register(b6)
+    {
+        float4 cWindDirection;
+        float4 cWindParam;
+    }
+#endif
+
 #ifdef OBJECTPROXY
     #ifndef NORMALMAP
         #error OBJECTPROXY requires NORMALMAP
@@ -25,7 +38,13 @@ void VS(float4 iPos : POSITION,
         float4 iColor : COLOR0,
     #endif
     #ifdef WIND
-        float4 iWind : COLOR0,
+        #ifdef OBJECTPROXY
+            float iWindAtten : COLOR0,
+        #else
+            float4 iWind1 : COLOR0,
+            float4 iWind2 : COLOR1,
+            float3 iRawNormal : COLOR2,
+        #endif
     #endif
     #if defined(LIGHTMAP) || defined(AO)
         float2 iTexCoord2 : TEXCOORD1,
@@ -119,50 +138,36 @@ void VS(float4 iPos : POSITION,
 
     // Apply wind
     #ifdef WIND
-        const float3 vWindDirection = float3(1, 0, 0);
-        // half windMain; ///< Wind main strength
-        // half windPulseMagnitude; ///< Wind pulse magnitude
-        // half windPulseFrequency; ///< Wind pulse frequency
-        // half windTurbulence; ///< Wind turbulence
-        const float cfTrunkMagnitude = 0.5;
-        const float cfEdgeMainMagnitude = 0.0175;
-        const float cfEdgeTurbulenceMagnitude = 0.0056;
-        const float cfEdgeFrequency = 1.0;
-        const float cfBranchMainMagnitude = 0.1;
-        const float cfBranchTurbulenceMagnitude = 0.1;
-        const float cfBranchPhaseModifier = 0.0;
-        const float cfBranchFrequency = 0.666;
-
-        //const float4 inWindParam = float4(0, 0.1, 0.1, 0.1); // Calm
-        //const float4 inWindParam = float4(2.5, 0.5, 0.2f, 0.4); // Weak
-        //const float4 inWindParam = float4(10.0, 3.0, 0.25, 3.5); // Strong
-        const float4 inWindParam = float4(20.0, 10.0, 0.3, 5.0); // Storm
-
-        const float4 inWind = iWind;
-
-        float2 vEdgeMagnitude = inWindParam.xw * float2(cfEdgeMainMagnitude, cfEdgeTurbulenceMagnitude);
-        worldPos.xyz = FrondEdgeWind(
-            modelPosition, worldPos.xyz, oNormal,
-            inWind.w * max(inWindParam.x, inWindParam.y),
-            cfEdgeFrequency,
-            cElapsedTime);
-        worldPos.xyz = GlobalWind(
-            modelPosition, worldPos.xyz, oNormal,
-            inWind.x * cfTrunkMagnitude,
-            inWind.y * cfBranchMainMagnitude,
-            inWindParam.x,
-            inWindParam.y,
-            inWindParam.z,
-            inWind.z * cfBranchPhaseModifier,
-            cElapsedTime,
-            vWindDirection);
-        worldPos.xyz = BranchTurbulenceWind(
-            modelPosition, float3(0, 1, 0), worldPos.xyz,
-            inWind.y * cfBranchTurbulenceMagnitude * inWindParam.w,
-            cfBranchFrequency,
-            inWind.z,
-            cElapsedTime,
-            vWindDirection);
+        const float objectPhase = dot(modelPosition, 1.0);
+        #ifdef OBJECTPROXY
+        //worldPos.y += iWindAtten;
+            worldPos.xyz = GlobalWind(
+                worldPos.xyz, // position
+                cElapsedTime, // time
+                objectPhase, // phase
+                float2(cWindParam.w, 0.0), // frequency
+                float2(iWindAtten, 0.0), // attenuation
+                float2(cWindParam.x, 0.0), // wind base
+                cWindParam.zy, // wind magnitude
+                cWindDirection);
+        #else
+            worldPos.xyz = FrondEdgeWind(
+                worldPos.xyz, // position
+                normalize(mul(iRawNormal, (float3x3)modelMatrix)), // normal
+                cElapsedTime, // time
+                objectPhase, // phase
+                iWind1.w * max(cWindParam.x, cWindParam.y), // magnitude
+                iWind2.y); // frequency
+            worldPos.xyz = GlobalWind(
+                worldPos.xyz, // position
+                cElapsedTime, // time
+                float2(objectPhase, objectPhase + iWind1.z), // phase
+                float2(cWindParam.w, iWind2.x), // frequency
+                iWind1.xy, // attenuation
+                float2(cWindParam.x, 0.0), // wind base
+                cWindParam.zy, // wind magnitude
+                cWindDirection);
+        #endif
     #endif
 
     oPos = GetClipPos(worldPos);
