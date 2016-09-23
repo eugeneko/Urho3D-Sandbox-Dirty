@@ -1,25 +1,8 @@
-#include "Constants.hlsl"
-#include "Uniforms.hlsl"
-#include "Samplers.hlsl"
-#include "Transform.hlsl"
+#define COMPUTEWORLDNORMAL
+#include "StandardCommon.hlsl"
 #include "ScreenPos.hlsl"
 #include "Lighting.hlsl"
 #include "Fog.hlsl"
-#include "Math.hlsl"
-#include "VegetationWind.hlsl"
-
-#ifndef D3D11
-    // D3D9 uniforms
-    uniform float4 cWindDirection;
-    uniform float4 cWindParam;
-#else
-    // D3D11 constant buffer
-    cbuffer WindVS : register(b6)
-    {
-        float4 cWindDirection;
-        float4 cWindParam;
-    }
-#endif
 
 #ifdef OBJECTPROXY
     #ifndef NORMALMAP
@@ -43,7 +26,7 @@ void VS(float4 iPos : POSITION,
         #else
             float4 iWind1 : COLOR0,
             float4 iWind2 : COLOR1,
-            float3 iRawNormal : COLOR2,
+            float3 iWindNormal : COLOR2,
         #endif
     #endif
     #if defined(LIGHTMAP) || defined(AO)
@@ -107,7 +90,7 @@ void VS(float4 iPos : POSITION,
     #ifdef NOUV
         float2 iTexCoord = float2(0.0, 0.0);
     #endif
-    
+
     // Get matrix and vectors
     float4x3 modelMatrix = iModelMatrix;
     float3 modelPosition = iModelMatrix._m30_m31_m32;
@@ -120,13 +103,10 @@ void VS(float4 iPos : POSITION,
     oNormal = GetWorldNormal(modelMatrix);
 
     // Get fade factor
-    oFade.x = 1.0;
     #ifdef OBJECTPROXY
-        oFade.y = GetProxyFadeFactor(oNormal, iProxyParam.x, iProxyParam.y, iProxyParam.z > 0.0, eye, modelUp);
-        oFade.zw = iSize.zw * iProxyParam.w;
+        oFade = ComputeFade(1.0, oNormal, eye, modelUp, iProxyParam, iSize.zw);
     #else
-        oFade.y = 1.0;
-        oFade.zw = 1.0;
+        oFade = ComputeFade(1.0, 1.0);
     #endif
 
     // Compute position
@@ -140,33 +120,10 @@ void VS(float4 iPos : POSITION,
     #ifdef WIND
         const float objectPhase = dot(modelPosition, 1.0);
         #ifdef OBJECTPROXY
-        //worldPos.y += iWindAtten;
-            worldPos.xyz = GlobalWind(
-                worldPos.xyz, // position
-                cElapsedTime, // time
-                objectPhase, // phase
-                float2(cWindParam.w, 0.0), // frequency
-                float2(iWindAtten, 0.0), // attenuation
-                float2(cWindParam.x, 0.0), // wind base
-                cWindParam.zy, // wind magnitude
-                cWindDirection);
+            worldPos = ComputeWind(worldPos, iWindAtten, modelPosition);
         #else
-            worldPos.xyz = FrondEdgeWind(
-                worldPos.xyz, // position
-                normalize(mul(iRawNormal, (float3x3)modelMatrix)), // normal
-                cElapsedTime, // time
-                objectPhase, // phase
-                iWind1.w * max(cWindParam.x, cWindParam.y), // magnitude
-                iWind2.y); // frequency
-            worldPos.xyz = GlobalWind(
-                worldPos.xyz, // position
-                cElapsedTime, // time
-                float2(objectPhase, objectPhase + iWind1.z), // phase
-                float2(cWindParam.w, iWind2.x), // frequency
-                iWind1.xy, // attenuation
-                float2(cWindParam.x, 0.0), // wind base
-                cWindParam.zy, // wind magnitude
-                cWindDirection);
+            const float3 worldWindNormal = normalize(mul(iWindNormal, (float3x3)modelMatrix));
+            worldPos = ComputeWind(worldPos, iWind1, iWind2, worldWindNormal, modelPosition);
         #endif
     #endif
 
@@ -290,15 +247,7 @@ void PS(
     #endif
     out float4 oColor : OUTCOLOR0)
 {
-    #ifdef OBJECTPROXY
-        float noiseTexCoord = Random(floor(iFade.zw));
-        if (noiseTexCoord > iFade.y || noiseTexCoord + 1.0 < iFade.y)
-            discard;
-    #endif
-    
-    //float noiseFragPos = Random(floor(iFragPos.xy));
-    //if (screenSpaceFade > iFade.x || screenSpaceFade + 1.0 < iFade.x)
-    //    discard;
+    DiscardByFade(iFade, iFragPos.xy);
 
     // Get material diffuse albedo
     #ifdef DIFFMAP
@@ -310,9 +259,6 @@ void PS(
         float4 diffColor = cMatDiffColor * diffInput;
     #else
         float4 diffColor = cMatDiffColor;
-        //float4 diffColor = float4(iTexCoord.xy, 0, 1);
-        //float4 diffColor = noiseTexCoord;
-        //float4 diffColor = noiseTexCoord;
     #endif
 
     #ifdef VERTEXCOLOR
