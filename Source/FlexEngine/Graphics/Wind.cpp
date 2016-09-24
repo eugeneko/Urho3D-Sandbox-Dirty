@@ -154,13 +154,18 @@ void WindSystem::SetMaterialWind(Material& material, const WindSample& wind)
 
 void WindSystem::SetReferencedMaterialsWind(const WindSample& wind)
 {
-    for (ReferencedMaterialSet::Iterator it = referencedMaterials_.Begin(); it != referencedMaterials_.End(); ++it)
+    for (ReferencedMaterialSet::Iterator it = referencedMaterials_.Begin(); it != referencedMaterials_.End();)
     {
         // Remove materials those are not referenced by any object except resource cache.
         if (it->Refs() <= 1)
+        {
             it = referencedMaterials_.Erase(it);
+        }
         else
+        {
             SetMaterialWind(**it, wind);
+            ++it;
+        }
     }
 }
 
