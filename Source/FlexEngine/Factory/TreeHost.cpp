@@ -5,6 +5,7 @@
 #include <FlexEngine/Factory/TextureFactory.h>
 #include <FlexEngine/Factory/ProxyGeometryFactory.h>
 #include <FlexEngine/Graphics/Wind.h>
+#include <FlexEngine/Math/Hash.h>
 #include <FlexEngine/Resource/ResourceCacheHelpers.h>
 
 #include <Urho3D/Core/Context.h>
@@ -90,6 +91,17 @@ void TreeHost::RegisterObject(Context* context)
     URHO3D_MEMBER_ATTRIBUTE("Oscillation Frequency", float, windOscillationFrequency_, 1.0f, AM_DEFAULT);
 }
 
+void TreeHost::EnumerateResources(Vector<ResourceRef>& resources)
+{
+    if (!destinationModelName_.Empty())
+        resources.Push(ResourceRef(Model::GetTypeStatic(), destinationModelName_));
+    if (TreeProxy* proxy = GetComponent<TreeProxy>())
+    {
+        resources.Push(ResourceRef(Image::GetTypeStatic(), proxy->GetDestinationProxyDiffuseAttr().name_));
+        resources.Push(ResourceRef(Image::GetTypeStatic(), proxy->GetDestinationProxyNormalAttr().name_));
+    }
+}
+
 void TreeHost::OnBranchGenerated(const BranchDescription& /*branch*/, const BranchShapeSettings& /*shape*/)
 {
 
@@ -103,7 +115,7 @@ void TreeHost::OnLeafGenerated(const LeafDescription& leaf, const LeafShapeSetti
 void TreeHost::SetDestinationModelAttr(const ResourceRef& value)
 {
     destinationModelName_ = value.name_;
-    MarkNeedUpdate();
+    MarkResourceListDirty();
 }
 
 ResourceRef TreeHost::GetDestinationModelAttr() const
@@ -124,6 +136,17 @@ void TreeHost::UpdateViews()
     }
 }
 
+bool TreeHost::ComputeHash(Hash& hash) const
+{
+    hash.HashString(destinationModelName_);
+    hash.HashFloat(windMainMagnitude_);
+    hash.HashFloat(windTurbulenceMagnitude_);
+    hash.HashFloat(windOscillationMagnitude_);
+    hash.HashFloat(windTurbulenceFrequency_);
+    hash.HashFloat(windOscillationFrequency_);
+    return true;
+}
+
 void TreeHost::GenerateTreeTopology()
 {
     // Generate tree
@@ -142,7 +165,7 @@ void TreeHost::GenerateTreeTopology()
     }
 }
 
-void TreeHost::DoUpdate()
+void TreeHost::DoGenerateResources(Vector<SharedPtr<Resource>>& resources)
 {
     GenerateTreeTopology();
 
@@ -185,6 +208,7 @@ void TreeHost::DoUpdate()
     // Generate and setup
     materials_ = factory.GetMaterials();
     model_ = factory.BuildModel();
+    resources.Push(model_);
     for (unsigned i = 0; i < lods.Size(); ++i)
     {
         for (unsigned j = 0; j < model_->GetNumGeometries(); ++j)
@@ -210,17 +234,20 @@ void TreeHost::DoUpdate()
         // Append proxy
         TreeProxy& treeProxy = *proxies[0];
         AppendEmptyLOD(*model_, treeProxy.GetDistance());
-        AppendModelGeometries(*model_, *treeProxy.Generate(model_, materials_));
+        TreeProxy::GeneratedData data = treeProxy.Generate(model_, materials_);
+        AppendModelGeometries(*model_, *data.model_);
+        resources.Push(data.diffuseImage_);
+        resources.Push(data.normalImage_);
         materials_.Push(treeProxy.GetProxyMaterial());
     }
 
     // Save model
-    if (!destinationModelName_.Empty() && model_)
-    {
-        // Write texture to file and re-load it
-        model_->SetName(destinationModelName_);
-        SaveResource(*model_);
-    }
+//     if (!destinationModelName_.Empty() && model_)
+//     {
+//         // Write texture to file and re-load it
+//         model_->SetName(destinationModelName_);
+//         SaveResource(*model_);
+//     }
 
     // Update model and materials
     UpdateViews();
@@ -262,6 +289,26 @@ void TreeElement::Triangulate(ModelFactory& factory, TreeHost& host, TreeLevelOf
 {
     DoTriangulate(factory, host, lod);
     TriangulateChildren(*node_, factory, host, lod);
+}
+
+bool TreeElement::ComputeHash(Hash& hash) const
+{
+    hash.HashUInt(distribution_.seed_);
+    hash.HashUInt(distribution_.frequency_);
+    hash.HashVector3(distribution_.position_);
+    hash.HashVector3(distribution_.direction_);
+    hash.HashEnum(distribution_.distributionType_);
+    hash.HashVector2(distribution_.location_);
+    hash.HashString(distribution_.density_.GetCurveString());
+    hash.HashVector2(distribution_.density_.GetResultRange());
+    hash.HashFloat(distribution_.twirlStep_);
+    hash.HashFloat(distribution_.twirlNoise_);
+    hash.HashFloat(distribution_.twirlBase_);
+    hash.HashString(distribution_.growthScale_.GetCurveString());
+    hash.HashVector2(distribution_.growthScale_.GetResultRange());
+    hash.HashString(distribution_.growthAngle_.GetCurveString());
+    hash.HashVector2(distribution_.growthAngle_.GetResultRange());
+    return true;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -330,6 +377,25 @@ void BranchGroup::Generate(TreeHost& host)
 
     // Generate children
     GenerateChildren(*node_, host);
+}
+
+bool BranchGroup::ComputeHash(Hash& hash) const
+{
+    TreeElement::ComputeHash(hash);
+    hash.HashString(material_ ? material_->GetName() : String::EMPTY);
+    hash.HashVector2(shape_.textureScale_);
+    hash.HashFloat(shape_.quality_);
+    hash.HashVector2(shape_.length_);
+    hash.HashUInt(shape_.relativeLength_);
+    hash.HashUInt(shape_.fakeEnding_);
+    hash.HashString(shape_.radius_.GetCurveString());
+    hash.HashVector2(shape_.radius_.GetResultRange());
+    hash.HashFloat(shape_.resistance_);
+    hash.HashFloat(shape_.gravityIntensity_);
+    hash.HashFloat(shape_.windMainMagnitude_);
+    hash.HashFloat(shape_.windTurbulenceMagnitude_);
+    hash.HashFloat(shape_.windPhaseOffset_);
+    return true;
 }
 
 void BranchGroup::DoTriangulate(ModelFactory& factory, TreeHost& host, TreeLevelOfDetail& lod) const
@@ -429,6 +495,24 @@ void LeafGroup::Generate(TreeHost& host)
     }
 }
 
+bool LeafGroup::ComputeHash(Hash& hash) const
+{
+    TreeElement::ComputeHash(hash);
+    hash.HashString(material_ ? material_->GetName() : String::EMPTY);
+    hash.HashVector2(shape_.size_);
+    hash.HashVector3(shape_.scale_);
+    hash.HashVector2(shape_.adjustToGlobal_);
+    hash.HashVector2(shape_.alignVertical_);
+    hash.HashVector3(shape_.junctionOffset_);
+    hash.HashVector3(shape_.gravityIntensity_);
+    hash.HashVector3(shape_.gravityResistance_);
+    hash.HashFloat(shape_.bumpNormals_);
+    hash.HashVector2(shape_.windMainMagnitude_);
+    hash.HashVector2(shape_.windTurbulenceMagnitude_);
+    hash.HashVector2(shape_.windOscillationMagnitude_);
+    return true;
+}
+
 void LeafGroup::DoTriangulate(ModelFactory& factory, TreeHost& host, TreeLevelOfDetail& lod) const
 {
     factory.AddGeometry(material_);
@@ -473,6 +557,16 @@ void TreeLevelOfDetail::RegisterObject(Context* context)
     URHO3D_MEMBER_ATTRIBUTE("Num Radial Segments", unsigned, numRadialSegments_, 5, AM_DEFAULT);
 }
 
+bool TreeLevelOfDetail::ComputeHash(Hash& hash) const
+{
+    hash.HashFloat(distance_);
+    hash.HashUInt(maxBranchSegments_);
+    hash.HashUInt(minBranchSegments_);
+    hash.HashFloat(minAngle_);
+    hash.HashUInt(numRadialSegments_);
+    return true;
+}
+
 //////////////////////////////////////////////////////////////////////////
 TreeProxy::TreeProxy(Context* context)
     : ProceduralComponentAgent(context)
@@ -506,7 +600,7 @@ void TreeProxy::RegisterObject(Context* context)
     URHO3D_MEMBER_ATTRIBUTE("Fill Gap Depth", unsigned, fillGapDepth_, 0, AM_DEFAULT);
 }
 
-SharedPtr<Model> TreeProxy::Generate(SharedPtr<Model> model, const Vector<SharedPtr<Material>>& materials) const
+TreeProxy::GeneratedData TreeProxy::Generate(SharedPtr<Model> model, const Vector<SharedPtr<Material>>& materials) const
 {
     ModelFactory factory(context_);
     factory.Initialize(DefaultVertex::GetVertexElements(), true);
@@ -579,24 +673,31 @@ SharedPtr<Model> TreeProxy::Generate(SharedPtr<Model> model, const Vector<Shared
     SharedPtr<Texture2D> diffuseTexture = RenderTexture(context_, desc, TextureMap());
     diffuseTexture->SetName(destinationProxyDiffuseName_);
     SharedPtr<Image> diffuseImage = ConvertTextureToImage(diffuseTexture);
-    diffuseImage = FillTextureGaps(diffuseImage, fillGapDepth_, true, fillGapRenderPath_, GetOrCreateQuadModel(context_), fillGapMaterial_, inputParameterUniform[0]);
+    FillImageGaps(diffuseImage, true);
+    //diffuseImage = FillTextureGaps(diffuseImage, fillGapDepth_, true, fillGapRenderPath_, GetOrCreateQuadModel(context_), fillGapMaterial_, inputParameterUniform[0]);
     diffuseImage->PrecalculateLevels();
-    SaveImage(cache, *diffuseImage);
+//     SaveImage(cache, *diffuseImage);
 
     desc.renderPath_ = normalRenderPath_;
     SharedPtr<Texture2D> normalTexture = RenderTexture(context_, desc, TextureMap());
     normalTexture->SetName(destinationProxyNormalName_);
     SharedPtr<Image> normalImage = ConvertTextureToImage(normalTexture);
-    normalImage = FillTextureGaps(normalImage, fillGapDepth_, false, fillGapRenderPath_, GetOrCreateQuadModel(context_), fillGapMaterial_, inputParameterUniform[0]);
+    FillImageGaps(normalImage, false);
+    //normalImage = FillTextureGaps(normalImage, fillGapDepth_, false, fillGapRenderPath_, GetOrCreateQuadModel(context_), fillGapMaterial_, inputParameterUniform[0]);
     normalImage->PrecalculateLevels();
-    SaveImage(cache, *normalImage);
+//     SaveImage(cache, *normalImage);
 
-    return proxyModel;
+    GeneratedData result;
+    result.model_ = proxyModel;
+    result.diffuseImage_ = diffuseImage;
+    result.normalImage_ = normalImage;
+    return result;
 }
 
 void TreeProxy::SetDestinationProxyDiffuseAttr(const ResourceRef& value)
 {
     destinationProxyDiffuseName_ = value.name_;
+    MarkResourceListDirty();
 }
 
 ResourceRef TreeProxy::GetDestinationProxyDiffuseAttr() const
@@ -607,6 +708,7 @@ ResourceRef TreeProxy::GetDestinationProxyDiffuseAttr() const
 void TreeProxy::SetDestinationProxyNormalAttr(const ResourceRef& value)
 {
     destinationProxyNormalName_ = value.name_;
+    MarkResourceListDirty();
 }
 
 ResourceRef TreeProxy::GetDestinationProxyNormalAttr() const
@@ -667,6 +769,18 @@ void TreeProxy::SetFillGapMaterialAttr(const ResourceRef& value)
 ResourceRef TreeProxy::GetFillGapMaterialAttr() const
 {
     return GetResourceRef(fillGapMaterial_, Material::GetTypeStatic());
+}
+
+bool TreeProxy::ComputeHash(Hash& hash) const
+{
+    hash.HashFloat(distance_);
+    hash.HashUInt(numPlanes_);
+    hash.HashUInt(numVerticalSegments_);
+    hash.HashFloat(resistance_);
+    hash.HashFloat(windMagnitude_);
+    hash.HashUInt(proxyTextureWidth_);
+    hash.HashUInt(proxyTextureHeight_);
+    return true;
 }
 
 }

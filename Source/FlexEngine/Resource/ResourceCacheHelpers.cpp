@@ -1,8 +1,11 @@
 #include <FlexEngine/Resource/ResourceCacheHelpers.h>
 
+#include <FlexEngine/Factory/TextureFactory.h>
+
 #include <Urho3D/IO/File.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
+#include <Urho3D/Resource/Image.h>
 #include <Urho3D/Resource/Resource.h>
 #include <Urho3D/Resource/ResourceCache.h>
 
@@ -62,19 +65,28 @@ bool SaveResource(Resource& resource, bool reloadAfter)
     CreateDirectoriesToFile(*cache, outputFileName);
 
     // Save file
-    File file(resource.GetContext(), outputFileName, FILE_WRITE);
-    if (file.IsOpen())
+    bool success = false;
+    if (resource.IsInstanceOf<Image>())
     {
-        if (resource.Save(file))
+        // #TODO Remove this hack
+        return SaveImage(cache, static_cast<Image&>(resource));
+    }
+    else
+    {
+        File file(resource.GetContext(), outputFileName, FILE_WRITE);
+        if (file.IsOpen())
         {
-            // Reload resource
-            if (reloadAfter)
+            if (resource.Save(file))
             {
-                file.Close();
-                cache->ReloadResourceWithDependencies(resourceName);
-            }
+                // Reload resource
+                if (reloadAfter)
+                {
+                    file.Close();
+                    cache->ReloadResourceWithDependencies(resourceName);
+                }
 
-            return true;
+                return true;
+            }
         }
     }
     return false;

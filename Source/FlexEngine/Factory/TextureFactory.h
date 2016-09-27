@@ -130,6 +130,38 @@ Vector<ViewDescription> ConstructViewsForTexture(Context* context, const Texture
 /// Render texture using description.
 SharedPtr<Texture2D> RenderTexture(Context* context, const TextureDescription& desc, const TextureMap& textures);
 
+/// Signed distance field.
+class SignedDistanceField
+{
+public:
+    /// Construct.
+    SignedDistanceField(const Image& image, bool isTransparent);
+    /// Is empty?
+    bool IsEmpty() const { return data_.Empty(); }
+    /// Get value of pixel at wrapped coordinated.
+    const Vector3& GetPixel(int x, int y) const;
+    /// Get value of pixel at wrapped coordinated.
+    void SetPixel(int x, int y, const Vector3& value);
+    /// Get coordinates of nearest pixel.
+    IntVector2 GetNearestPixel(int x, int y) const;
+
+private:
+    /// Update min distance of signed distance field 
+    void UpdateMinDistance(int x, int y, int offsetX, int offsetY, float& currentDist);
+    /// Wrap coordinate to image.
+    IntVector2 Wrap(IntVector2 xy) const;
+private:
+    /// Width.
+    int width_ = 0;
+    /// Height.
+    int height_ = 0;
+    /// Image data.
+    PODVector<Vector3> data_;
+};
+
+/// Fill gaps in image.
+void FillImageGaps(SharedPtr<Image> image, bool isTransparent);
+
 /// Apply fill gap filter that replaces transparent or black texture pixels with neighbor colors.
 /// @pre Render path shall have transparent background color.
 /// @pre Model shall be the standard quad model.

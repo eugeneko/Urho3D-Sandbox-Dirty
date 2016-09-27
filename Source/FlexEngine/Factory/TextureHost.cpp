@@ -74,6 +74,22 @@ void TextureHost::RegisterObject(Context* context)
 
 }
 
+void TextureHost::DoGenerateResources(Vector<SharedPtr<Resource>>& resources)
+{
+    if (node_)
+    {
+        for (SharedPtr<Node> child : node_->GetChildren())
+        {
+            PODVector<TextureElement*> elements;
+            child->GetDerivedComponents<TextureElement>(elements);
+            for (TextureElement* element : elements)
+            {
+                element->Update();
+            }
+        }
+    }
+}
+
 void TextureHost::SetPreviewTexture(SharedPtr<Texture2D> texture)
 {
     previewTexture_ = texture;
@@ -90,22 +106,6 @@ void TextureHost::SetPreviewMaterialAttr(const ResourceRef& value)
 ResourceRef TextureHost::GetPreviewMaterialAttr() const
 {
     return GetResourceRef(previewMaterial_, Material::GetTypeStatic());
-}
-
-void TextureHost::DoUpdate()
-{
-    if (node_)
-    {
-        for (SharedPtr<Node> child : node_->GetChildren())
-        {
-            PODVector<TextureElement*> elements;
-            child->GetDerivedComponents<TextureElement>(elements);
-            for (TextureElement* element : elements)
-            {
-                element->Update();
-            }
-        }
-    }
 }
 
 void TextureHost::UpdateViews()
@@ -180,7 +180,7 @@ void TextureElement::MarkNeedUpdate(bool updatePreview)
         // Mark host
         if (TextureHost* host = GetHostComponent())
         {
-            host->MarkNeedUpdate();
+            host->MarkNeedGeneration();
         }
     }
 }
@@ -194,7 +194,7 @@ void TextureElement::ShowInPreview()
         // Mark host
         if (TextureHost* host = GetHostComponent())
         {
-            host->MarkNeedUpdate();
+            host->MarkNeedGeneration();
         }
     }
 }

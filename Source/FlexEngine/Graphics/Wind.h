@@ -17,7 +17,7 @@ namespace FlexEngine
 class WindObject;
 class WindZone;
 
-/// Wind direction uniform. Name is 'WindDirection'. XYZ is wind direction.
+/// Wind direction uniform. Name is 'WindDirection'. XYZ is wind direction. Y component is ignored.
 extern const String VSP_WINDDIRECTION;
 /// Wind parameters uniform. Name is 'WindParam'. X is main wind. Y is turbulence. Z is pulse magnitude. W is pulse frequency.
 extern const String VSP_WINDPARAM;
@@ -146,7 +146,7 @@ private:
 
     /// Add wind zone to wind system.
     void AddZoneToWindSystem();
-    /// Remove wind zone to wind system.
+    /// Remove wind zone from wind system.
     void RemoveZoneFromWindSystem();
 
 protected:

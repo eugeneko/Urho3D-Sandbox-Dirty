@@ -123,6 +123,7 @@
     <DisplayString Condition="type_==Urho3D::VAR_QUATERNION">(quat) {*(Urho3D::Quaternion*)&amp;value_}</DisplayString>
     <DisplayString Condition="type_==Urho3D::VAR_VOIDPTR">(void*) {value_.ptr_}</DisplayString>
     <DisplayString Condition="type_==Urho3D::VAR_PTR">(ref) {*((Urho3D::WeakPtr&lt;Urho3D::RefCounted&gt;*)(&amp;value_))}</DisplayString>
+    <DisplayString Condition="type_==Urho3D::VAR_RESOURCEREF">(resref) {*((Urho3D::ResourceRef*)(&amp;value_))}</DisplayString>
   </Type>
 
 </AutoVisualizer>

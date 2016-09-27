@@ -32,6 +32,7 @@ void FlexEnginePlayer::Start()
     Procedural::RegisterObject(context_);
 
     DynamicComponent::RegisterObject(context_);
+    ProceduralSystem::RegisterObject(context_);
     ProceduralComponent::RegisterObject(context_);
     ProceduralComponentAgent::RegisterObject(context_);
     TreeHost::RegisterObject(context_);

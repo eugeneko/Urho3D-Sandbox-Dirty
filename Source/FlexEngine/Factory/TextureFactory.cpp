@@ -566,6 +566,101 @@ SharedPtr<Texture2D> RenderTexture(Context* context, const TextureDescription& d
     }
 }
 
+SignedDistanceField::SignedDistanceField(const Image& image, bool isTransparent)
+    : width_(image.GetWidth())
+    , height_(image.GetHeight())
+    , data_(width_ * height_)
+{
+    for (int j = 0; j < height_; ++j)
+        for (int i = 0; i < width_; ++i)
+        {
+            const Color pixel = image.GetPixel(i, j);
+            const bool isGap = isTransparent ? pixel.a_ < M_LARGE_EPSILON : pixel.Luma() < M_LARGE_EPSILON;
+            if (isGap)
+                SetPixel(i, j, Vector3(M_INFINITY, M_INFINITY, M_INFINITY));
+            else
+                SetPixel(i, j, Vector3::ZERO);
+        }
+
+    for (int j = 0; j < height_; ++j)
+        for (int i = 0; i < width_; ++i)
+        {
+            float src = GetPixel(i, j).z_;
+            UpdateMinDistance(i, j, -1, -1, src);
+            UpdateMinDistance(i, j, 0, -1, src);
+            UpdateMinDistance(i, j, 1, -1, src);
+            UpdateMinDistance(i, j, -1, 0, src);
+        }
+
+    for (int j = height_ - 1; j >= 0; --j)
+        for (int i = width_ - 1; i >= 0; --i)
+        {
+            float src = GetPixel(i, j).z_;
+            UpdateMinDistance(i, j, 1, 0, src);
+            UpdateMinDistance(i, j, -1, 1, src);
+            UpdateMinDistance(i, j, 0, 1, src);
+            UpdateMinDistance(i, j, 1, 1, src);
+        }
+}
+
+const Vector3& SignedDistanceField::GetPixel(int x, int y) const
+{
+    const IntVector2 xy = Wrap(IntVector2(x, y));
+    return data_[xy.y_ * width_ + xy.x_];
+}
+
+void SignedDistanceField::SetPixel(int x, int y, const Vector3& value)
+{
+    const IntVector2 xy = Wrap(IntVector2(x, y));
+    data_[xy.y_ * width_ + xy.x_] = value;
+}
+
+IntVector2 SignedDistanceField::GetNearestPixel(int x, int y) const
+{
+    const Vector3 pos = Vector3(static_cast<float>(x), static_cast<float>(y)) + GetPixel(x, y);
+    return IntVector2(static_cast<int>(Round(pos.x_)), static_cast<int>(Round(pos.y_)));
+}
+
+void SignedDistanceField::UpdateMinDistance(int x, int y, int offsetX, int offsetY, float& currentDist)
+{
+    Vector3 value = GetPixel(x + offsetX, y + offsetY) + Vector3(static_cast<float>(offsetX), static_cast<float>(offsetY));
+    value.z_ = Vector2(value.x_, value.y_).Length();
+    if (value.z_ < currentDist)
+    {
+        currentDist = value.z_;
+        SetPixel(x, y, value);
+    }
+}
+
+IntVector2 SignedDistanceField::Wrap(IntVector2 xy) const
+{
+    xy.x_ %= width_;
+    if (xy.x_ < 0)
+        xy.x_ += width_;
+
+    xy.y_ %= height_;
+    if (xy.y_ < 0)
+        xy.y_ += height_;
+
+    return xy;
+}
+
+void FillImageGaps(SharedPtr<Image> image, bool isTransparent)
+{
+    if (image)
+    {
+        const SignedDistanceField sdf(*image, isTransparent);
+        for (int j = 0; j < image->GetHeight(); ++j)
+            for (int i = 0; i < image->GetWidth(); ++i)
+            {
+                const IntVector2 nij = sdf.GetNearestPixel(i, j);
+                Color pixel = image->GetPixel(i, j);
+                Color nearestPixel = image->GetPixel(nij.x_, nij.y_);
+                image->SetPixel(i, j, Color(nearestPixel, pixel.a_));
+            }
+    }
+}
+
 SharedPtr<Image> FillTextureGaps(SharedPtr<Image> image, unsigned depth, bool isTransparent,
     SharedPtr<XMLFile> renderPath, SharedPtr<Model> model, SharedPtr<Material> material, const String& sizeUniform)
 {

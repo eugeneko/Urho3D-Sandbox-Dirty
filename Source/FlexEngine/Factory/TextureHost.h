@@ -36,6 +36,9 @@ public:
     /// Register object factory.
     static void RegisterObject(Context* context);
 
+    /// Generate resources.
+    virtual void DoGenerateResources(Vector<SharedPtr<Resource>>& resources) override;
+
     /// Set preview texture.
     void SetPreviewTexture(SharedPtr<Texture2D> texture);
 
@@ -45,9 +48,6 @@ public:
     ResourceRef GetPreviewMaterialAttr() const;
 
 private:
-    /// Implementation of procedural generator.
-    virtual void DoUpdate() override;
-
     /// Update views with generated resource.
     void UpdateViews();
 
@@ -103,6 +103,9 @@ public:
     ResourceRef GetDestinationTextureAttr() const;
 
 private:
+    // #TODO Remove me
+    /// Always returns false.
+    bool GetFalse() const { return false; }
     /// Show this previewed.
     void DoShowInPreview(bool) { ShowInPreview(); }
     /// Implementation of texture generator.

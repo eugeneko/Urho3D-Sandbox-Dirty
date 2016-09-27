@@ -9,6 +9,7 @@
 namespace Urho3D
 {
 
+class Image;
 class Material;
 class XMLFile;
 
@@ -32,6 +33,8 @@ public:
     virtual ~TreeHost();
     /// Register object factory.
     static void RegisterObject(Context* context);
+    /// Enumerate resources.
+    virtual void EnumerateResources(Vector<ResourceRef>& resources) override;
 
     /// Called during element generation for each generated branch.
     void OnBranchGenerated(const BranchDescription& branch, const BranchShapeSettings& shape);
@@ -49,10 +52,12 @@ public:
     ResourceRef GetDestinationModelAttr() const;
 
 private:
+    /// Compute hash.
+    virtual bool ComputeHash(Hash& hash) const override;
     /// Generate tree topology and invariants.
     void GenerateTreeTopology();
-    /// Implementation of procedural generator.
-    virtual void DoUpdate() override;
+    /// Generate resources.
+    virtual void DoGenerateResources(Vector<SharedPtr<Resource>>& resources) override;
 
     /// Update views with generated resource.
     void UpdateViews();
@@ -106,6 +111,10 @@ private:
     virtual void DoTriangulate(ModelFactory& factory, TreeHost& host, TreeLevelOfDetail& lod) const = 0;
 
 protected:
+    /// Compute hash.
+    virtual bool ComputeHash(Hash& hash) const override;
+
+protected:
     /// Distribution settings.
     TreeElementDistribution distribution_;
 
@@ -135,6 +144,9 @@ public:
     ResourceRef GetMaterialAttr() const;
 
 private:
+    /// Compute hash.
+    virtual bool ComputeHash(Hash& hash) const override;
+
     /// Triangulate this tree element.
     virtual void DoTriangulate(ModelFactory& factory, TreeHost& host, TreeLevelOfDetail& lod) const override;
 
@@ -171,6 +183,9 @@ public:
     ResourceRef GetMaterialAttr() const;
 
 private:
+    /// Compute hash.
+    virtual bool ComputeHash(Hash& hash) const override;
+
     /// Triangulate this tree element.
     virtual void DoTriangulate(ModelFactory& factory, TreeHost& host, TreeLevelOfDetail& lod) const override;
 
@@ -207,7 +222,11 @@ public:
     /// Get number of radial segments.
     unsigned GetNumRadialSegments() const { return numRadialSegments_; }
 
-protected:
+private:
+    /// Compute hash.
+    virtual bool ComputeHash(Hash& hash) const override;
+
+private:
     /// Distance.
     float distance_ = 0.0f;
     /// Maximum number of branch segments.
@@ -227,6 +246,17 @@ class TreeProxy : public ProceduralComponentAgent
     URHO3D_OBJECT(TreeProxy, ProceduralComponentAgent);
 
 public:
+    /// Tree proxy data.
+    struct GeneratedData
+    {
+        /// Proxy model.
+        SharedPtr<Model> model_;
+        /// Diffuse texture.
+        SharedPtr<Image> diffuseImage_;
+        /// Normal texture.
+        SharedPtr<Image> normalImage_;
+    };
+
     /// Construct.
     TreeProxy(Context* context);
     /// Destruct.
@@ -235,7 +265,7 @@ public:
     static void RegisterObject(Context* context);
 
     /// Generate proxy model and textures.
-    SharedPtr<Model> Generate(SharedPtr<Model> model, const Vector<SharedPtr<Material>>& materials) const;
+    GeneratedData Generate(SharedPtr<Model> model, const Vector<SharedPtr<Material>>& materials) const;
 
     /// Set LOD distance.
     void SetDistance(float distance) { distance_ = distance; }
@@ -274,6 +304,10 @@ public:
     void SetFillGapMaterialAttr(const ResourceRef& value);
     /// Get fill gap material attribute.
     ResourceRef GetFillGapMaterialAttr() const;
+
+private:
+    /// Compute hash.
+    virtual bool ComputeHash(Hash& hash) const override;
 
 private:
     /// Proxy LOD distance.
