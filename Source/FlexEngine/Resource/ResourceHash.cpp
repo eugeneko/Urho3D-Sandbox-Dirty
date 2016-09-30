@@ -101,6 +101,11 @@ void InitializeStubResource(Resource* resource)
         for (unsigned i = 0; i < model->GetNumGeometries(); ++i)
             model->SetGeometry(i, 0, new Geometry(context));
     }
+    else if (resource->IsInstanceOf<Image>())
+    {
+        Image* image = static_cast<Image*>(resource);
+        image->SetSize(1, 1, 4);
+    }
 }
 
 }

@@ -566,6 +566,16 @@ SharedPtr<Texture2D> RenderTexture(Context* context, const TextureDescription& d
     }
 }
 
+void BuildNormalMapAlpha(SharedPtr<Image> image)
+{
+    for (int y = 0; y < image->GetHeight(); ++y)
+        for (int x = 0; x < image->GetWidth(); ++x)
+        {
+            const Color pixel = image->GetPixel(x, y);
+            image->SetPixel(x, y, Color(pixel, pixel.Luma() > M_LARGE_EPSILON ? 1.0f : 0.0f));
+        }
+}
+
 SignedDistanceField::SignedDistanceField(const Image& image, bool isTransparent)
     : width_(image.GetWidth())
     , height_(image.GetHeight())
@@ -645,18 +655,37 @@ IntVector2 SignedDistanceField::Wrap(IntVector2 xy) const
     return xy;
 }
 
-void FillImageGaps(SharedPtr<Image> image, bool isTransparent)
+void FillImageGaps(SharedPtr<Image> image, unsigned downsample)
 {
     if (image)
     {
-        const SignedDistanceField sdf(*image, isTransparent);
+        // Downsample image
+        image->CleanupLevels();
+        SharedPtr<Image> inputImage = image;
+        for (unsigned i = 0; i < downsample; ++i)
+            inputImage = inputImage->GetNextLevel();
+
+        // Restore image colors
+        if (downsample > 0)
+        {
+            for (int y = 0; y < image->GetHeight(); ++y)
+                for (int x = 0; x < image->GetWidth(); ++x)
+                {
+                    const Color pixel = inputImage->GetPixel(x, y);
+                    if (pixel.a_ > M_LARGE_EPSILON)
+                        inputImage->SetPixel(x, y, pixel * (1.0f / pixel.a_));
+                }
+        }
+
+        const unsigned downsampleFactor = 1 << downsample;
+        const SignedDistanceField sdf(*inputImage, true);
         for (int j = 0; j < image->GetHeight(); ++j)
             for (int i = 0; i < image->GetWidth(); ++i)
             {
-                const IntVector2 nij = sdf.GetNearestPixel(i, j);
-                Color pixel = image->GetPixel(i, j);
-                Color nearestPixel = image->GetPixel(nij.x_, nij.y_);
-                image->SetPixel(i, j, Color(nearestPixel, pixel.a_));
+                const IntVector2 nij = sdf.GetNearestPixel(i / downsampleFactor, j / downsampleFactor);
+                const Color fillColor = inputImage->GetPixel(nij.x_, nij.y_);
+                const Color pixel = image->GetPixel(i, j);
+                image->SetPixel(i, j, pixel.a_ > M_LARGE_EPSILON ? pixel : Color(fillColor, pixel.a_));
             }
     }
 }

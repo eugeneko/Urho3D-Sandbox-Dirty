@@ -159,8 +159,11 @@ private:
     PODVector<Vector3> data_;
 };
 
+/// Build alpha channel of normal map.
+void BuildNormalMapAlpha(SharedPtr<Image> image);
+
 /// Fill gaps in image.
-void FillImageGaps(SharedPtr<Image> image, bool isTransparent);
+void FillImageGaps(SharedPtr<Image> image, unsigned downsample);
 
 /// Apply fill gap filter that replaces transparent or black texture pixels with neighbor colors.
 /// @pre Render path shall have transparent background color.

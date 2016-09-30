@@ -673,7 +673,8 @@ TreeProxy::GeneratedData TreeProxy::Generate(SharedPtr<Model> model, const Vecto
     SharedPtr<Texture2D> diffuseTexture = RenderTexture(context_, desc, TextureMap());
     diffuseTexture->SetName(destinationProxyDiffuseName_);
     SharedPtr<Image> diffuseImage = ConvertTextureToImage(diffuseTexture);
-    FillImageGaps(diffuseImage, true);
+    // #TODO Use fill gap downsample from system
+    FillImageGaps(diffuseImage, 2);
     //diffuseImage = FillTextureGaps(diffuseImage, fillGapDepth_, true, fillGapRenderPath_, GetOrCreateQuadModel(context_), fillGapMaterial_, inputParameterUniform[0]);
     diffuseImage->PrecalculateLevels();
 //     SaveImage(cache, *diffuseImage);
@@ -682,7 +683,8 @@ TreeProxy::GeneratedData TreeProxy::Generate(SharedPtr<Model> model, const Vecto
     SharedPtr<Texture2D> normalTexture = RenderTexture(context_, desc, TextureMap());
     normalTexture->SetName(destinationProxyNormalName_);
     SharedPtr<Image> normalImage = ConvertTextureToImage(normalTexture);
-    FillImageGaps(normalImage, false);
+    BuildNormalMapAlpha(normalImage);
+    FillImageGaps(normalImage, 2);
     //normalImage = FillTextureGaps(normalImage, fillGapDepth_, false, fillGapRenderPath_, GetOrCreateQuadModel(context_), fillGapMaterial_, inputParameterUniform[0]);
     normalImage->PrecalculateLevels();
 //     SaveImage(cache, *normalImage);
