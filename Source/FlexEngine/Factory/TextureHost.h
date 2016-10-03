@@ -297,11 +297,6 @@ private:
     /// Octaves as array of 4-vectors. Each vector contains scale as 2-vector, magnitude and seed.
     VariantMap octaves_;
 
-    /// Quad model.
-    SharedPtr<Model> model_;
-    /// Buffer for texture data.
-    PODVector<float> buffer_;
-
 };
 
 /// Fill gaps texture filter.

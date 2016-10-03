@@ -64,8 +64,6 @@ void TriangulateChildren(Node& node, ModelFactory& factory, TreeHost& host, Tree
 
 }
 
-extern const char* inputParameterUniform[];
-
 //////////////////////////////////////////////////////////////////////////
 TreeHost::TreeHost(Context* context)
     : ProceduralComponent(context)

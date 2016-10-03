@@ -23,15 +23,17 @@ static void DefaultVertex_Contruct(DefaultVertex* ptr)
     new(ptr) DefaultVertex();
 }
 
-Vector4 DefaultVertex_GetUV(unsigned int idx, DefaultVertex* vertex)
+Vector4 DefaultVertex_GetUV(unsigned idx, DefaultVertex* ptr)
 {
     if (idx >= MAX_VERTEX_TEXCOORD) return Vector4::ZERO;
-    return vertex->uv_[idx];
+    return ptr->uv_[idx];
 }
-void DefaultVertex_SetUV(unsigned int idx, Vector4 value, DefaultVertex* vertex)
+
+void DefaultVertex_SetUV(unsigned idx, Vector4 value, DefaultVertex* ptr)
 {
     if (idx >= MAX_VERTEX_TEXCOORD) return;
-    vertex->uv_[idx] = value;
+    ptr->uv_[idx] = value;
+}
 }
 
 }

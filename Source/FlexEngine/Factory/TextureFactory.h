@@ -121,6 +121,9 @@ struct TextureDescription
     HashMap<String, Variant> parameters_;
 };
 
+/// Standard uniforms that can be used for passing parameters.
+extern const char* inputParameterUniform[];
+
 /// Texture mapping from name to object.
 using TextureMap = HashMap<String, SharedPtr<Texture2D>>;
 
@@ -164,6 +167,15 @@ void BuildNormalMapAlpha(SharedPtr<Image> image);
 
 /// Fill gaps in image.
 void FillImageGaps(SharedPtr<Image> image, unsigned downsample);
+
+/// Compute single octave of Perlin noise on GPU.
+SharedPtr<Texture2D> ComputePerlinNoiseOctave(XMLFile* renderPath, Model* model, Material* material, unsigned width, unsigned height,
+    const Vector2& scale, float seed);
+
+/// Compute multiple octaves of Perlin noise on GPU. Octave parameters are (scale.x, scale.y, magnitude, seed)
+SharedPtr<Image> ComputePerlinNoise(XMLFile* renderPath, Model* model, Material* material, unsigned width, unsigned height,
+    const Color& firstColor, const Color& secondColor, const PODVector<Vector4>& octaves,
+    float bias, float contrast, const Vector2& range);
 
 /// Apply fill gap filter that replaces transparent or black texture pixels with neighbor colors.
 /// @pre Render path shall have transparent background color.

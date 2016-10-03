@@ -51,8 +51,6 @@ static_assert(sizeof(textureInputsNames) / sizeof(textureInputsNames[0]) == maxT
 
 }
 
-const char* inputParameterUniform[] = { "MatDiffColor" };
-
 TextureHost::TextureHost(Context* context)
     : ProceduralComponent(context)
 {
@@ -568,20 +566,7 @@ void PerlinNoiseTexture::ApplyNumberOfOctaves()
 
 SharedPtr<Texture2D> PerlinNoiseTexture::GenerateOctaveTexture(const Vector2& scale, float seed) const
 {
-    TextureDescription desc;
-    desc.renderPath_ = renderPath_;
-    desc.width_ = Max(1u, width_);
-    desc.height_ = Max(1u, height_);
-
-    GeometryDescription geometryDesc;
-    geometryDesc.model_ = GetOrCreateQuadModel(context_);
-    geometryDesc.materials_.Push(material_);
-    desc.geometries_.Push(geometryDesc);
-
-    desc.cameras_.Push(OrthoCameraDescription::Identity(desc.width_, desc.height_));
-    desc.parameters_.Populate(inputParameterUniform[0], Vector4(scale.x_, scale.y_, seed, seed));
-
-    return RenderTexture(context_, desc, TextureMap());
+    return ComputePerlinNoiseOctave(renderPath_, GetOrCreateQuadModel(context_), material_, width_, height_, scale, seed);
 }
 
 void PerlinNoiseTexture::AddOctaveToBuffer(unsigned i, PODVector<float>& buffer, float& totalMagnitude) const
@@ -623,47 +608,11 @@ void PerlinNoiseTexture::AddOctaveToBuffer(unsigned i, PODVector<float>& buffer,
 
 SharedPtr<Texture2D> PerlinNoiseTexture::DoGenerateTexture()
 {
-    // Reset buffer
-    buffer_.Resize(width_ * height_);
-    for (float& value : buffer_)
-    {
-        value = 0.0f;
-    }
-
-    // Apply octaves
-    float maxMagnitude = 0.0f;
+    PODVector<Vector4> octaves;
     for (unsigned i = 0; i < numOctaves_; ++i)
-    {
-        AddOctaveToBuffer(i, buffer_, maxMagnitude);
-    }
-
-    // Apply modifiers
-    for (float& value : buffer_)
-    {
-        // Normalize and apply bias
-        value = Clamp(value / maxMagnitude + bias_, 0.0f, 1.0f);
-        // Apply contrast
-        value = SmoothStepEx(value, contrast_);
-        // Remap to range
-        value = Clamp(range_.Get(value), 0.0f, 1.0f);
-    }
-
-    // Build image
-    Image image(context_);
-    image.SetSize(width_, height_, 4);
-    for (unsigned y = 0; y < height_; ++y)
-    {
-        for (unsigned x = 0; x < width_; ++x)
-        {
-            const float value = buffer_[y * width_ + x];
-            const Color color = Lerp(firstColor_, secondColor_, value);
-            image.SetPixel(x, y, color);
-        }
-    }
-
-    SharedPtr<Texture2D> texture = MakeShared<Texture2D>(context_);
-    texture->SetData(&image);
-    return texture;
+        octaves.Push(octaves_[StringHash(i)].GetVector4() * Vector4(baseScale_.x_, baseScale_.y_, 1.0f, 1.0f));
+    return ConvertImageToTexture(ComputePerlinNoise(renderPath_, GetOrCreateQuadModel(context_), material_, width_, height_,
+        firstColor_, secondColor_, octaves, bias_, contrast_, range_));
 }
 
 //////////////////////////////////////////////////////////////////////////

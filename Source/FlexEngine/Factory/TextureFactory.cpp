@@ -183,6 +183,8 @@ static_assert(sizeof(DDSurfaceDesc2) == 124, "Invalid DDS header size");
 
 }
 
+const char* inputParameterUniform[] = { "MatDiffColor" };
+
 SharedPtr<Texture2D> RenderViews(Context* context, unsigned width, unsigned height, const Vector<ViewDescription>& views)
 {
     // Allocate destination buffers
@@ -688,6 +690,109 @@ void FillImageGaps(SharedPtr<Image> image, unsigned downsample)
                 image->SetPixel(i, j, pixel.a_ > M_LARGE_EPSILON ? pixel : Color(fillColor, pixel.a_));
             }
     }
+}
+
+SharedPtr<Texture2D> ComputePerlinNoiseOctave(XMLFile* renderPath, Model* model, Material* material,
+    unsigned width, unsigned height, const Vector2& scale, float seed)
+{
+    if (!renderPath || !model || !material)
+    {
+        URHO3D_LOGERROR("ComputePerlinNoiseOctave must accept valid render path, model and material");
+        return nullptr;
+    }
+    Context* context = renderPath->GetContext();
+
+    TextureDescription desc;
+    desc.renderPath_ = renderPath;
+    desc.width_ = Max(1u, width);
+    desc.height_ = Max(1u, height);
+
+    GeometryDescription geometryDesc;
+    geometryDesc.model_ = model;
+    geometryDesc.materials_.Push(SharedPtr<Material>(material));
+    desc.geometries_.Push(geometryDesc);
+
+    desc.cameras_.Push(OrthoCameraDescription::Identity(desc.width_, desc.height_));
+    desc.parameters_.Populate(inputParameterUniform[0], Vector4(scale.x_, scale.y_, seed, seed));
+
+    return RenderTexture(context, desc, TextureMap());
+}
+
+SharedPtr<Image> ComputePerlinNoise(XMLFile* renderPath, Model* model, Material* material, unsigned width, unsigned height,
+    const Color& firstColor, const Color& secondColor, const PODVector<Vector4>& octaves,
+    float bias, float contrast, const Vector2& range)
+{
+    if (!renderPath || !model || !material)
+    {
+        URHO3D_LOGERROR("ComputePerlinNoise must accept valid render path, model and material");
+        return nullptr;
+    }
+    Context* context = renderPath->GetContext();
+
+    PODVector<float> buffer;
+    buffer.Resize(width * height, 0.0f);
+
+    // Apply octaves
+    float maxMagnitude = 0.0f;
+    for (unsigned i = 0; i < octaves.Size(); ++i)
+    {
+        // Compute base scale
+        const Vector2 textureScale = width > height
+            ? Vector2(static_cast<float>(width) / height, 1.0f)
+            : Vector2(1.0f, static_cast<float>(height) / width);
+
+        // Read parameters
+        const Vector2 scale(octaves[i].x_, octaves[i].y_);
+        const float magnitude = octaves[i].z_;
+        const float seed = octaves[i].w_;
+
+        // Generate texture
+        const SharedPtr<Texture2D> texture = ComputePerlinNoiseOctave(
+            renderPath, model, material, width, height, scale * textureScale, seed);
+        const SharedPtr<Image> image = texture ? ConvertTextureToImage(texture) : nullptr;
+
+        // Write to buffer
+        if (image)
+        {
+            assert(image->GetWidth() == width);
+            assert(image->GetHeight() == height);
+            assert(buffer.Size() == width * height);
+            maxMagnitude += magnitude;
+            for (unsigned y = 0; y < height; ++y)
+            {
+                for (unsigned x = 0; x < width; ++x)
+                {
+                    const float value = image->GetPixel(x, y).r_;
+                    buffer[y * width + x] += value * magnitude;
+                }
+            }
+        }
+    }
+
+    // Apply modifiers
+    for (float& value : buffer)
+    {
+        // Normalize and apply bias
+        value = Clamp(value / maxMagnitude + bias, 0.0f, 1.0f);
+        // Apply contrast
+        value = SmoothStepEx(value, contrast);
+        // Remap to range
+        value = Clamp(FloatRange(range).Get(value), 0.0f, 1.0f);
+    }
+
+    // Build image
+    SharedPtr<Image> image = MakeShared<Image>(context);
+    image->SetSize(width, height, 4);
+    for (unsigned y = 0; y < height; ++y)
+    {
+        for (unsigned x = 0; x < width; ++x)
+        {
+            const float value = buffer[y * width + x];
+            const Color color = Lerp(firstColor, secondColor, value);
+            image->SetPixel(x, y, color);
+        }
+    }
+    return image;
 }
 
 SharedPtr<Image> FillTextureGaps(SharedPtr<Image> image, unsigned depth, bool isTransparent,
