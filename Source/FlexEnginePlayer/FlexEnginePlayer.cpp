@@ -7,6 +7,7 @@
 #include <FlexEngine/Component/Procedural.h>
 #include <FlexEngine/Factory/ProceduralComponent.h>
 #include <FlexEngine/Factory/ProceduralFactory.h>
+#include <FlexEngine/Factory/ScriptedResource.h>
 #include <FlexEngine/Factory/TextureHost.h>
 #include <FlexEngine/Factory/TreeHost.h>
 #include <FlexEngine/Graphics/StaticModelEx.h>
@@ -35,6 +36,7 @@ void FlexEnginePlayer::Start()
     ProceduralSystem::RegisterObject(context_);
     ProceduralComponent::RegisterObject(context_);
     ProceduralComponentAgent::RegisterObject(context_);
+    ScriptedResource::RegisterObject(context_);
     TreeHost::RegisterObject(context_);
     TreeElement::RegisterObject(context_);
     BranchGroup::RegisterObject(context_);

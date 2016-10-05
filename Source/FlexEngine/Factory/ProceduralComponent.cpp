@@ -195,6 +195,7 @@ void ProceduralComponent::ApplyAttributes()
         resourcesChecked_ = true;
         CheckResources();
     }
+    MarkParametersDirty();
 }
 
 void ProceduralComponent::CheckResources()
@@ -225,13 +226,13 @@ void ProceduralComponent::EnumerateResources(Vector<ResourceRef>& /*resources*/)
 
 void ProceduralComponent::GenerateResources()
 {
+    // Generate resources
+    Vector<SharedPtr<Resource>> resources;
+    DoGenerateResources(resources);
+
     // Enumerate resources
     Vector<ResourceRef> resourceRefs;
     EnumerateResources(resourceRefs);
-
-    // Generate
-    Vector<SharedPtr<Resource>> resources;
-    DoGenerateResources(resources);
     if (resources.Size() != resourceRefs.Size())
     {
         URHO3D_LOGERROR("Mismatch of enumerated and generated resources");
@@ -242,9 +243,12 @@ void ProceduralComponent::GenerateResources()
     resourcesHashes_.Resize(resources.Size(), 0u);
     for (unsigned i = 0; i < resources.Size(); ++i)
     {
-        resourcesHashes_[i] = Max(1u, HashResource(resources[i]).GetHash());
-        resources[i]->SetName(resourceRefs[i].name_);
-        SaveResource(*resources[i]);
+        if (resources[i] && !resourceRefs[i].name_.Empty())
+        {
+            resourcesHashes_[i] = Max(1u, HashResource(resources[i]).GetHash());
+            resources[i]->SetName(resourceRefs[i].name_);
+            SaveResource(*resources[i]);
+        }
     }
 }
 

@@ -1,0 +1,5 @@
+<material>
+    <technique name="Techniques/Standard.xml" />
+    <shader vsdefines="DIFFMAP " psdefines="DIFFMAP " />
+    <texture unit="diffuse" name="Objects/WhiteTree/BlackBarkDiffuse.dds" />
+</material>

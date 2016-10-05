@@ -6,9 +6,9 @@
 	<attribute name="Snap Threshold" value="5" />
 	<attribute name="Elapsed Time" value="0" />
 	<attribute name="Next Replicated Node ID" value="108" />
-	<attribute name="Next Replicated Component ID" value="163" />
-	<attribute name="Next Local Node ID" value="16777356" />
-	<attribute name="Next Local Component ID" value="16778896" />
+	<attribute name="Next Replicated Component ID" value="165" />
+	<attribute name="Next Local Node ID" value="16777363" />
+	<attribute name="Next Local Component ID" value="16778980" />
 	<attribute name="Variables" />
 	<attribute name="Variable Names" value="" />
 	<component type="Octree" id="1" />
@@ -32,6 +32,8 @@
 			<variant type="ResourceRef" value="Model;Objects/WhiteTree/Tree11A.mdl" />
 			<variant type="ResourceRef" value="Image;Objects/WhiteTree/Tree11ADiffuse.dds" />
 			<variant type="ResourceRef" value="Image;Objects/WhiteTree/Tree11ANormal.dds" />
+			<variant type="ResourceRef" value="Texture2D;Objects/WhiteTree/FoliageDiffuse.dds" />
+			<variant type="ResourceRef" value="Texture2D;Objects/WhiteTree/BlackBarkDiffuse.dds" />
 		</attribute>
 	</component>
 	<node id="2">
@@ -52,8 +54,8 @@
 		<component type="TreeHost" id="3">
 			<attribute name="Resources Hashes">
 				<variant type="Int" value="-614949314" />
-				<variant type="Int" value="-915459224" />
-				<variant type="Int" value="-915459224" />
+				<variant type="Int" value="-1211824956" />
+				<variant type="Int" value="-1211824956" />
 			</attribute>
 			<attribute name="Hash" value="431956179" />
 			<attribute name="Destination Model" value="Model;Objects/WhiteTree/Tree29A.mdl" />
@@ -215,8 +217,8 @@
 		<component type="TreeHost" id="91">
 			<attribute name="Resources Hashes">
 				<variant type="Int" value="172657109" />
-				<variant type="Int" value="-915459224" />
-				<variant type="Int" value="-915459224" />
+				<variant type="Int" value="-1211824956" />
+				<variant type="Int" value="-1211824956" />
 			</attribute>
 			<attribute name="Hash" value="-1208478555" />
 			<attribute name="Destination Model" value="Model;Objects/WhiteTree/Tree19A.mdl" />
@@ -378,8 +380,8 @@
 		<component type="TreeHost" id="132">
 			<attribute name="Resources Hashes">
 				<variant type="Int" value="519941098" />
-				<variant type="Int" value="-915459224" />
-				<variant type="Int" value="-915459224" />
+				<variant type="Int" value="-1211824956" />
+				<variant type="Int" value="-1211824956" />
 			</attribute>
 			<attribute name="Hash" value="-462472792" />
 			<attribute name="Destination Model" value="Model;Objects/WhiteTree/Tree11A.mdl" />
@@ -552,125 +554,19 @@
 		<attribute name="Rotation" value="1 0 0 0" />
 		<attribute name="Scale" value="4 4 4" />
 		<attribute name="Variables" />
-		<component type="TextureHost" id="34">
-			<attribute name="Preview Material" value="Material;Materials/TexturePreview.xml" />
-		</component>
 		<component type="StaticModel" id="35">
 			<attribute name="Model" value="Model;Models/Box.mdl" />
-			<attribute name="Material" value="Material;" />
+			<attribute name="Material" value="Material;Objects/WhiteTree/LargeFoliageMaterialPreview.xml" />
 		</component>
-		<node id="37">
-			<attribute name="Is Enabled" value="true" />
-			<attribute name="Name" value="FoliageDiffuseNoGap" />
-			<attribute name="Tags" />
-			<attribute name="Position" value="0 0 0" />
-			<attribute name="Rotation" value="1 0 0 0" />
-			<attribute name="Scale" value="1 1 1" />
-			<attribute name="Variables" />
-			<component type="FillGapFilter" id="58">
-				<attribute name="Destination Texture" value="Texture2D;Objects/WhiteTree/FoliageDiffuse.dds" />
-				<attribute name="Adjust Alpha" value="1.168" />
-				<attribute name="Input Texture" value="Input 0" />
-				<attribute name="Render Path" value="XMLFile;RenderPaths/BakeTransparent.xml" />
-				<attribute name="Material" value="Material;Materials/Procedural/FillGap.xml" />
-				<attribute name="Depth" value="16" />
-			</component>
-			<node id="17">
-				<attribute name="Is Enabled" value="true" />
-				<attribute name="Name" value="FoliageDiffuse" />
-				<attribute name="Tags" />
-				<attribute name="Position" value="0 0 0" />
-				<attribute name="Rotation" value="1 0 0 0" />
-				<attribute name="Scale" value="1 1 1" />
-				<attribute name="Variables" />
-				<component type="RenderedModelTexture" id="26">
-					<attribute name="Width" value="1024" />
-					<attribute name="Height" value="1024" />
-					<attribute name="Render Path" value="XMLFile;RenderPaths/BakeTransparent.xml" />
-					<attribute name="Materials" value="Material;Materials/Procedural/MixColor.xml" />
-					<attribute name="Input 0" value="Input 0" />
-					<attribute name="Input 1" value="Input 1" />
-					<attribute name="Input 2" value="Input 2" />
-					<attribute name="Input 3" value="Input 3" />
-				</component>
-				<node id="16">
-					<attribute name="Is Enabled" value="true" />
-					<attribute name="Name" value="FoliageMask" />
-					<attribute name="Tags" />
-					<attribute name="Position" value="0 0 0" />
-					<attribute name="Rotation" value="1 0 0 0" />
-					<attribute name="Scale" value="1 1 1" />
-					<attribute name="Variables" />
-					<component type="RenderedModelTexture" id="24">
-						<attribute name="Width" value="1024" />
-						<attribute name="Height" value="1024" />
-						<attribute name="Render Path" value="XMLFile;RenderPaths/BakeOpaque.xml" />
-						<attribute name="Model Script" value="ScriptFile;Objects/WhiteTree/ProceduralFoliage.as" />
-						<attribute name="Entry Point" value="MainFoliageMask" />
-						<attribute name="Materials" value="Material;Materials/Procedural/SuperMask.xml" />
-						<attribute name="Model Position" value="0.5 0 0.5" />
-						<attribute name="Input 0" value="Input 0" />
-					</component>
-					<node id="14">
-						<attribute name="Is Enabled" value="true" />
-						<attribute name="Name" value="LeafMask" />
-						<attribute name="Tags" />
-						<attribute name="Position" value="0 0 -2" />
-						<attribute name="Rotation" value="1 0 0 0" />
-						<attribute name="Scale" value="1 1 1" />
-						<attribute name="Variables" />
-						<component type="RenderedModelTexture" id="22">
-							<attribute name="Width" value="64" />
-							<attribute name="Height" value="64" />
-							<attribute name="Render Path" value="XMLFile;RenderPaths/BakeOpaque.xml" />
-							<attribute name="Model Script" value="ScriptFile;Objects/WhiteTree/ProceduralFoliage.as" />
-							<attribute name="Entry Point" value="MainLeafMask" />
-							<attribute name="Materials" value="Material;Materials/Procedural/MaskAdd.xml" />
-							<attribute name="Model Position" value="0.5 0 0.5" />
-						</component>
-					</node>
-				</node>
-				<node id="19">
-					<attribute name="Is Enabled" value="true" />
-					<attribute name="Name" value="LeafMain" />
-					<attribute name="Tags" />
-					<attribute name="Position" value="0 0 0" />
-					<attribute name="Rotation" value="1 0 0 0" />
-					<attribute name="Scale" value="1 1 1" />
-					<attribute name="Variables" />
-					<component type="InputTexture" id="47">
-						<attribute name="Adjust Alpha" value="0" />
-						<attribute name="Color" value="0.204 0.502 0.09 1" />
-					</component>
-				</node>
-				<node id="20">
-					<attribute name="Is Enabled" value="true" />
-					<attribute name="Name" value="LeafEdge" />
-					<attribute name="Tags" />
-					<attribute name="Position" value="0 0 0" />
-					<attribute name="Rotation" value="1 0 0 0" />
-					<attribute name="Scale" value="1 1 1" />
-					<attribute name="Variables" />
-					<component type="InputTexture" id="48">
-						<attribute name="Adjust Alpha" value="0" />
-						<attribute name="Color" value="0.298 0.769 0.09 1" />
-					</component>
-				</node>
-				<node id="18">
-					<attribute name="Is Enabled" value="true" />
-					<attribute name="Name" value="EmptyColor" />
-					<attribute name="Tags" />
-					<attribute name="Position" value="0 0 0" />
-					<attribute name="Rotation" value="1 0 0 0" />
-					<attribute name="Scale" value="1 1 1" />
-					<attribute name="Variables" />
-					<component type="InputTexture" id="49">
-						<attribute name="Adjust Alpha" value="0" />
-						<attribute name="Color" value="0 0 0 0" />
-					</component>
-				</node>
-			</node>
-		</node>
+		<component type="ScriptedResource" id="163">
+			<attribute name="Resources Hashes">
+				<variant type="Int" value="-662911500" />
+			</attribute>
+			<attribute name="Hash" value="-997650232" />
+			<attribute name="Script" value="ScriptFile;Objects/WhiteTree/ProceduralFoliage.as" />
+			<attribute name="Entry Point" value="MainFoliage" />
+			<attribute name="Resources" value="Texture2D;Objects/WhiteTree/FoliageDiffuse.dds" />
+		</component>
 	</node>
 	<node id="21">
 		<attribute name="Is Enabled" value="true" />
@@ -680,181 +576,19 @@
 		<attribute name="Rotation" value="1 0 0 0" />
 		<attribute name="Scale" value="1 4 1" />
 		<attribute name="Variables" />
-		<component type="TextureHost" id="37">
-			<attribute name="Preview Material" value="Material;Materials/TexturePreview.xml" />
-		</component>
 		<component type="StaticModel" id="36">
 			<attribute name="Model" value="Model;Models/Box.mdl" />
-			<attribute name="Material" value="Material;" />
+			<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterialPreview.xml" />
 		</component>
-		<node id="33">
-			<attribute name="Is Enabled" value="true" />
-			<attribute name="Name" value="BarkDiffuse" />
-			<attribute name="Tags" />
-			<attribute name="Position" value="0 0 0" />
-			<attribute name="Rotation" value="1 0 0 0" />
-			<attribute name="Scale" value="1 1 1" />
-			<attribute name="Variables" />
-			<component type="RenderedModelTexture" id="55">
-				<attribute name="Destination Texture" value="Texture2D;Objects/WhiteTree/BlackBarkDiffuse.dds" />
-				<attribute name="Width" value="256" />
-				<attribute name="Height" value="1024" />
-				<attribute name="Render Path" value="XMLFile;RenderPaths/BakeOpaque.xml" />
-				<attribute name="Materials" value="Material;Materials/Procedural/SuperMixColor.xml" />
-				<attribute name="Input 0" value="Input 0" />
-				<attribute name="Input 1" value="Input 1" />
-				<attribute name="Input 2" value="Input 2" />
-				<attribute name="Input 3" value="Input 3" />
-			</component>
-			<node id="28">
-				<attribute name="Is Enabled" value="true" />
-				<attribute name="Name" value="CrackMap" />
-				<attribute name="Tags" />
-				<attribute name="Position" value="-14.5139 0.438498 1.4383" />
-				<attribute name="Rotation" value="1 0 0 0" />
-				<attribute name="Scale" value="1 1 1" />
-				<attribute name="Variables" />
-				<component type="PerlinNoiseTexture" id="46">
-					<attribute name="Width" value="256" />
-					<attribute name="Height" value="1024" />
-					<attribute name="Render Path" value="XMLFile;RenderPaths/BakeTransparent.xml" />
-					<attribute name="Material" value="Material;Materials/Procedural/PerlinNoise.xml" />
-					<attribute name="Base Scale" value="4 8" />
-					<attribute name="Contrast" value="-1" />
-					<attribute name="Number of Octaves" value="4" />
-					<attribute name="Octaves">
-						<variant hash="0" type="Vector4" value="1 1 1 0" />
-						<variant hash="1" type="Vector4" value="2 2 0.5 0" />
-						<variant hash="2" type="Vector4" value="4 4 0.25 0" />
-						<variant hash="3" type="Vector4" value="8 8 0.125 0" />
-					</attribute>
-				</component>
-			</node>
-			<node id="32">
-				<attribute name="Is Enabled" value="true" />
-				<attribute name="Name" value="White" />
-				<attribute name="Tags" />
-				<attribute name="Position" value="0 0 0" />
-				<attribute name="Rotation" value="1 0 0 0" />
-				<attribute name="Scale" value="1 1 1" />
-				<attribute name="Variables" />
-				<component type="RenderedModelTexture" id="54">
-					<attribute name="Width" value="256" />
-					<attribute name="Height" value="1024" />
-					<attribute name="Render Path" value="XMLFile;RenderPaths/BakeOpaque.xml" />
-					<attribute name="Materials" value="Material;Materials/Procedural/MixColor.xml" />
-					<attribute name="Input 0" value="Input 0" />
-					<attribute name="Input 1" value="Input 1" />
-					<attribute name="Input 2" value="Input 2" />
-					<attribute name="Input 3" value="Input 1" />
-				</component>
-				<node id="27">
-					<attribute name="Is Enabled" value="true" />
-					<attribute name="Name" value="TickMap" />
-					<attribute name="Tags" />
-					<attribute name="Position" value="0 0 0" />
-					<attribute name="Rotation" value="1 0 0 0" />
-					<attribute name="Scale" value="1 1 1" />
-					<attribute name="Variables" />
-					<component type="PerlinNoiseTexture" id="44">
-						<attribute name="Width" value="256" />
-						<attribute name="Height" value="1024" />
-						<attribute name="Render Path" value="XMLFile;RenderPaths/BakeTransparent.xml" />
-						<attribute name="Material" value="Material;Materials/Procedural/PerlinNoise.xml" />
-						<attribute name="Base Scale" value="8 64" />
-						<attribute name="Range" value="-0.5 1" />
-						<attribute name="Contrast" value="2" />
-						<attribute name="Number of Octaves" value="2" />
-						<attribute name="Octaves">
-							<variant hash="0" type="Vector4" value="1 1 1 0" />
-							<variant hash="1" type="Vector4" value="2 2 0.5 0" />
-						</attribute>
-					</component>
-				</node>
-				<node id="29">
-					<attribute name="Is Enabled" value="true" />
-					<attribute name="Name" value="WhiteColor" />
-					<attribute name="Tags" />
-					<attribute name="Position" value="0 0 0" />
-					<attribute name="Rotation" value="1 0 0 0" />
-					<attribute name="Scale" value="1 1 1" />
-					<attribute name="Variables" />
-					<component type="PerlinNoiseTexture" id="50">
-						<attribute name="Width" value="256" />
-						<attribute name="Height" value="1024" />
-						<attribute name="Render Path" value="XMLFile;RenderPaths/BakeOpaque.xml" />
-						<attribute name="Material" value="Material;Materials/Procedural/PerlinNoise.xml" />
-						<attribute name="Color 1" value="0.941 0.941 0.941 1" />
-						<attribute name="Color 2" value="0.816 0.816 0.816 1" />
-						<attribute name="Base Scale" value="4 4" />
-						<attribute name="Number of Octaves" value="2" />
-						<attribute name="Octaves">
-							<variant hash="0" type="Vector4" value="1 1 1 0" />
-							<variant hash="1" type="Vector4" value="2 2 0.5 0" />
-						</attribute>
-					</component>
-				</node>
-				<node id="31">
-					<attribute name="Is Enabled" value="true" />
-					<attribute name="Name" value="TickColor" />
-					<attribute name="Tags" />
-					<attribute name="Position" value="0 0 0" />
-					<attribute name="Rotation" value="1 0 0 0" />
-					<attribute name="Scale" value="1 1 1" />
-					<attribute name="Variables" />
-					<component type="InputTexture" id="53">
-						<attribute name="Adjust Alpha" value="0" />
-						<attribute name="Color" value="0.518 0.518 0.51 1" />
-					</component>
-				</node>
-			</node>
-			<node id="30">
-				<attribute name="Is Enabled" value="true" />
-				<attribute name="Name" value="DarkColor" />
-				<attribute name="Tags" />
-				<attribute name="Position" value="0 0 0" />
-				<attribute name="Rotation" value="1 0 0 0" />
-				<attribute name="Scale" value="1 1 1" />
-				<attribute name="Variables" />
-				<component type="PerlinNoiseTexture" id="52">
-					<attribute name="Width" value="256" />
-					<attribute name="Height" value="1025" />
-					<attribute name="Render Path" value="XMLFile;RenderPaths/BakeOpaque.xml" />
-					<attribute name="Material" value="Material;Materials/Procedural/PerlinNoise.xml" />
-					<attribute name="Color 2" value="0.126 0.106 0.09 1" />
-					<attribute name="Base Scale" value="32 8" />
-					<attribute name="Number of Octaves" value="3" />
-					<attribute name="Octaves">
-						<variant hash="0" type="Vector4" value="1 1 1 0" />
-						<variant hash="1" type="Vector4" value="2 2 0.5 0" />
-						<variant hash="2" type="Vector4" value="4 4 0.25 0" />
-					</attribute>
-				</component>
-			</node>
-			<node id="34">
-				<attribute name="Is Enabled" value="true" />
-				<attribute name="Name" value="Noise" />
-				<attribute name="Tags" />
-				<attribute name="Position" value="0 0 0" />
-				<attribute name="Rotation" value="1 0 0 0" />
-				<attribute name="Scale" value="1 1 1" />
-				<attribute name="Variables" />
-				<component type="PerlinNoiseTexture" id="56">
-					<attribute name="Width" value="256" />
-					<attribute name="Height" value="1024" />
-					<attribute name="Render Path" value="XMLFile;RenderPaths/BakeOpaque.xml" />
-					<attribute name="Material" value="Material;Materials/Procedural/PerlinNoise.xml" />
-					<attribute name="Base Scale" value="32 16" />
-					<attribute name="Number of Octaves" value="4" />
-					<attribute name="Octaves">
-						<variant hash="0" type="Vector4" value="1 1 1 0" />
-						<variant hash="1" type="Vector4" value="2 2 0.5 0" />
-						<variant hash="2" type="Vector4" value="4 4 0.25 0" />
-						<variant hash="3" type="Vector4" value="8 8 0.125 0" />
-					</attribute>
-				</component>
-			</node>
-		</node>
+		<component type="ScriptedResource" id="164">
+			<attribute name="Resources Hashes">
+				<variant type="Int" value="-1407962152" />
+			</attribute>
+			<attribute name="Hash" value="-809419594" />
+			<attribute name="Script" value="ScriptFile;Objects/WhiteTree/ProceduralFoliage.as" />
+			<attribute name="Entry Point" value="MainBark" />
+			<attribute name="Resources" value="Texture2D;Objects/WhiteTree/BlackBarkDiffuse.dds" />
+		</component>
 	</node>
 	<node id="38">
 		<attribute name="Is Enabled" value="true" />

@@ -47,10 +47,10 @@ struct ViewDescription
 SharedPtr<Texture2D> RenderViews(Context* context, unsigned width, unsigned height, const Vector<ViewDescription>& views);
 
 /// Convert RGBA8 texture to image.
-SharedPtr<Image> ConvertTextureToImage(SharedPtr<Texture2D> texture);
+SharedPtr<Image> ConvertTextureToImage(const Texture2D* texture);
 
 /// Convert image to texture.
-SharedPtr<Texture2D> ConvertImageToTexture(SharedPtr<Image> image);
+SharedPtr<Texture2D> ConvertImageToTexture(const Image* image);
 
 /// Convert color key transparency to alpha transparency.
 SharedPtr<Image> ConvertColorKeyToAlpha(SharedPtr<Image> image, const Color& colorKey);
@@ -121,6 +121,9 @@ struct TextureDescription
     HashMap<String, Variant> parameters_;
 };
 
+/// Number of standard uniforms.
+static const unsigned MAX_INPUT_UNIFORM_PARAMETERS = 1;
+
 /// Standard uniforms that can be used for passing parameters.
 extern const char* inputParameterUniform[];
 
@@ -168,12 +171,12 @@ void BuildNormalMapAlpha(SharedPtr<Image> image);
 /// Fill gaps in image.
 void FillImageGaps(SharedPtr<Image> image, unsigned downsample);
 
-/// Compute single octave of Perlin noise on GPU.
-SharedPtr<Texture2D> ComputePerlinNoiseOctave(XMLFile* renderPath, Model* model, Material* material, unsigned width, unsigned height,
+/// Generate single octave of Perlin noise on GPU.
+SharedPtr<Texture2D> GeneratePerlinNoiseOctave(XMLFile* renderPath, Model* model, Material* material, unsigned width, unsigned height,
     const Vector2& scale, float seed);
 
-/// Compute multiple octaves of Perlin noise on GPU. Octave parameters are (scale.x, scale.y, magnitude, seed)
-SharedPtr<Image> ComputePerlinNoise(XMLFile* renderPath, Model* model, Material* material, unsigned width, unsigned height,
+/// Generate multiple octaves of Perlin noise on GPU. Octave parameters are (scale.x, scale.y, magnitude, seed)
+SharedPtr<Image> GeneratePerlinNoise(XMLFile* renderPath, Model* model, Material* material, unsigned width, unsigned height,
     const Color& firstColor, const Color& secondColor, const PODVector<Vector4>& octaves,
     float bias, float contrast, const Vector2& range);
 

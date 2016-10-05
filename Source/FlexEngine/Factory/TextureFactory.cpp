@@ -183,7 +183,7 @@ static_assert(sizeof(DDSurfaceDesc2) == 124, "Invalid DDS header size");
 
 }
 
-const char* inputParameterUniform[] = { "MatDiffColor" };
+const char* inputParameterUniform[MAX_INPUT_UNIFORM_PARAMETERS] = { "MatDiffColor" };
 
 SharedPtr<Texture2D> RenderViews(Context* context, unsigned width, unsigned height, const Vector<ViewDescription>& views)
 {
@@ -239,7 +239,7 @@ SharedPtr<Texture2D> RenderViews(Context* context, unsigned width, unsigned heig
     return texture;
 }
 
-SharedPtr<Image> ConvertTextureToImage(SharedPtr<Texture2D> texture)
+SharedPtr<Image> ConvertTextureToImage(const Texture2D* texture)
 {
     if (!texture)
     {
@@ -247,25 +247,12 @@ SharedPtr<Image> ConvertTextureToImage(SharedPtr<Texture2D> texture)
         return nullptr;
     }
 
-    const unsigned width = texture->GetWidth();
-    const unsigned height = texture->GetHeight();
-    const unsigned dataSize = texture->GetDataSize(width, height);
-    if (texture->GetFormat() != Graphics::GetRGBAFormat())
-    {
-        URHO3D_LOGERROR("Texture must have RGBA8 format");
-        return nullptr;
-    }
-    
-    PODVector<unsigned char> buffer(dataSize);
-    texture->GetData(0, buffer.Buffer());
-    SharedPtr<Image> image = MakeShared<Image>(texture->GetContext());
-    image->SetSize(width, height, texture->GetComponents());
-    image->SetData(buffer.Buffer());
+    SharedPtr<Image> image = texture->GetImage();
     image->SetName(texture->GetName());
     return image;
 }
 
-SharedPtr<Texture2D> ConvertImageToTexture(SharedPtr<Image> image)
+SharedPtr<Texture2D> ConvertImageToTexture(const Image* image)
 {
     if (!image)
     {
@@ -274,7 +261,7 @@ SharedPtr<Texture2D> ConvertImageToTexture(SharedPtr<Image> image)
     }
 
     SharedPtr<Texture2D> texture = MakeShared<Texture2D>(image->GetContext());
-    texture->SetData(image);
+    texture->SetData(const_cast<Image*>(image));
     return texture;
 }
 
@@ -692,12 +679,12 @@ void FillImageGaps(SharedPtr<Image> image, unsigned downsample)
     }
 }
 
-SharedPtr<Texture2D> ComputePerlinNoiseOctave(XMLFile* renderPath, Model* model, Material* material,
+SharedPtr<Texture2D> GeneratePerlinNoiseOctave(XMLFile* renderPath, Model* model, Material* material,
     unsigned width, unsigned height, const Vector2& scale, float seed)
 {
     if (!renderPath || !model || !material)
     {
-        URHO3D_LOGERROR("ComputePerlinNoiseOctave must accept valid render path, model and material");
+        URHO3D_LOGERROR("GeneratePerlinNoiseOctave must accept valid render path, model and material");
         return nullptr;
     }
     Context* context = renderPath->GetContext();
@@ -718,19 +705,18 @@ SharedPtr<Texture2D> ComputePerlinNoiseOctave(XMLFile* renderPath, Model* model,
     return RenderTexture(context, desc, TextureMap());
 }
 
-SharedPtr<Image> ComputePerlinNoise(XMLFile* renderPath, Model* model, Material* material, unsigned width, unsigned height,
+SharedPtr<Image> GeneratePerlinNoise(XMLFile* renderPath, Model* model, Material* material, unsigned width, unsigned height,
     const Color& firstColor, const Color& secondColor, const PODVector<Vector4>& octaves,
     float bias, float contrast, const Vector2& range)
 {
     if (!renderPath || !model || !material)
     {
-        URHO3D_LOGERROR("ComputePerlinNoise must accept valid render path, model and material");
+        URHO3D_LOGERROR("GeneratePerlinNoise must accept valid render path, model and material");
         return nullptr;
     }
     Context* context = renderPath->GetContext();
 
-    PODVector<float> buffer;
-    buffer.Resize(width * height, 0.0f);
+    PODVector<float> buffer(width * height, 0.0f);
 
     // Apply octaves
     float maxMagnitude = 0.0f;
@@ -747,7 +733,7 @@ SharedPtr<Image> ComputePerlinNoise(XMLFile* renderPath, Model* model, Material*
         const float seed = octaves[i].w_;
 
         // Generate texture
-        const SharedPtr<Texture2D> texture = ComputePerlinNoiseOctave(
+        const SharedPtr<Texture2D> texture = GeneratePerlinNoiseOctave(
             renderPath, model, material, width, height, scale * textureScale, seed);
         const SharedPtr<Image> image = texture ? ConvertTextureToImage(texture) : nullptr;
 

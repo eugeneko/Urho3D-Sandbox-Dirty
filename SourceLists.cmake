@@ -30,6 +30,8 @@ set (SOURCE_FILES
     "${SOURCE_FOLDER}FlexEngine/Factory/ProceduralFactory.h"
     "${SOURCE_FOLDER}FlexEngine/Factory/ProxyGeometryFactory.cpp"
     "${SOURCE_FOLDER}FlexEngine/Factory/ProxyGeometryFactory.h"
+    "${SOURCE_FOLDER}FlexEngine/Factory/ScriptedResource.cpp"
+    "${SOURCE_FOLDER}FlexEngine/Factory/ScriptedResource.h"
     "${SOURCE_FOLDER}FlexEngine/Factory/TextureFactory.cpp"
     "${SOURCE_FOLDER}FlexEngine/Factory/TextureFactory.h"
     "${SOURCE_FOLDER}FlexEngine/Factory/TextureHost.cpp"

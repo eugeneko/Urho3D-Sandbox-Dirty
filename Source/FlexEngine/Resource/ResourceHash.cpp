@@ -59,10 +59,9 @@ Hash HashResource(Resource* resource)
     {
         Image* image = static_cast<Image*>(resource);
 
-        hash.HashUInt(image->GetWidth());
-        hash.HashUInt(image->GetHeight());
-        hash.HashUInt(image->GetDepth());
-        hash.HashUInt(image->GetCompressedFormat());
+        hash.HashUInt(Max(1, image->GetWidth()));
+        hash.HashUInt(Max(1, image->GetHeight()));
+        hash.HashUInt(Max(1, image->GetDepth()));
         hash.HashUInt(image->GetComponents());
     }
     else if (resource->IsInstanceOf<Texture2D>())

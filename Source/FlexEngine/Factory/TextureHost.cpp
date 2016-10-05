@@ -566,7 +566,7 @@ void PerlinNoiseTexture::ApplyNumberOfOctaves()
 
 SharedPtr<Texture2D> PerlinNoiseTexture::GenerateOctaveTexture(const Vector2& scale, float seed) const
 {
-    return ComputePerlinNoiseOctave(renderPath_, GetOrCreateQuadModel(context_), material_, width_, height_, scale, seed);
+    return GeneratePerlinNoiseOctave(renderPath_, GetOrCreateQuadModel(context_), material_, width_, height_, scale, seed);
 }
 
 void PerlinNoiseTexture::AddOctaveToBuffer(unsigned i, PODVector<float>& buffer, float& totalMagnitude) const
@@ -611,7 +611,7 @@ SharedPtr<Texture2D> PerlinNoiseTexture::DoGenerateTexture()
     PODVector<Vector4> octaves;
     for (unsigned i = 0; i < numOctaves_; ++i)
         octaves.Push(octaves_[StringHash(i)].GetVector4() * Vector4(baseScale_.x_, baseScale_.y_, 1.0f, 1.0f));
-    return ConvertImageToTexture(ComputePerlinNoise(renderPath_, GetOrCreateQuadModel(context_), material_, width_, height_,
+    return ConvertImageToTexture(GeneratePerlinNoise(renderPath_, GetOrCreateQuadModel(context_), material_, width_, height_,
         firstColor_, secondColor_, octaves, bias_, contrast_, range_));
 }
 
