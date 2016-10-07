@@ -10,6 +10,7 @@ void VS(float4 iPos : POSITION,
     #endif
     #ifdef INSTANCED
         float4x3 iModelInstance : TEXCOORD4,
+        float4 iInstanceData : TEXCOORD7,
     #endif
     #ifdef OBJECTPROXY
         float4 iSize : TEXCOORD1,
@@ -35,9 +36,14 @@ void VS(float4 iPos : POSITION,
     out float4 oFade : COLOR1,
     out float4 oPos : OUTPOSITION)
 {
+    // Define default instance data if not expected from engine
+    #ifndef INSTANCED
+        float4 iInstanceData = float4(1.0, 0.0, 0.0, 0.0);
+    #endif
+
     // Define a 0,0 UV coord if not expected from the vertex data
     #ifdef NOUV
-    float2 iTexCoord = float2(0.0, 0.0);
+        float2 iTexCoord = float2(0.0, 0.0);
     #endif
 
     // Get matrix and vectors
@@ -51,9 +57,9 @@ void VS(float4 iPos : POSITION,
     // Get fade factor
     #ifdef OBJECTPROXY
         float3 worldNormal = GetWorldNormal(modelMatrix);
-        oFade = ComputeFade(1.0, worldNormal, eye, modelUp, iProxyParam, iSize.zw);
+        oFade = ComputeFade(iInstanceData.x, 1.0, worldNormal, eye, modelUp, iProxyParam, iSize.zw);
     #else
-        oFade = ComputeFade(1.0, 1.0);
+        oFade = ComputeFade(iInstanceData.x, 1.0, 1.0);
     #endif
 
     // Compute position

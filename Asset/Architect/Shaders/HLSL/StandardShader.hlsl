@@ -41,6 +41,7 @@ void VS(float4 iPos : POSITION,
     #endif
     #ifdef INSTANCED
         float4x3 iModelInstance : TEXCOORD4,
+        float4 iInstanceData : TEXCOORD7,
     #endif
     #if defined(BILLBOARD) || defined(DIRBILLBOARD)
         float2 iSize : TEXCOORD1,
@@ -86,6 +87,11 @@ void VS(float4 iPos : POSITION,
     #endif
     out float4 oPos : OUTPOSITION)
 {
+    // Define default instance data if not expected from engine
+    #ifndef INSTANCED
+        float4 iInstanceData = float4(1.0, 0.0, 0.0, 0.0);
+    #endif
+
     // Define a 0,0 UV coord if not expected from the vertex data
     #ifdef NOUV
         float2 iTexCoord = float2(0.0, 0.0);
@@ -104,9 +110,9 @@ void VS(float4 iPos : POSITION,
 
     // Get fade factor
     #ifdef OBJECTPROXY
-        oFade = ComputeFade(1.0, oNormal, eye, modelUp, iProxyParam, iSize.zw);
+        oFade = ComputeFade(iInstanceData.x, 1.0, oNormal, eye, modelUp, iProxyParam, iSize.zw);
     #else
-        oFade = ComputeFade(1.0, 1.0);
+        oFade = ComputeFade(iInstanceData.x, 1.0, 1.0);
     #endif
 
     // Compute position

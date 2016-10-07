@@ -7,6 +7,28 @@
 
 namespace FlexEngine
 {
+/// Static model per-geometry extra data (extended).
+/// @see Urho3D::StaticModelGeometryData
+struct StaticModelGeometryDataEx
+{
+    /// Original geometry material.
+    SharedPtr<Material> originalMaterial_;
+    /// Unique copy of geometry material.
+    SharedPtr<Material> clonedMaterial_;
+
+    /// Primary LOD level.
+    unsigned primaryLodLevel_;
+    /// Secondary LOD level.
+    unsigned secondaryLodLevel_;
+    /// Mix factor of primary and secondary LOD levels.
+    float lodLevelMix_;
+    /// Fade-in and fade-out LOD level distances.
+    PODVector<Vector2> lodDistances_;
+    /// Per-instance data for primary LOD.
+    Vector4 primaryInstanceData_;
+    /// Per-instance data for secondary LOD.
+    Vector4 secondaryInstanceData_;
+};
 
 /// Wind zone.
 class StaticModelEx : public StaticModel
@@ -47,15 +69,16 @@ public:
     void SetUniqueMaterials(bool uniqueMaterials) { SetCloneRequest(CR_FORCE_UNIQUE, uniqueMaterials); }
     /// Return whether to use unique materials.
     bool AreMaterialsUnique() const { return cloneRequests_ & CR_FORCE_UNIQUE; }
+    /// Set LOD switch bias.
+    void SetLodSwitchBias(float bias) { lodSwitchBias_ = bias; SetupLodDistances(); }
+    /// Return LOD switch bias.
+    float GetLodSwitchBias() const { return lodSwitchBias_; }
+    /// Set LOD switch duration.
+    void SetLodSwitchDuration(float duration) { lodSwitchDuration_ = duration; }
+    /// Return LOD switch duration.
+    float GetLodSwitchDuration() const { return lodSwitchDuration_; }
 
 private:
-    /// Extended geometry data.
-    struct GeometryDataEx
-    {
-        SharedPtr<Material> originalMaterial_;
-        SharedPtr<Material> clonedMaterial_;
-    };
-
     /// Handle scene being assigned. This may happen several times during the component's lifetime. Scene-wide subsystems and events are subscribed to here.
     virtual void OnSceneSet(Scene* scene) override;
 
@@ -72,23 +95,44 @@ private:
     /// Set clone request flag. This call is ignored if materials are not cloned.
     void SetCloneRequest(unsigned flag, bool enable);
 
+    /// Setup LOD distances.
+    void SetupLodDistances();
+    /// Reset LOD levels.
+    void ResetLodLevels();
+    /// Choose LOD levels based on distance.
+    void CalculateLodLevels(float timeStep);
+    /// Compute best LOD level
+    static unsigned ComputeBestLod(float distance, unsigned currentLod, const PODVector<Vector2>& distances);
+
+    /// Update distances and LOD levels.
+    void UpdateLodLevels(const FrameInfo& frame);
+    /// Update wind.
+    void UpdateWind();
+
 private:
     /// Clone request from user.
     static const unsigned CR_FORCE_UNIQUE = 1 << 0;
     /// Clone request from wind system.
     static const unsigned CR_WIND = 1 << 1;
 
-    /// Whether to receive wind updates.
-    bool applyWind_ = false;
     /// Wind system.
     WeakPtr<WindSystem> windSystem_;
+
+    /// Whether to receive wind updates.
+    bool applyWind_ = false;
     /// Whether to clone materials.
     bool cloneMaterials_ = false;
-
     /// Flag set of clone material requests.
     unsigned cloneRequests_ = 0;
+    /// LOD switch bias.
+    float lodSwitchBias_ = 1.0f;
+    /// Duration of LOD switching.
+    float lodSwitchDuration_ = 1.0f;
+
     /// Extended per-geometry data.
-    Vector<GeometryDataEx> geometryDataEx_;
+    Vector<StaticModelGeometryDataEx> geometryDataEx_;
+    /// Number of active LOD switching animations.
+    int numLodSwitchAnimations_ = 0;
 };
 
 }

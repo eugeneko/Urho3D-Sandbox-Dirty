@@ -16,6 +16,7 @@
 
 #include <Urho3D/DebugNew.h>
 #include <Urho3D/AngelScript/Script.h>
+#include <Urho3D/Graphics/Renderer.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/Resource/ResourceCache.h>
 
@@ -29,6 +30,8 @@ FlexEnginePlayer::FlexEnginePlayer(Context* context) :
 void FlexEnginePlayer::Start()
 {
     ResourceCache* resourceCache = GetSubsystem<ResourceCache>();
+    GetSubsystem<Renderer>()->SetMinInstances(1);
+    GetSubsystem<Renderer>()->SetNumExtraInstancingBufferElements(1);
 
     Procedural::RegisterObject(context_);
 

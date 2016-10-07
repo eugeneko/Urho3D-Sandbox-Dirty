@@ -52,7 +52,7 @@
 			<attribute name="Rotation" value="1 0 0 0" />
 			<attribute name="Scale" value="4 4 4" />
 			<attribute name="Variables" />
-			<component type="StaticModel" id="35">
+			<component type="StaticModelEx" id="35">
 				<attribute name="Model" value="Model;Models/Box.mdl" />
 				<attribute name="Material" value="Material;Objects/WhiteTree/LargeFoliageMaterialPreview.xml" />
 			</component>
@@ -75,7 +75,7 @@
 			<attribute name="Rotation" value="1 0 0 0" />
 			<attribute name="Scale" value="1 4 1" />
 			<attribute name="Variables" />
-			<component type="StaticModel" id="36">
+			<component type="StaticModelEx" id="36">
 				<attribute name="Model" value="Model;Models/Box.mdl" />
 				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterialPreview.xml" />
 			</component>

@@ -12,6 +12,7 @@
 #include <Urho3D/Graphics/Geometry.h>
 #include <Urho3D/Graphics/Material.h>
 #include <Urho3D/Graphics/StaticModel.h>
+#include <Urho3D/Graphics/Renderer.h>
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/Resource/Image.h>
 #include <Urho3D/Resource/ResourceCache.h>
@@ -229,10 +230,16 @@ void TreeHost::DoGenerateResources(Vector<SharedPtr<Resource>>& resources)
             URHO3D_LOGWARNING("Tree must have at most one proxy level");
         }
 
-        // Append proxy
+        // Generate proxy
+        Renderer* renderer = GetSubsystem<Renderer>();
         TreeProxy& treeProxy = *proxies[0];
-        AppendEmptyLOD(*model_, treeProxy.GetDistance());
+        const bool hadInstancing = renderer->GetDynamicInstancing();
+        renderer->SetDynamicInstancing(false);
         TreeProxy::GeneratedData data = treeProxy.Generate(model_, materials_);
+        renderer->SetDynamicInstancing(hadInstancing);
+
+        // Append proxy
+        AppendEmptyLOD(*model_, treeProxy.GetDistance());
         AppendModelGeometries(*model_, *data.model_);
         resources.Push(data.diffuseImage_);
         resources.Push(data.normalImage_);

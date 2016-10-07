@@ -6,15 +6,15 @@
 
 /// Compute fade
 #ifdef OBJECTPROXY
-    float4 ComputeFade(float2 iFade, float3 iNormal, float3 iEye, float3 iModelUp, float4 iProxyParam, float2 iFadeScale)
+    float4 ComputeFade(float iScreenFade, float iTextureFade, float3 iNormal, float3 iEye, float3 iModelUp, float4 iProxyParam, float2 iFadeScale)
     {
         float proxyFade = GetProxyFadeFactor(iNormal, iProxyParam.x, iProxyParam.y, iProxyParam.z > 0.0, iEye, iModelUp);
-        return float4(iFade.x, iFade.y * proxyFade, iFadeScale * iProxyParam.w);
+        return float4(iScreenFade, iTextureFade * proxyFade, iFadeScale * iProxyParam.w);
     }
 #else
-    float4 ComputeFade(float2 iFade, float2 iFadeScale)
+    float4 ComputeFade(float iScreenFade, float iTextureFade, float2 iFadeScale)
     {
-        return float4(iFade, iFadeScale);
+        return float4(iScreenFade, iTextureFade, iFadeScale);
     }
 #endif
 
@@ -37,6 +37,7 @@
 /// Compute main and turbulence wind.
 float3 ComputeGlobalWind(
     float3 iPos,
+    float3 iModelPosition,
     float iTime,
     float2 iPhase,
     float2 iFrequency,
@@ -46,6 +47,7 @@ float3 ComputeGlobalWind(
     float3 iWindDirection)
 {
     // Preserve shape
+    iPos -= iModelPosition;
     float positionLength = length(iPos);
                         
     // Compute oscillation
@@ -58,7 +60,7 @@ float3 ComputeGlobalWind(
     iPos.xz += iWindDirection.xz * value.x;
 
     // Restore position
-    iPos = normalize(iPos) * positionLength;
+    iPos = normalize(iPos) * positionLength + iModelPosition;
 
     // Apply tubulence
     iPos.y -= value.y;
@@ -110,6 +112,7 @@ float3 ComputeFoliageWind(
         #ifdef OBJECTPROXY
             float3 worldPos = ComputeGlobalWind(
                 iPos, // position
+                iModelPosition, // model position
                 cElapsedTime, // time
                 objectPhase, // phase
                 float2(cWindParam.w, 0.0), // frequency
@@ -127,6 +130,7 @@ float3 ComputeFoliageWind(
                 iWind2.y); // frequency
             worldPos = ComputeGlobalWind(
                 worldPos, // position
+                iModelPosition, // model position
                 cElapsedTime, // time
                 float2(objectPhase, objectPhase + iWind1.z), // phase
                 float2(cWindParam.w, iWind2.x), // frequency
