@@ -5,10 +5,10 @@
 	<attribute name="Smoothing Constant" value="50" />
 	<attribute name="Snap Threshold" value="5" />
 	<attribute name="Elapsed Time" value="0" />
-	<attribute name="Next Replicated Node ID" value="108" />
+	<attribute name="Next Replicated Node ID" value="109" />
 	<attribute name="Next Replicated Component ID" value="165" />
-	<attribute name="Next Local Node ID" value="16777363" />
-	<attribute name="Next Local Component ID" value="16778980" />
+	<attribute name="Next Local Node ID" value="16777367" />
+	<attribute name="Next Local Component ID" value="16779028" />
 	<attribute name="Variables" />
 	<attribute name="Variable Names" value="" />
 	<component type="Octree" id="1" />
@@ -23,6 +23,8 @@
 	</component>
 	<component type="ProceduralSystem" id="162">
 		<attribute name="Resource List">
+			<variant type="ResourceRef" value="Image;Objects/WhiteTree/FoliageDiffuse.dds" />
+			<variant type="ResourceRef" value="Image;Objects/WhiteTree/BlackBarkDiffuse.dds" />
 			<variant type="ResourceRef" value="Model;Objects/WhiteTree/Tree29A.mdl" />
 			<variant type="ResourceRef" value="Image;Objects/WhiteTree/Tree29ADiffuse.dds" />
 			<variant type="ResourceRef" value="Image;Objects/WhiteTree/Tree29ANormal.dds" />
@@ -32,475 +34,528 @@
 			<variant type="ResourceRef" value="Model;Objects/WhiteTree/Tree11A.mdl" />
 			<variant type="ResourceRef" value="Image;Objects/WhiteTree/Tree11ADiffuse.dds" />
 			<variant type="ResourceRef" value="Image;Objects/WhiteTree/Tree11ANormal.dds" />
-			<variant type="ResourceRef" value="Texture2D;Objects/WhiteTree/FoliageDiffuse.dds" />
-			<variant type="ResourceRef" value="Texture2D;Objects/WhiteTree/BlackBarkDiffuse.dds" />
 		</attribute>
 	</component>
-	<node id="2">
+	<node id="108">
 		<attribute name="Is Enabled" value="true" />
-		<attribute name="Name" value="WhiteTree_29m" />
+		<attribute name="Name" value="Procedural" />
 		<attribute name="Tags" />
 		<attribute name="Position" value="0 0 0" />
 		<attribute name="Rotation" value="1 0 0 0" />
 		<attribute name="Scale" value="1 1 1" />
 		<attribute name="Variables" />
-		<component type="StaticModelEx" id="4">
-			<attribute name="Apply Wind" value="true" />
-			<attribute name="Clone Materials" value="true" />
-			<attribute name="Model" value="Model;Objects/WhiteTree/Tree29A.mdl" />
-			<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree29AMaterial.xml" />
-			<attribute name="Cast Shadows" value="true" />
-		</component>
-		<component type="TreeHost" id="3">
-			<attribute name="Resources Hashes">
-				<variant type="Int" value="-614949314" />
-				<variant type="Int" value="-1211824956" />
-				<variant type="Int" value="-1211824956" />
-			</attribute>
-			<attribute name="Hash" value="431956179" />
-			<attribute name="Destination Model" value="Model;Objects/WhiteTree/Tree29A.mdl" />
-			<attribute name="Main Wind" value="0.2" />
-			<attribute name="Turbulence Magnitude" value="0.05" />
-			<attribute name="Oscillation Magnitude" value="0.3" />
-		</component>
-		<component type="TreeLevelOfDetail" id="59">
-			<attribute name="Hash" value="-725142978" />
-		</component>
-		<component type="TreeLevelOfDetail" id="60">
-			<attribute name="Hash" value="2046213305" />
-			<attribute name="Distance" value="1" />
-			<attribute name="Num Radial Segments" value="3" />
-		</component>
-		<component type="TreeProxy" id="61">
-			<attribute name="Distance" value="8" />
-			<attribute name="Resistance" value="0.6" />
-			<attribute name="Wind Magnitude" value="0.2" />
-			<attribute name="Proxy Width" value="2048" />
-			<attribute name="Proxy Height" value="512" />
-			<attribute name="Proxy Diffuse" value="Texture2D;Objects/WhiteTree/Tree29ADiffuse.dds" />
-			<attribute name="Proxy Normal" value="Texture2D;Objects/WhiteTree/Tree29ANormal.dds" />
-			<attribute name="Proxy Material" value="Material;Objects/WhiteTree/Tree29AMaterial.xml" />
-			<attribute name="RP Diffuse" value="XMLFile;RenderPaths/BakeDiffuse.xml" />
-			<attribute name="RP Normal" value="XMLFile;RenderPaths/BakeNormal.xml" />
-			<attribute name="Fill Gap RP" value="XMLFile;RenderPaths/BakeTransparent.xml" />
-			<attribute name="Fill Gap Material" value="Material;Materials/Procedural/FillGap.xml" />
-			<attribute name="Fill Gap Depth" value="16" />
-		</component>
-		<node id="3">
+		<node id="15">
 			<attribute name="Is Enabled" value="true" />
-			<attribute name="Name" value="Trunk" />
+			<attribute name="Name" value="WhiteTree_foliage" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="-2 2 -15" />
+			<attribute name="Rotation" value="1 0 0 0" />
+			<attribute name="Scale" value="4 4 4" />
+			<attribute name="Variables" />
+			<component type="StaticModel" id="35">
+				<attribute name="Model" value="Model;Models/Box.mdl" />
+				<attribute name="Material" value="Material;Objects/WhiteTree/LargeFoliageMaterialPreview.xml" />
+			</component>
+			<component type="ScriptedResource" id="163">
+				<attribute name="Resources Hashes">
+					<variant type="Int" value="-662911500" />
+				</attribute>
+				<attribute name="Hash" value="-997650232" />
+				<attribute name="Type" value="-612052389" />
+				<attribute name="Script" value="ScriptFile;Objects/WhiteTree/Procedural.as" />
+				<attribute name="Entry Point" value="MainFoliage" />
+				<attribute name="Resources" value="Texture2D;Objects/WhiteTree/FoliageDiffuse.dds" />
+			</component>
+		</node>
+		<node id="21">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="WhiteTree_bark" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="2 2 -15" />
+			<attribute name="Rotation" value="1 0 0 0" />
+			<attribute name="Scale" value="1 4 1" />
+			<attribute name="Variables" />
+			<component type="StaticModel" id="36">
+				<attribute name="Model" value="Model;Models/Box.mdl" />
+				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterialPreview.xml" />
+			</component>
+			<component type="ScriptedResource" id="164">
+				<attribute name="Resources Hashes">
+					<variant type="Int" value="-1407962152" />
+				</attribute>
+				<attribute name="Hash" value="-809419594" />
+				<attribute name="Type" value="-612052389" />
+				<attribute name="Script" value="ScriptFile;Objects/WhiteTree/Procedural.as" />
+				<attribute name="Entry Point" value="MainBark" />
+				<attribute name="Resources" value="Texture2D;Objects/WhiteTree/BlackBarkDiffuse.dds" />
+			</component>
+		</node>
+		<node id="2">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="WhiteTree_29m" />
 			<attribute name="Tags" />
 			<attribute name="Position" value="0 0 0" />
 			<attribute name="Rotation" value="1 0 0 0" />
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
-			<component type="BranchGroup" id="8">
-				<attribute name="Hash" value="109392469" />
-				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml" />
-				<attribute name="UV Scale" value="1 4" />
-				<attribute name="Quality" value="2" />
-				<attribute name="Length" value="29 1" />
-				<attribute name="Radius" value="0.25 0.01" />
-				<attribute name="Resistance" value="0.6" />
-				<attribute name="Wind Main" value="0.5" />
+			<component type="StaticModelEx" id="4">
+				<attribute name="Apply Wind" value="true" />
+				<attribute name="Clone Materials" value="true" />
+				<attribute name="Model" value="Model;Objects/WhiteTree/Tree29A.mdl" />
+				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree29AMaterial.xml" />
+				<attribute name="Cast Shadows" value="true" />
 			</component>
-			<node id="4">
+			<component type="TreeHost" id="3">
+				<attribute name="Resources Hashes">
+					<variant type="Int" value="-614949314" />
+					<variant type="Int" value="-1211824956" />
+					<variant type="Int" value="-1211824956" />
+				</attribute>
+				<attribute name="Hash" value="431956179" />
+				<attribute name="Destination Model" value="Model;Objects/WhiteTree/Tree29A.mdl" />
+				<attribute name="Main Wind" value="0.2" />
+				<attribute name="Turbulence Magnitude" value="0.05" />
+				<attribute name="Oscillation Magnitude" value="0.3" />
+			</component>
+			<component type="TreeLevelOfDetail" id="59">
+				<attribute name="Hash" value="-725142978" />
+			</component>
+			<component type="TreeLevelOfDetail" id="60">
+				<attribute name="Hash" value="2046213305" />
+				<attribute name="Distance" value="1" />
+				<attribute name="Num Radial Segments" value="3" />
+			</component>
+			<component type="TreeProxy" id="61">
+				<attribute name="Distance" value="8" />
+				<attribute name="Resistance" value="0.6" />
+				<attribute name="Wind Magnitude" value="0.2" />
+				<attribute name="Proxy Width" value="2048" />
+				<attribute name="Proxy Height" value="512" />
+				<attribute name="Proxy Diffuse" value="Texture2D;Objects/WhiteTree/Tree29ADiffuse.dds" />
+				<attribute name="Proxy Normal" value="Texture2D;Objects/WhiteTree/Tree29ANormal.dds" />
+				<attribute name="Proxy Material" value="Material;Objects/WhiteTree/Tree29AMaterial.xml" />
+				<attribute name="RP Diffuse" value="XMLFile;RenderPaths/BakeDiffuse.xml" />
+				<attribute name="RP Normal" value="XMLFile;RenderPaths/BakeNormal.xml" />
+				<attribute name="Fill Gap RP" value="XMLFile;RenderPaths/BakeTransparent.xml" />
+				<attribute name="Fill Gap Material" value="Material;Materials/Procedural/FillGap.xml" />
+				<attribute name="Fill Gap Depth" value="16" />
+			</component>
+			<node id="3">
 				<attribute name="Is Enabled" value="true" />
-				<attribute name="Name" value="Branches" />
+				<attribute name="Name" value="Trunk" />
 				<attribute name="Tags" />
 				<attribute name="Position" value="0 0 0" />
 				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="1 1 1" />
 				<attribute name="Variables" />
-				<component type="BranchGroup" id="9">
-					<attribute name="Hash" value="735740180" />
-					<attribute name="Frequency" value="12" />
-					<attribute name="Growth Location" value="0.15 0.8" />
-					<attribute name="Twirl angle step" value="105" />
-					<attribute name="Twirl angle random" value="30" />
-					<attribute name="Growth Angle" value="30 50" />
+				<component type="BranchGroup" id="8">
+					<attribute name="Hash" value="109392469" />
 					<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml" />
 					<attribute name="UV Scale" value="1 4" />
-					<attribute name="Length" value="0.3 0.3" />
-					<attribute name="Fake Ending" value="true" />
-					<attribute name="Radius" value="0.6 0.1" />
-					<attribute name="Gravity Intensity" value="7" />
-					<attribute name="Wind Main" value="0.2" />
-					<attribute name="Wind Turbulence" value="1" />
-					<attribute name="Wind Phase" value="1" />
+					<attribute name="Quality" value="2" />
+					<attribute name="Length" value="29 1" />
+					<attribute name="Radius" value="0.25 0.01" />
+					<attribute name="Resistance" value="0.6" />
+					<attribute name="Wind Main" value="0.5" />
 				</component>
-				<node id="6">
+				<node id="4">
 					<attribute name="Is Enabled" value="true" />
-					<attribute name="Name" value="Nested branches" />
+					<attribute name="Name" value="Branches" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="0 0 0" />
 					<attribute name="Rotation" value="1 0 0 0" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
-					<component type="BranchGroup" id="11">
-						<attribute name="Hash" value="-330114378" />
-						<attribute name="Frequency" value="2" />
-						<attribute name="Growth Location" value="0 0.7" />
+					<component type="BranchGroup" id="9">
+						<attribute name="Hash" value="735740180" />
+						<attribute name="Frequency" value="12" />
+						<attribute name="Growth Location" value="0.15 0.8" />
+						<attribute name="Twirl angle step" value="105" />
 						<attribute name="Twirl angle random" value="30" />
-						<attribute name="Growth Angle" value="30 30" />
+						<attribute name="Growth Angle" value="30 50" />
 						<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml" />
 						<attribute name="UV Scale" value="1 4" />
-						<attribute name="Length" value="0.5 0.5" />
+						<attribute name="Length" value="0.3 0.3" />
 						<attribute name="Fake Ending" value="true" />
-						<attribute name="Radius" value="0.6 0.2" />
-						<attribute name="Gravity Intensity" value="4" />
-						<attribute name="Wind Main" value="0.1" />
+						<attribute name="Radius" value="0.6 0.1" />
+						<attribute name="Gravity Intensity" value="7" />
+						<attribute name="Wind Main" value="0.2" />
 						<attribute name="Wind Turbulence" value="1" />
+						<attribute name="Wind Phase" value="1" />
 					</component>
-					<node id="7">
+					<node id="6">
 						<attribute name="Is Enabled" value="true" />
-						<attribute name="Name" value="Supernested branches" />
+						<attribute name="Name" value="Nested branches" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="0 0 0" />
 						<attribute name="Rotation" value="1 0 0 0" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
-						<component type="BranchGroup" id="12">
-							<attribute name="Hash" value="-521015234" />
+						<component type="BranchGroup" id="11">
+							<attribute name="Hash" value="-330114378" />
 							<attribute name="Frequency" value="2" />
-							<attribute name="Growth Location" value="0.2 0.7" />
+							<attribute name="Growth Location" value="0 0.7" />
+							<attribute name="Twirl angle random" value="30" />
 							<attribute name="Growth Angle" value="30 30" />
 							<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml" />
 							<attribute name="UV Scale" value="1 4" />
-							<attribute name="Length" value="0.6 0.6" />
+							<attribute name="Length" value="0.5 0.5" />
 							<attribute name="Fake Ending" value="true" />
-							<attribute name="Radius" value="0.8 0.2" />
-							<attribute name="Gravity Intensity" value="3" />
+							<attribute name="Radius" value="0.6 0.2" />
+							<attribute name="Gravity Intensity" value="4" />
+							<attribute name="Wind Main" value="0.1" />
+							<attribute name="Wind Turbulence" value="1" />
 						</component>
-						<node id="9">
+						<node id="7">
 							<attribute name="Is Enabled" value="true" />
-							<attribute name="Name" value="Leaves" />
+							<attribute name="Name" value="Supernested branches" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="0 0 0" />
 							<attribute name="Rotation" value="1 0 0 0" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
-							<component type="LeafGroup" id="14">
-								<attribute name="Hash" value="-361644284" />
+							<component type="BranchGroup" id="12">
+								<attribute name="Hash" value="-521015234" />
 								<attribute name="Frequency" value="2" />
-								<attribute name="Material" value="Material;Objects/WhiteTree/LargeFoliageMaterial.xml" />
-								<attribute name="Size" value="4 4" />
-								<attribute name="Adjust to Global" value="1 1" />
-								<attribute name="Junction Offset" value="0 0.5 -0.1" />
-								<attribute name="Gravity Intensity" value="1 0 4" />
-								<attribute name="Bump Normals" value="0.8" />
-								<attribute name="Wind Main" value="0.001 0.01" />
-								<attribute name="Wind Turbulence" value="0.1 0.5" />
-								<attribute name="Wind Oscillation" value="0.1 1" />
+								<attribute name="Growth Location" value="0.2 0.7" />
+								<attribute name="Growth Angle" value="30 30" />
+								<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml" />
+								<attribute name="UV Scale" value="1 4" />
+								<attribute name="Length" value="0.6 0.6" />
+								<attribute name="Fake Ending" value="true" />
+								<attribute name="Radius" value="0.8 0.2" />
+								<attribute name="Gravity Intensity" value="3" />
 							</component>
+							<node id="9">
+								<attribute name="Is Enabled" value="true" />
+								<attribute name="Name" value="Leaves" />
+								<attribute name="Tags" />
+								<attribute name="Position" value="0 0 0" />
+								<attribute name="Rotation" value="1 0 0 0" />
+								<attribute name="Scale" value="1 1 1" />
+								<attribute name="Variables" />
+								<component type="LeafGroup" id="14">
+									<attribute name="Hash" value="-361644284" />
+									<attribute name="Frequency" value="2" />
+									<attribute name="Material" value="Material;Objects/WhiteTree/LargeFoliageMaterial.xml" />
+									<attribute name="Size" value="4 4" />
+									<attribute name="Adjust to Global" value="1 1" />
+									<attribute name="Junction Offset" value="0 0.5 -0.1" />
+									<attribute name="Gravity Intensity" value="1 0 4" />
+									<attribute name="Bump Normals" value="0.8" />
+									<attribute name="Wind Main" value="0.001 0.01" />
+									<attribute name="Wind Turbulence" value="0.1 0.5" />
+									<attribute name="Wind Oscillation" value="0.1 1" />
+								</component>
+							</node>
 						</node>
 					</node>
 				</node>
 			</node>
 		</node>
-	</node>
-	<node id="53">
-		<attribute name="Is Enabled" value="true" />
-		<attribute name="Name" value="WhiteTree_19m" />
-		<attribute name="Tags" />
-		<attribute name="Position" value="20.5 0 0" />
-		<attribute name="Rotation" value="1 0 0 0" />
-		<attribute name="Scale" value="1 1 1" />
-		<attribute name="Variables" />
-		<component type="StaticModelEx" id="90">
-			<attribute name="Apply Wind" value="true" />
-			<attribute name="Clone Materials" value="true" />
-			<attribute name="Model" value="Model;Objects/WhiteTree/Tree19A.mdl" />
-			<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree19AMaterial.xml" />
-			<attribute name="Cast Shadows" value="true" />
-		</component>
-		<component type="TreeHost" id="91">
-			<attribute name="Resources Hashes">
-				<variant type="Int" value="172657109" />
-				<variant type="Int" value="-1211824956" />
-				<variant type="Int" value="-1211824956" />
-			</attribute>
-			<attribute name="Hash" value="-1208478555" />
-			<attribute name="Destination Model" value="Model;Objects/WhiteTree/Tree19A.mdl" />
-			<attribute name="Main Wind" value="0.2" />
-			<attribute name="Turbulence Magnitude" value="0.05" />
-			<attribute name="Oscillation Magnitude" value="0.3" />
-		</component>
-		<component type="TreeLevelOfDetail" id="92">
-			<attribute name="Hash" value="-725142978" />
-		</component>
-		<component type="TreeLevelOfDetail" id="93">
-			<attribute name="Hash" value="2046213305" />
-			<attribute name="Distance" value="1" />
-			<attribute name="Num Radial Segments" value="3" />
-		</component>
-		<component type="TreeProxy" id="94">
-			<attribute name="Distance" value="8" />
-			<attribute name="Resistance" value="0.6" />
-			<attribute name="Wind Magnitude" value="0.2" />
-			<attribute name="Proxy Width" value="2048" />
-			<attribute name="Proxy Height" value="512" />
-			<attribute name="Proxy Diffuse" value="Texture2D;Objects/WhiteTree/Tree19ADiffuse.dds" />
-			<attribute name="Proxy Normal" value="Texture2D;Objects/WhiteTree/Tree19ANormal.dds" />
-			<attribute name="Proxy Material" value="Material;Objects/WhiteTree/Tree19AMaterial.xml" />
-			<attribute name="RP Diffuse" value="XMLFile;RenderPaths/BakeDiffuse.xml" />
-			<attribute name="RP Normal" value="XMLFile;RenderPaths/BakeNormal.xml" />
-			<attribute name="Fill Gap RP" value="XMLFile;RenderPaths/BakeTransparent.xml" />
-			<attribute name="Fill Gap Material" value="Material;Materials/Procedural/FillGap.xml" />
-			<attribute name="Fill Gap Depth" value="16" />
-		</component>
-		<node id="59">
+		<node id="53">
 			<attribute name="Is Enabled" value="true" />
-			<attribute name="Name" value="Trunk" />
+			<attribute name="Name" value="WhiteTree_19m" />
 			<attribute name="Tags" />
-			<attribute name="Position" value="0 0 0" />
+			<attribute name="Position" value="20.5 0 0" />
 			<attribute name="Rotation" value="1 0 0 0" />
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
-			<component type="BranchGroup" id="95">
-				<attribute name="Hash" value="2057166556" />
-				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml" />
-				<attribute name="UV Scale" value="1 4" />
-				<attribute name="Quality" value="2" />
-				<attribute name="Length" value="19 1" />
-				<attribute name="Radius" value="0.15 0.01" />
-				<attribute name="Resistance" value="0.6" />
-				<attribute name="Wind Main" value="0.5" />
+			<component type="StaticModelEx" id="90">
+				<attribute name="Apply Wind" value="true" />
+				<attribute name="Clone Materials" value="true" />
+				<attribute name="Model" value="Model;Objects/WhiteTree/Tree19A.mdl" />
+				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree19AMaterial.xml" />
+				<attribute name="Cast Shadows" value="true" />
 			</component>
-			<node id="60">
+			<component type="TreeHost" id="91">
+				<attribute name="Resources Hashes">
+					<variant type="Int" value="172657109" />
+					<variant type="Int" value="-1211824956" />
+					<variant type="Int" value="-1211824956" />
+				</attribute>
+				<attribute name="Hash" value="-1208478555" />
+				<attribute name="Destination Model" value="Model;Objects/WhiteTree/Tree19A.mdl" />
+				<attribute name="Main Wind" value="0.2" />
+				<attribute name="Turbulence Magnitude" value="0.05" />
+				<attribute name="Oscillation Magnitude" value="0.3" />
+			</component>
+			<component type="TreeLevelOfDetail" id="92">
+				<attribute name="Hash" value="-725142978" />
+			</component>
+			<component type="TreeLevelOfDetail" id="93">
+				<attribute name="Hash" value="2046213305" />
+				<attribute name="Distance" value="1" />
+				<attribute name="Num Radial Segments" value="3" />
+			</component>
+			<component type="TreeProxy" id="94">
+				<attribute name="Distance" value="8" />
+				<attribute name="Resistance" value="0.6" />
+				<attribute name="Wind Magnitude" value="0.2" />
+				<attribute name="Proxy Width" value="2048" />
+				<attribute name="Proxy Height" value="512" />
+				<attribute name="Proxy Diffuse" value="Texture2D;Objects/WhiteTree/Tree19ADiffuse.dds" />
+				<attribute name="Proxy Normal" value="Texture2D;Objects/WhiteTree/Tree19ANormal.dds" />
+				<attribute name="Proxy Material" value="Material;Objects/WhiteTree/Tree19AMaterial.xml" />
+				<attribute name="RP Diffuse" value="XMLFile;RenderPaths/BakeDiffuse.xml" />
+				<attribute name="RP Normal" value="XMLFile;RenderPaths/BakeNormal.xml" />
+				<attribute name="Fill Gap RP" value="XMLFile;RenderPaths/BakeTransparent.xml" />
+				<attribute name="Fill Gap Material" value="Material;Materials/Procedural/FillGap.xml" />
+				<attribute name="Fill Gap Depth" value="16" />
+			</component>
+			<node id="59">
 				<attribute name="Is Enabled" value="true" />
-				<attribute name="Name" value="Branches" />
+				<attribute name="Name" value="Trunk" />
 				<attribute name="Tags" />
 				<attribute name="Position" value="0 0 0" />
 				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="1 1 1" />
 				<attribute name="Variables" />
-				<component type="BranchGroup" id="96">
-					<attribute name="Hash" value="114479020" />
-					<attribute name="Frequency" value="9" />
-					<attribute name="Growth Location" value="0.15 0.85" />
-					<attribute name="Twirl angle step" value="105" />
-					<attribute name="Twirl angle random" value="30" />
-					<attribute name="Growth Angle" value="40 60" />
+				<component type="BranchGroup" id="95">
+					<attribute name="Hash" value="2057166556" />
 					<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml" />
 					<attribute name="UV Scale" value="1 4" />
-					<attribute name="Length" value="0.3 0.3" />
-					<attribute name="Fake Ending" value="true" />
-					<attribute name="Radius" value="0.6 0.1" />
-					<attribute name="Gravity Intensity" value="6" />
-					<attribute name="Wind Main" value="0.2" />
-					<attribute name="Wind Turbulence" value="1" />
-					<attribute name="Wind Phase" value="1" />
+					<attribute name="Quality" value="2" />
+					<attribute name="Length" value="19 1" />
+					<attribute name="Radius" value="0.15 0.01" />
+					<attribute name="Resistance" value="0.6" />
+					<attribute name="Wind Main" value="0.5" />
 				</component>
-				<node id="61">
+				<node id="60">
 					<attribute name="Is Enabled" value="true" />
-					<attribute name="Name" value="Nested branches" />
+					<attribute name="Name" value="Branches" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="0 0 0" />
 					<attribute name="Rotation" value="1 0 0 0" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
-					<component type="BranchGroup" id="97">
-						<attribute name="Hash" value="818766805" />
-						<attribute name="Frequency" value="1" />
-						<attribute name="Growth Location" value="0 0.7" />
+					<component type="BranchGroup" id="96">
+						<attribute name="Hash" value="114479020" />
+						<attribute name="Frequency" value="9" />
+						<attribute name="Growth Location" value="0.15 0.85" />
+						<attribute name="Twirl angle step" value="105" />
 						<attribute name="Twirl angle random" value="30" />
-						<attribute name="Growth Angle" value="30 30" />
+						<attribute name="Growth Angle" value="40 60" />
 						<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml" />
 						<attribute name="UV Scale" value="1 4" />
-						<attribute name="Length" value="0.5 0.5" />
+						<attribute name="Length" value="0.3 0.3" />
 						<attribute name="Fake Ending" value="true" />
-						<attribute name="Radius" value="0.6 0.2" />
-						<attribute name="Gravity Intensity" value="4" />
-						<attribute name="Wind Main" value="0.1" />
+						<attribute name="Radius" value="0.6 0.1" />
+						<attribute name="Gravity Intensity" value="6" />
+						<attribute name="Wind Main" value="0.2" />
 						<attribute name="Wind Turbulence" value="1" />
+						<attribute name="Wind Phase" value="1" />
 					</component>
-					<node id="62">
+					<node id="61">
 						<attribute name="Is Enabled" value="true" />
-						<attribute name="Name" value="Supernested branches" />
+						<attribute name="Name" value="Nested branches" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="0 0 0" />
 						<attribute name="Rotation" value="1 0 0 0" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
-						<component type="BranchGroup" id="98">
-							<attribute name="Hash" value="674611756" />
+						<component type="BranchGroup" id="97">
+							<attribute name="Hash" value="818766805" />
 							<attribute name="Frequency" value="1" />
-							<attribute name="Growth Location" value="0.2 0.7" />
+							<attribute name="Growth Location" value="0 0.7" />
+							<attribute name="Twirl angle random" value="30" />
 							<attribute name="Growth Angle" value="30 30" />
 							<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml" />
 							<attribute name="UV Scale" value="1 4" />
-							<attribute name="Length" value="0.6 0.6" />
+							<attribute name="Length" value="0.5 0.5" />
 							<attribute name="Fake Ending" value="true" />
-							<attribute name="Radius" value="0.8 0.2" />
-							<attribute name="Gravity Intensity" value="3" />
+							<attribute name="Radius" value="0.6 0.2" />
+							<attribute name="Gravity Intensity" value="4" />
+							<attribute name="Wind Main" value="0.1" />
+							<attribute name="Wind Turbulence" value="1" />
 						</component>
-						<node id="63">
+						<node id="62">
 							<attribute name="Is Enabled" value="true" />
-							<attribute name="Name" value="Leaves" />
+							<attribute name="Name" value="Supernested branches" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="0 0 0" />
 							<attribute name="Rotation" value="1 0 0 0" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
-							<component type="LeafGroup" id="99">
-								<attribute name="Hash" value="-1578430329" />
-								<attribute name="Frequency" value="2" />
-								<attribute name="Material" value="Material;Objects/WhiteTree/LargeFoliageMaterial.xml" />
-								<attribute name="Size" value="4 4" />
-								<attribute name="Adjust to Global" value="1 1" />
-								<attribute name="Junction Offset" value="0 0.5 -0.5" />
-								<attribute name="Gravity Intensity" value="1 0 4" />
-								<attribute name="Bump Normals" value="0.8" />
-								<attribute name="Wind Main" value="0.001 0.01" />
-								<attribute name="Wind Turbulence" value="0.1 0.5" />
-								<attribute name="Wind Oscillation" value="0.1 1" />
+							<component type="BranchGroup" id="98">
+								<attribute name="Hash" value="674611756" />
+								<attribute name="Frequency" value="1" />
+								<attribute name="Growth Location" value="0.2 0.7" />
+								<attribute name="Growth Angle" value="30 30" />
+								<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml" />
+								<attribute name="UV Scale" value="1 4" />
+								<attribute name="Length" value="0.6 0.6" />
+								<attribute name="Fake Ending" value="true" />
+								<attribute name="Radius" value="0.8 0.2" />
+								<attribute name="Gravity Intensity" value="3" />
 							</component>
+							<node id="63">
+								<attribute name="Is Enabled" value="true" />
+								<attribute name="Name" value="Leaves" />
+								<attribute name="Tags" />
+								<attribute name="Position" value="0 0 0" />
+								<attribute name="Rotation" value="1 0 0 0" />
+								<attribute name="Scale" value="1 1 1" />
+								<attribute name="Variables" />
+								<component type="LeafGroup" id="99">
+									<attribute name="Hash" value="-1578430329" />
+									<attribute name="Frequency" value="2" />
+									<attribute name="Material" value="Material;Objects/WhiteTree/LargeFoliageMaterial.xml" />
+									<attribute name="Size" value="4 4" />
+									<attribute name="Adjust to Global" value="1 1" />
+									<attribute name="Junction Offset" value="0 0.5 -0.5" />
+									<attribute name="Gravity Intensity" value="1 0 4" />
+									<attribute name="Bump Normals" value="0.8" />
+									<attribute name="Wind Main" value="0.001 0.01" />
+									<attribute name="Wind Turbulence" value="0.1 0.5" />
+									<attribute name="Wind Oscillation" value="0.1 1" />
+								</component>
+							</node>
 						</node>
 					</node>
 				</node>
 			</node>
 		</node>
-	</node>
-	<node id="75">
-		<attribute name="Is Enabled" value="true" />
-		<attribute name="Name" value="WhiteTree_11m" />
-		<attribute name="Tags" />
-		<attribute name="Position" value="40 0 0" />
-		<attribute name="Rotation" value="1 0 0 0" />
-		<attribute name="Scale" value="1 1 1" />
-		<attribute name="Variables" />
-		<component type="StaticModelEx" id="131">
-			<attribute name="Apply Wind" value="true" />
-			<attribute name="Clone Materials" value="true" />
-			<attribute name="Model" value="Model;Objects/WhiteTree/Tree11A.mdl" />
-			<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree11AMaterial.xml" />
-			<attribute name="Cast Shadows" value="true" />
-		</component>
-		<component type="TreeHost" id="132">
-			<attribute name="Resources Hashes">
-				<variant type="Int" value="519941098" />
-				<variant type="Int" value="-1211824956" />
-				<variant type="Int" value="-1211824956" />
-			</attribute>
-			<attribute name="Hash" value="-462472792" />
-			<attribute name="Destination Model" value="Model;Objects/WhiteTree/Tree11A.mdl" />
-			<attribute name="Main Wind" value="0.2" />
-			<attribute name="Turbulence Magnitude" value="0.05" />
-			<attribute name="Oscillation Magnitude" value="0.3" />
-		</component>
-		<component type="TreeLevelOfDetail" id="133">
-			<attribute name="Hash" value="-725142978" />
-		</component>
-		<component type="TreeLevelOfDetail" id="134">
-			<attribute name="Hash" value="2046213305" />
-			<attribute name="Distance" value="1" />
-			<attribute name="Num Radial Segments" value="3" />
-		</component>
-		<component type="TreeProxy" id="135">
-			<attribute name="Distance" value="8" />
-			<attribute name="Resistance" value="0.6" />
-			<attribute name="Wind Magnitude" value="0.2" />
-			<attribute name="Proxy Width" value="2048" />
-			<attribute name="Proxy Height" value="512" />
-			<attribute name="Proxy Diffuse" value="Texture2D;Objects/WhiteTree/Tree11ADiffuse.dds" />
-			<attribute name="Proxy Normal" value="Texture2D;Objects/WhiteTree/Tree11ANormal.dds" />
-			<attribute name="Proxy Material" value="Material;Objects/WhiteTree/Tree11AMaterial.xml" />
-			<attribute name="RP Diffuse" value="XMLFile;RenderPaths/BakeDiffuse.xml" />
-			<attribute name="RP Normal" value="XMLFile;RenderPaths/BakeNormal.xml" />
-			<attribute name="Fill Gap RP" value="XMLFile;RenderPaths/BakeTransparent.xml" />
-			<attribute name="Fill Gap Material" value="Material;Materials/Procedural/FillGap.xml" />
-			<attribute name="Fill Gap Depth" value="16" />
-		</component>
-		<node id="82">
+		<node id="75">
 			<attribute name="Is Enabled" value="true" />
-			<attribute name="Name" value="Trunk" />
+			<attribute name="Name" value="WhiteTree_11m" />
 			<attribute name="Tags" />
-			<attribute name="Position" value="0 0 0" />
+			<attribute name="Position" value="40 0 0" />
 			<attribute name="Rotation" value="1 0 0 0" />
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
-			<component type="BranchGroup" id="136">
-				<attribute name="Hash" value="-444369182" />
-				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml" />
-				<attribute name="UV Scale" value="1 4" />
-				<attribute name="Quality" value="2" />
-				<attribute name="Length" value="11 1" />
-				<attribute name="Radius" value="0.1 0.01" />
-				<attribute name="Resistance" value="0.6" />
-				<attribute name="Wind Main" value="0.5" />
+			<component type="StaticModelEx" id="131">
+				<attribute name="Apply Wind" value="true" />
+				<attribute name="Clone Materials" value="true" />
+				<attribute name="Model" value="Model;Objects/WhiteTree/Tree11A.mdl" />
+				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree11AMaterial.xml" />
+				<attribute name="Cast Shadows" value="true" />
 			</component>
-			<node id="83">
+			<component type="TreeHost" id="132">
+				<attribute name="Resources Hashes">
+					<variant type="Int" value="519941098" />
+					<variant type="Int" value="-1211824956" />
+					<variant type="Int" value="-1211824956" />
+				</attribute>
+				<attribute name="Hash" value="-462472792" />
+				<attribute name="Destination Model" value="Model;Objects/WhiteTree/Tree11A.mdl" />
+				<attribute name="Main Wind" value="0.2" />
+				<attribute name="Turbulence Magnitude" value="0.05" />
+				<attribute name="Oscillation Magnitude" value="0.3" />
+			</component>
+			<component type="TreeLevelOfDetail" id="133">
+				<attribute name="Hash" value="-725142978" />
+			</component>
+			<component type="TreeLevelOfDetail" id="134">
+				<attribute name="Hash" value="2046213305" />
+				<attribute name="Distance" value="1" />
+				<attribute name="Num Radial Segments" value="3" />
+			</component>
+			<component type="TreeProxy" id="135">
+				<attribute name="Distance" value="8" />
+				<attribute name="Resistance" value="0.6" />
+				<attribute name="Wind Magnitude" value="0.2" />
+				<attribute name="Proxy Width" value="2048" />
+				<attribute name="Proxy Height" value="512" />
+				<attribute name="Proxy Diffuse" value="Texture2D;Objects/WhiteTree/Tree11ADiffuse.dds" />
+				<attribute name="Proxy Normal" value="Texture2D;Objects/WhiteTree/Tree11ANormal.dds" />
+				<attribute name="Proxy Material" value="Material;Objects/WhiteTree/Tree11AMaterial.xml" />
+				<attribute name="RP Diffuse" value="XMLFile;RenderPaths/BakeDiffuse.xml" />
+				<attribute name="RP Normal" value="XMLFile;RenderPaths/BakeNormal.xml" />
+				<attribute name="Fill Gap RP" value="XMLFile;RenderPaths/BakeTransparent.xml" />
+				<attribute name="Fill Gap Material" value="Material;Materials/Procedural/FillGap.xml" />
+				<attribute name="Fill Gap Depth" value="16" />
+			</component>
+			<node id="82">
 				<attribute name="Is Enabled" value="true" />
-				<attribute name="Name" value="Branches" />
+				<attribute name="Name" value="Trunk" />
 				<attribute name="Tags" />
 				<attribute name="Position" value="0 0 0" />
 				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="1 1 1" />
 				<attribute name="Variables" />
-				<component type="BranchGroup" id="137">
-					<attribute name="Hash" value="1837910488" />
-					<attribute name="Frequency" value="6" />
-					<attribute name="Growth Location" value="0.15 0.7" />
-					<attribute name="Twirl angle step" value="105" />
-					<attribute name="Twirl angle random" value="50" />
-					<attribute name="Growth Angle" value="50 70" />
+				<component type="BranchGroup" id="136">
+					<attribute name="Hash" value="-444369182" />
 					<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml" />
 					<attribute name="UV Scale" value="1 4" />
-					<attribute name="Length" value="0.3 0.1" />
-					<attribute name="Fake Ending" value="true" />
-					<attribute name="Radius" value="0.6 0.1" />
-					<attribute name="Gravity Intensity" value="3" />
-					<attribute name="Wind Main" value="0.2" />
-					<attribute name="Wind Turbulence" value="1" />
-					<attribute name="Wind Phase" value="1" />
+					<attribute name="Quality" value="2" />
+					<attribute name="Length" value="11 1" />
+					<attribute name="Radius" value="0.1 0.01" />
+					<attribute name="Resistance" value="0.6" />
+					<attribute name="Wind Main" value="0.5" />
 				</component>
-				<node id="84">
+				<node id="83">
 					<attribute name="Is Enabled" value="true" />
-					<attribute name="Name" value="Nested branches" />
+					<attribute name="Name" value="Branches" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="0 0 0" />
 					<attribute name="Rotation" value="1 0 0 0" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
-					<component type="BranchGroup" id="138">
-						<attribute name="Hash" value="-1774184096" />
-						<attribute name="Frequency" value="2" />
-						<attribute name="Growth Location" value="0 0.7" />
-						<attribute name="Twirl angle random" value="30" />
+					<component type="BranchGroup" id="137">
+						<attribute name="Hash" value="1837910488" />
+						<attribute name="Frequency" value="6" />
+						<attribute name="Growth Location" value="0.15 0.7" />
+						<attribute name="Twirl angle step" value="105" />
+						<attribute name="Twirl angle random" value="50" />
 						<attribute name="Growth Angle" value="50 70" />
 						<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml" />
 						<attribute name="UV Scale" value="1 4" />
-						<attribute name="Length" value="0.5 0.5" />
+						<attribute name="Length" value="0.3 0.1" />
 						<attribute name="Fake Ending" value="true" />
-						<attribute name="Radius" value="0.6 0.2" />
-						<attribute name="Gravity Intensity" value="1" />
-						<attribute name="Wind Main" value="0.1" />
+						<attribute name="Radius" value="0.6 0.1" />
+						<attribute name="Gravity Intensity" value="3" />
+						<attribute name="Wind Main" value="0.2" />
 						<attribute name="Wind Turbulence" value="1" />
+						<attribute name="Wind Phase" value="1" />
 					</component>
-					<node id="85">
+					<node id="84">
 						<attribute name="Is Enabled" value="true" />
-						<attribute name="Name" value="Leaves" />
+						<attribute name="Name" value="Nested branches" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="0 0 0" />
 						<attribute name="Rotation" value="1 0 0 0" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
-						<component type="LeafGroup" id="139">
-							<attribute name="Hash" value="-1882107272" />
+						<component type="BranchGroup" id="138">
+							<attribute name="Hash" value="-1774184096" />
 							<attribute name="Frequency" value="2" />
-							<attribute name="Growth Angle" value="90 90" />
-							<attribute name="Material" value="Material;Objects/WhiteTree/LargeFoliageMaterial.xml" />
-							<attribute name="Size" value="3 3" />
-							<attribute name="Adjust to Global" value="1 1" />
-							<attribute name="Junction Offset" value="0 0.5 -0.6" />
-							<attribute name="Gravity Intensity" value="1 0 4" />
-							<attribute name="Gravity Resistance" value="0.4 0.4 0.4" />
-							<attribute name="Bump Normals" value="0.8" />
-							<attribute name="Wind Main" value="0.001 0.01" />
-							<attribute name="Wind Turbulence" value="0.1 0.5" />
-							<attribute name="Wind Oscillation" value="0.1 1" />
+							<attribute name="Growth Location" value="0 0.7" />
+							<attribute name="Twirl angle random" value="30" />
+							<attribute name="Growth Angle" value="50 70" />
+							<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml" />
+							<attribute name="UV Scale" value="1 4" />
+							<attribute name="Length" value="0.5 0.5" />
+							<attribute name="Fake Ending" value="true" />
+							<attribute name="Radius" value="0.6 0.2" />
+							<attribute name="Gravity Intensity" value="1" />
+							<attribute name="Wind Main" value="0.1" />
+							<attribute name="Wind Turbulence" value="1" />
 						</component>
+						<node id="85">
+							<attribute name="Is Enabled" value="true" />
+							<attribute name="Name" value="Leaves" />
+							<attribute name="Tags" />
+							<attribute name="Position" value="0 0 0" />
+							<attribute name="Rotation" value="1 0 0 0" />
+							<attribute name="Scale" value="1 1 1" />
+							<attribute name="Variables" />
+							<component type="LeafGroup" id="139">
+								<attribute name="Hash" value="-1882107272" />
+								<attribute name="Frequency" value="2" />
+								<attribute name="Growth Angle" value="90 90" />
+								<attribute name="Material" value="Material;Objects/WhiteTree/LargeFoliageMaterial.xml" />
+								<attribute name="Size" value="3 3" />
+								<attribute name="Adjust to Global" value="1 1" />
+								<attribute name="Junction Offset" value="0 0.5 -0.6" />
+								<attribute name="Gravity Intensity" value="1 0 4" />
+								<attribute name="Gravity Resistance" value="0.4 0.4 0.4" />
+								<attribute name="Bump Normals" value="0.8" />
+								<attribute name="Wind Main" value="0.001 0.01" />
+								<attribute name="Wind Turbulence" value="0.1 0.5" />
+								<attribute name="Wind Oscillation" value="0.1 1" />
+							</component>
+						</node>
 					</node>
 				</node>
 			</node>
@@ -544,50 +599,6 @@
 		<component type="StaticModel" id="17">
 			<attribute name="Model" value="Model;Models/Plane.mdl" />
 			<attribute name="Material" value="Material;Materials/DefaultGrey.xml" />
-		</component>
-	</node>
-	<node id="15">
-		<attribute name="Is Enabled" value="true" />
-		<attribute name="Name" value="WhiteTree_foliage" />
-		<attribute name="Tags" />
-		<attribute name="Position" value="-2 2 -15" />
-		<attribute name="Rotation" value="1 0 0 0" />
-		<attribute name="Scale" value="4 4 4" />
-		<attribute name="Variables" />
-		<component type="StaticModel" id="35">
-			<attribute name="Model" value="Model;Models/Box.mdl" />
-			<attribute name="Material" value="Material;Objects/WhiteTree/LargeFoliageMaterialPreview.xml" />
-		</component>
-		<component type="ScriptedResource" id="163">
-			<attribute name="Resources Hashes">
-				<variant type="Int" value="-662911500" />
-			</attribute>
-			<attribute name="Hash" value="-997650232" />
-			<attribute name="Script" value="ScriptFile;Objects/WhiteTree/ProceduralFoliage.as" />
-			<attribute name="Entry Point" value="MainFoliage" />
-			<attribute name="Resources" value="Texture2D;Objects/WhiteTree/FoliageDiffuse.dds" />
-		</component>
-	</node>
-	<node id="21">
-		<attribute name="Is Enabled" value="true" />
-		<attribute name="Name" value="WhiteTree_bark" />
-		<attribute name="Tags" />
-		<attribute name="Position" value="2 2 -15" />
-		<attribute name="Rotation" value="1 0 0 0" />
-		<attribute name="Scale" value="1 4 1" />
-		<attribute name="Variables" />
-		<component type="StaticModel" id="36">
-			<attribute name="Model" value="Model;Models/Box.mdl" />
-			<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterialPreview.xml" />
-		</component>
-		<component type="ScriptedResource" id="164">
-			<attribute name="Resources Hashes">
-				<variant type="Int" value="-1407962152" />
-			</attribute>
-			<attribute name="Hash" value="-809419594" />
-			<attribute name="Script" value="ScriptFile;Objects/WhiteTree/ProceduralFoliage.as" />
-			<attribute name="Entry Point" value="MainBark" />
-			<attribute name="Resources" value="Texture2D;Objects/WhiteTree/BlackBarkDiffuse.dds" />
 		</component>
 	</node>
 	<node id="38">

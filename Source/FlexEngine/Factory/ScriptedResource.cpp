@@ -37,20 +37,17 @@ void ScriptedResource::RegisterObject(Context* context)
 
     URHO3D_COPY_BASE_ATTRIBUTES(ProceduralComponent);
 
+    URHO3D_ACCESSOR_ATTRIBUTE("Type", GetTypeAttr, SetTypeAttr, StringHash, StringHash(), AM_FILE | AM_NOEDIT);
+
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Script", GetScriptAttr, SetScriptAttr, ResourceRef, ResourceRef(ScriptFile::GetTypeStatic()), AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Entry Point", GetEntryPoint, SetEntryPoint, String, String::EMPTY, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Resources", GetResourcesAttr, SetResourcesAttr, ResourceRefList, ResourceRefList(ScriptFile::GetTypeStatic(), StringVector(1)), AM_DEFAULT);
 }
 
-void ScriptedResource::ApplyAttributes()
-{
-
-}
-
 void ScriptedResource::EnumerateResources(Vector<ResourceRef>& resources)
 {
     for (unsigned i = 0; i < resources_.names_.Size(); ++i)
-        resources.Push(ResourceRef(resources_.type_, resources_.names_[i]));
+        resources.Push(ResourceRef(type_, resources_.names_[i]));
 }
 
 void ScriptedResource::SetScriptAttr(const ResourceRef& value)
@@ -82,6 +79,8 @@ bool ScriptedResource::ComputeHash(Hash& hash) const
 
 void ScriptedResource::DoGenerateResources(Vector<SharedPtr<Resource>>& resources)
 {
+    static const unsigned startParam = 3;
+
     // Call script
     ScriptContext output;
     output.context_ = GetContext();
@@ -93,17 +92,18 @@ void ScriptedResource::DoGenerateResources(Vector<SharedPtr<Resource>>& resource
     }
 
     // Update resource list
-    if (output.items_.Size() >= 2)
+    if (output.items_.Size() >= startParam)
     {
         resources_.names_.Resize(output.items_[0].GetUInt());
         resources_.type_ = output.items_[1].GetStringHash();
+        type_ = output.items_[2].GetStringHash();
     }
 
     // Update resources
     for (unsigned i = 0; i < resources_.names_.Size(); ++i)
     {
-        resources.Push(i + 2 < output.items_.Size()
-                       ? DynamicCast<Resource>(SharedPtr<RefCounted>(output.items_[i + 2].GetPtr()))
+        resources.Push(i + startParam < output.items_.Size()
+                       ? DynamicCast<Resource>(SharedPtr<RefCounted>(output.items_[i + startParam].GetPtr()))
                        : nullptr);
     }
 }

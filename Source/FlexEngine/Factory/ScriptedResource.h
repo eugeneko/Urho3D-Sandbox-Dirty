@@ -41,8 +41,6 @@ public:
     virtual ~ScriptedResource();
     /// Register object factory.
     static void RegisterObject(Context* context);
-    /// Apply attribute changes that can not be applied immediately. Called after scene load or a network update.
-    virtual void ApplyAttributes();
     /// Enumerate resources.
     virtual void EnumerateResources(Vector<ResourceRef>& resources) override;
 
@@ -66,12 +64,19 @@ private:
     /// Generate resources.
     virtual void DoGenerateResources(Vector<SharedPtr<Resource>>& resources);
 
+    /// Set resources attribute.
+    void SetTypeAttr(const StringHash& type) { type_ = type; }
+    /// Return resources attribute.
+    const StringHash& GetTypeAttr() const { return type_; }
+
 private:
     /// Script.
     SharedPtr<ScriptFile> script_;
     /// Entry point.
     String entryPoint_;
-    /// Resource names and types.
+    /// Actual resource type.
+    StringHash type_;
+    /// Resource names and editor type.
     ResourceRefList resources_;
 
 };

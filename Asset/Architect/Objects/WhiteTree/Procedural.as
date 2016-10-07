@@ -142,84 +142,86 @@ void MainLeafMask(ModelFactory@ dest)
 
 void MainFoliage(ProceduralContext@ context)
 {
-	context[0] = Variant(1);
-	context[1] = Variant(StringHash("Texture2D"));
-	
-	XMLFile@ opaqueRP = cache.GetResource("XMLFile", "RenderPaths/BakeOpaque.xml");
-	XMLFile@ transparentRP = cache.GetResource("XMLFile", "RenderPaths/BakeTransparent.xml");
-	Material@ maskAddMaterial = cache.GetResource("Material", "Materials/Procedural/MaskAdd.xml");
-	Material@ superMaskMaterial = cache.GetResource("Material", "Materials/Procedural/SuperMask.xml");
-	Material@ mixColorMaterial = cache.GetResource("Material", "Materials/Procedural/MixColor.xml");
-	Model@ quadModel = context.CreateQuadModel();
-	
-	ModelFactory@ leafMaskModelFactory = context.CreateModelFactory();
-	MainLeafMask(leafMaskModelFactory);
-	Model@ leafMaskModel = context.CreateModel(leafMaskModelFactory);
-	Texture2D@ leafMask = context.RenderTexture(
-		64, 64, BLACK, opaqueRP, leafMaskModel, maskAddMaterial, Vector3(0.5, 0, 0.5));
-	
-	ModelFactory@ foliageMaskModelFactory = context.CreateModelFactory();
-	MainFoliageMask(foliageMaskModelFactory);
-	Model@ foliageMaskModel = context.CreateModel(foliageMaskModelFactory);
-	Texture2D@ foliageMask = context.RenderTexture(
-		1024, 1024, BLACK, opaqueRP, foliageMaskModel, superMaskMaterial, Vector3(0.5, 0, 0.5), Array<Texture2D@> = {leafMask});
-		
-	Texture2D@ foliageDiffuse = context.RenderTexture(
-		1024, 1024, BLACK, transparentRP, quadModel, mixColorMaterial, Vector3(), Array<Texture2D@> =
-		{
-			foliageMask,
-			context.RenderTexture(Color(0.204, 0.502, 0.09, 1)),
-			context.RenderTexture(Color(0.298, 0.769, 0.09, 1)),
-			context.RenderTexture(Color(0, 0, 0, 0))
-		});
+    context[0] = Variant(1);
+    context[1] = Variant(StringHash("Texture2D"));
+    context[2] = Variant(StringHash("Image"));
 
-	Image@ foliageDiffuseImage = foliageDiffuse.GetImage();
-	foliageDiffuseImage.FillGaps(2);
-	foliageDiffuseImage.PrecalculateLevels();
-	foliageDiffuseImage.AdjustAlpha(1.16);
+    XMLFile@ opaqueRP = cache.GetResource("XMLFile", "RenderPaths/BakeOpaque.xml");
+    XMLFile@ transparentRP = cache.GetResource("XMLFile", "RenderPaths/BakeTransparent.xml");
+    Material@ maskAddMaterial = cache.GetResource("Material", "Materials/Procedural/MaskAdd.xml");
+    Material@ superMaskMaterial = cache.GetResource("Material", "Materials/Procedural/SuperMask.xml");
+    Material@ mixColorMaterial = cache.GetResource("Material", "Materials/Procedural/MixColor.xml");
+    Model@ quadModel = context.CreateQuadModel();
 
-	context[2] = Variant(foliageDiffuseImage);
+    ModelFactory@ leafMaskModelFactory = context.CreateModelFactory();
+    MainLeafMask(leafMaskModelFactory);
+    Model@ leafMaskModel = context.CreateModel(leafMaskModelFactory);
+    Texture2D@ leafMask = context.RenderTexture(
+        64, 64, BLACK, opaqueRP, leafMaskModel, maskAddMaterial, Vector3(0.5, 0, 0.5));
+
+    ModelFactory@ foliageMaskModelFactory = context.CreateModelFactory();
+    MainFoliageMask(foliageMaskModelFactory);
+    Model@ foliageMaskModel = context.CreateModel(foliageMaskModelFactory);
+    Texture2D@ foliageMask = context.RenderTexture(
+        1024, 1024, BLACK, opaqueRP, foliageMaskModel, superMaskMaterial, Vector3(0.5, 0, 0.5), Array<Texture2D@> = {leafMask});
+
+    Texture2D@ foliageDiffuse = context.RenderTexture(
+        1024, 1024, BLACK, transparentRP, quadModel, mixColorMaterial, Vector3(), Array<Texture2D@> =
+        {
+            foliageMask,
+            context.RenderTexture(Color(0.204, 0.502, 0.09, 1)),
+            context.RenderTexture(Color(0.298, 0.769, 0.09, 1)),
+            context.RenderTexture(Color(0, 0, 0, 0))
+        });
+
+    Image@ foliageDiffuseImage = foliageDiffuse.GetImage();
+    foliageDiffuseImage.FillGaps(2);
+    foliageDiffuseImage.PrecalculateLevels();
+    foliageDiffuseImage.AdjustAlpha(1.16);
+
+    context[3] = Variant(foliageDiffuseImage);
 }
 
 void MainBark(ProceduralContext@ context)
 {
-	context[0] = Variant(1);
-	context[1] = Variant(StringHash("Texture2D"));
-	
-	XMLFile@ transparentRP = cache.GetResource("XMLFile", "RenderPaths/BakeTransparent.xml");
-	Material@ perlinNoiseMaterial = cache.GetResource("Material", "Materials/Procedural/PerlinNoise.xml");
-	Material@ mixColorMaterial = cache.GetResource("Material", "Materials/Procedural/MixColor.xml");
-	Material@ superMixColorMaterial = cache.GetResource("Material", "Materials/Procedural/SuperMixColor.xml");
-	Model@ quadModel = context.CreateQuadModel();
+    context[0] = Variant(1);
+    context[1] = Variant(StringHash("Texture2D"));
+    context[2] = Variant(StringHash("Image"));
 
-	Texture2D@ crackMap = context.GeneratePerlinNoise(256, 1024, BLACK, WHITE, Vector2(4, 8),
-		Array<Vector4> = { Vector4(1, 1, 1, 0), Vector4(2, 2, 0.5, 0), Vector4(4, 4, 0.25, 0), Vector4(8, 8, 0.125, 0) }, 0, -1, Vector2(0, 1),
-		transparentRP, quadModel, perlinNoiseMaterial).GetTexture2D();
-		
-	Texture2D@ tickMap = context.GeneratePerlinNoise(256, 1024, BLACK, WHITE, Vector2(8, 64),
-		Array<Vector4> = { Vector4(1, 1, 1, 0), Vector4(2, 2, 0.5, 0) }, 0, 2, Vector2(-0.5, 1),
-		transparentRP, quadModel, perlinNoiseMaterial).GetTexture2D();
-	Texture2D@ whiteColor = context.GeneratePerlinNoise(256, 1024, Color(0.941, 0.941, 0.941), Color(0.816, 0.816, 0.816), Vector2(4, 4),
-		Array<Vector4> = { Vector4(1, 1, 1, 0), Vector4(2, 2, 0.5, 0) }, 0, 0, Vector2(0, 1),
-		transparentRP, quadModel, perlinNoiseMaterial).GetTexture2D();
-	Texture2D@ tickColor = context.RenderTexture(Color(0.518, 0.518, 0.51));
-	Texture2D@ white = context.RenderTexture(
-		256, 1024, BLACK, transparentRP, quadModel, mixColorMaterial, Vector3(),
-		Array<Texture2D@> = { tickMap, whiteColor, tickColor, whiteColor });
+    XMLFile@ transparentRP = cache.GetResource("XMLFile", "RenderPaths/BakeTransparent.xml");
+    Material@ perlinNoiseMaterial = cache.GetResource("Material", "Materials/Procedural/PerlinNoise.xml");
+    Material@ mixColorMaterial = cache.GetResource("Material", "Materials/Procedural/MixColor.xml");
+    Material@ superMixColorMaterial = cache.GetResource("Material", "Materials/Procedural/SuperMixColor.xml");
+    Model@ quadModel = context.CreateQuadModel();
 
-	Texture2D@ dark = context.GeneratePerlinNoise(256, 1024, BLACK, Color(0.126, 0.106, 0.09), Vector2(32, 8),
-		Array<Vector4> = { Vector4(1, 1, 1, 0), Vector4(2, 2, 0.5, 0), Vector4(4, 4, 0.25, 0) }, 0, -1, Vector2(0, 1),
-		transparentRP, quadModel, perlinNoiseMaterial).GetTexture2D();
+    Texture2D@ crackMap = context.GeneratePerlinNoise(256, 1024, BLACK, WHITE, Vector2(4, 8),
+        Array<Vector4> = { Vector4(1, 1, 1, 0), Vector4(2, 2, 0.5, 0), Vector4(4, 4, 0.25, 0), Vector4(8, 8, 0.125, 0) }, 0, -1, Vector2(0, 1),
+        transparentRP, quadModel, perlinNoiseMaterial).GetTexture2D();
 
-	Texture2D@ noise = context.GeneratePerlinNoise(256, 1024, BLACK, WHITE, Vector2(32, 16),
-		Array<Vector4> = { Vector4(1, 1, 1, 0), Vector4(2, 2, 0.5, 0), Vector4(4, 4, 0.25, 0), Vector4(8, 8, 0.125, 0) }, 0, 0, Vector2(0, 1),
-		transparentRP, quadModel, perlinNoiseMaterial).GetTexture2D();
-		
-	Image@ barkDiffuseImage = context.RenderTexture(
-		256, 1024, BLACK, transparentRP, quadModel, superMixColorMaterial, Vector3(),
-		Array<Texture2D@> = { crackMap, white, dark, noise }).GetImage();
+    Texture2D@ tickMap = context.GeneratePerlinNoise(256, 1024, BLACK, WHITE, Vector2(8, 64),
+        Array<Vector4> = { Vector4(1, 1, 1, 0), Vector4(2, 2, 0.5, 0) }, 0, 2, Vector2(-0.5, 1),
+        transparentRP, quadModel, perlinNoiseMaterial).GetTexture2D();
+    Texture2D@ whiteColor = context.GeneratePerlinNoise(256, 1024, Color(0.941, 0.941, 0.941), Color(0.816, 0.816, 0.816), Vector2(4, 4),
+        Array<Vector4> = { Vector4(1, 1, 1, 0), Vector4(2, 2, 0.5, 0) }, 0, 0, Vector2(0, 1),
+        transparentRP, quadModel, perlinNoiseMaterial).GetTexture2D();
+    Texture2D@ tickColor = context.RenderTexture(Color(0.518, 0.518, 0.51));
+    Texture2D@ white = context.RenderTexture(
+        256, 1024, BLACK, transparentRP, quadModel, mixColorMaterial, Vector3(),
+        Array<Texture2D@> = { tickMap, whiteColor, tickColor, whiteColor });
 
-	barkDiffuseImage.PrecalculateLevels();
+    Texture2D@ dark = context.GeneratePerlinNoise(256, 1024, BLACK, Color(0.126, 0.106, 0.09), Vector2(32, 8),
+        Array<Vector4> = { Vector4(1, 1, 1, 0), Vector4(2, 2, 0.5, 0), Vector4(4, 4, 0.25, 0) }, 0, -1, Vector2(0, 1),
+        transparentRP, quadModel, perlinNoiseMaterial).GetTexture2D();
 
-	context[2] = Variant(barkDiffuseImage);
+    Texture2D@ noise = context.GeneratePerlinNoise(256, 1024, BLACK, WHITE, Vector2(32, 16),
+        Array<Vector4> = { Vector4(1, 1, 1, 0), Vector4(2, 2, 0.5, 0), Vector4(4, 4, 0.25, 0), Vector4(8, 8, 0.125, 0) }, 0, 0, Vector2(0, 1),
+        transparentRP, quadModel, perlinNoiseMaterial).GetTexture2D();
+
+    Image@ barkDiffuseImage = context.RenderTexture(
+        256, 1024, BLACK, transparentRP, quadModel, superMixColorMaterial, Vector3(),
+        Array<Texture2D@> = { crackMap, white, dark, noise }).GetImage();
+
+    barkDiffuseImage.PrecalculateLevels();
+
+    context[3] = Variant(barkDiffuseImage);
 }

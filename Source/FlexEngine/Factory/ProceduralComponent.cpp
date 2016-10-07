@@ -92,6 +92,7 @@ void ProceduralSystem::Update()
 {
     for (ProceduralComponent* component : dirtyComponents_)
         component->GenerateResources();
+    dirtyComponentsSet_.Clear();
     dirtyComponents_.Clear();
 }
 
@@ -109,8 +110,11 @@ void ProceduralSystem::RemoveResource(ProceduralComponent* component)
 
 void ProceduralSystem::MarkComponentDirty(ProceduralComponent* component)
 {
-    if (component)
-        dirtyComponents_.Insert(component);
+    if (component && !dirtyComponentsSet_.Contains(component))
+    {
+        dirtyComponents_.Push(component);
+        dirtyComponentsSet_.Insert(component);
+    }
 }
 
 void ProceduralSystem::MarkResourceListDirty()

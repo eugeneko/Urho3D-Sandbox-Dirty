@@ -66,7 +66,9 @@ private:
     /// Procedural components.
     HashSet<ProceduralComponent*> components_;
     /// Set of dirty components.
-    HashSet<ProceduralComponent*> dirtyComponents_;
+    HashSet<ProceduralComponent*> dirtyComponentsSet_;
+    /// Vector of dirty components in right order.
+    PODVector<ProceduralComponent*> dirtyComponents_;
 
     /// Update period.
     float updatePeriod_ = 0.1f;
