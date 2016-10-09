@@ -6,15 +6,9 @@
 
 /// Compute fade
 #ifdef OBJECTPROXY
-    float4 ComputeFade(float iScreenFade, float iTextureFade, float3 iNormal, float3 iEye, float3 iModelUp, float4 iProxyParam, float2 iFadeScale)
+    float ComputeProxyFade(float3 iNormal, float3 iEye, float3 iModelUp, float4 iProxyParam)
     {
-        float proxyFade = GetProxyFadeFactor(iNormal, iProxyParam.x, iProxyParam.y, iProxyParam.z > 0.0, iEye, iModelUp);
-        return float4(iScreenFade, iTextureFade * proxyFade, iFadeScale * iProxyParam.w);
-    }
-#else
-    float4 ComputeFade(float iScreenFade, float iTextureFade, float2 iFadeScale)
-    {
-        return float4(iScreenFade, iTextureFade, iFadeScale);
+        return GetProxyFadeFactor(iNormal, iProxyParam.x, iProxyParam.y, iProxyParam.z > 0.0, iEye, iModelUp);
     }
 #endif
 
@@ -22,15 +16,17 @@
 #ifdef COMPILEPS
     void DiscardByFade(float4 iFade, float2 iFragPos)
     {
-        #ifdef OBJECTPROXY
+        #if defined(TEXFADE) || defined(PROXYFADE)
             float noiseTexCoord = Random(floor(iFade.zw));
             if (noiseTexCoord > iFade.y || noiseTexCoord + 1.0 < iFade.y)
                 discard;
         #endif
-    
-        float noiseFragPos = Random(floor(iFragPos.xy));
-        if (noiseFragPos > iFade.x || noiseFragPos + 1.0 < iFade.x)
-            discard;
+
+        #ifdef SCREENFADE
+            float noiseFragPos = Random(floor(iFragPos.xy));
+            if (noiseFragPos > iFade.x || noiseFragPos + 1.0 < iFade.x)
+                discard;
+        #endif
     }
 #endif
 

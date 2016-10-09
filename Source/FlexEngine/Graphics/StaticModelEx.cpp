@@ -29,12 +29,26 @@ void StaticModelEx::RegisterObject(Context* context)
 {
     context->RegisterFactory<StaticModelEx>(FLEXENGINE_CATEGORY);
 
+    URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Model", GetModelAttr, SetModelAttr, ResourceRef, ResourceRef(Model::GetTypeStatic()), AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Material", GetMaterialsAttr, SetMaterialsAttr, ResourceRefList, ResourceRefList(Material::GetTypeStatic()),
+        AM_DEFAULT);
+
     URHO3D_ACCESSOR_ATTRIBUTE("Apply Wind", ShouldApplyWind, SetApplyWind, bool, false, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Clone Materials", AreMaterialsCloned, SetCloneMaterials, bool, false, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Unique Materials", AreMaterialsUnique, SetUniqueMaterials, bool, false, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("LOD Switch Bias", GetLodSwitchBias, SetLodSwitchBias, float, 1.0f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("LOD Switch Duration", GetLodSwitchDuration, SetLodSwitchDuration, float, 1.0f, AM_DEFAULT);
-    URHO3D_COPY_BASE_ATTRIBUTES(StaticModel);
+
+    URHO3D_ATTRIBUTE("Is Occluder", bool, occluder_, false, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Can Be Occluded", IsOccludee, SetOccludee, bool, true, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Cast Shadows", bool, castShadows_, false, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Draw Distance", GetDrawDistance, SetDrawDistance, float, 0.0f, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Shadow Distance", GetShadowDistance, SetShadowDistance, float, 0.0f, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("LOD Bias", GetLodBias, SetLodBias, float, 1.0f, AM_DEFAULT);
+    URHO3D_COPY_BASE_ATTRIBUTES(Drawable);
+    URHO3D_ATTRIBUTE("Occlusion LOD Level", int, occlusionLodLevel_, M_MAX_UNSIGNED, AM_DEFAULT);
+
 }
 
 void StaticModelEx::ApplyAttributes()
@@ -83,8 +97,9 @@ void StaticModelEx::SetMaterial(Material* material)
 
 bool StaticModelEx::SetMaterial(unsigned index, Material* material)
 {
-    if (StaticModel::SetMaterial(index, material))
+    if (index < GetNumGeometries())
     {
+        StaticModel::SetMaterial(index, material);
         UpdateReferencedMaterial(material);
         SetMaterialImpl(index, material);
         SetBatchMaterial(index);
@@ -116,6 +131,15 @@ void StaticModelEx::SetCloneMaterials(bool cloneMaterials)
     {
         cloneRequests_ = 0;
     }
+}
+
+const ResourceRefList& StaticModelEx::GetMaterialsAttr() const
+{
+    materialsAttr_.names_.Resize(geometryDataEx_.Size());
+    for (unsigned i = 0; i < geometryDataEx_.Size(); ++i)
+        materialsAttr_.names_[i] = GetResourceName(geometryDataEx_[i].originalMaterial_);
+
+    return materialsAttr_;
 }
 
 void StaticModelEx::OnSceneSet(Scene* scene)

@@ -10,7 +10,9 @@ void VS(float4 iPos : POSITION,
     #endif
     #ifdef INSTANCED
         float4x3 iModelInstance : TEXCOORD4,
-        float4 iInstanceData : TEXCOORD7,
+        #ifdef INSTANCEDATA
+            float4 iInstanceData : TEXCOORD7,
+        #endif
     #endif
     #ifdef OBJECTPROXY
         float4 iSize : TEXCOORD1,
@@ -33,12 +35,16 @@ void VS(float4 iPos : POSITION,
     #else
         out float2 oTexCoord : TEXCOORD0,
     #endif
-    out float4 oFade : COLOR1,
+    #if defined(SCREENFADE) || defined(TEXFADE) || defined(PROXYFADE)
+        out float4 oFade : COLOR1,
+    #endif
     out float4 oPos : OUTPOSITION)
 {
     // Define default instance data if not expected from engine
     #ifndef INSTANCED
-        float4 iInstanceData = float4(1.0, 0.0, 0.0, 0.0);
+        #ifdef INSTANCEDATA
+            float4 iInstanceData = float4(1.0, 1.0, 0.0, 0.0);
+        #endif
     #endif
 
     // Define a 0,0 UV coord if not expected from the vertex data
@@ -57,14 +63,32 @@ void VS(float4 iPos : POSITION,
     // Get fade factor
     #ifdef OBJECTPROXY
         float3 worldNormal = GetWorldNormal(modelMatrix);
-        oFade = ComputeFade(iInstanceData.x, 1.0, worldNormal, eye, modelUp, iProxyParam, iSize.zw);
+        float proxyFade = ComputeProxyFade(worldNormal, eye, modelUp, iProxyParam);
+        float2 texFadeUv = iSize.zw * iProxyParam.w;
     #else
-        oFade = ComputeFade(iInstanceData.x, 1.0, 1.0);
+        float proxyFade = 1.0;
+        float2 texFadeUv = 1.0;
+    #endif
+
+    #ifdef SCREENFADE
+        float screenFade = iInstanceData.x;
+    #else
+        float screenFade = 1.0;
+    #endif
+
+    #ifdef TEXFADE
+        float texFade = iInstanceData.y;
+    #else
+        float texFade = 1.0;
+    #endif
+
+    #if defined(SCREENFADE) || defined(TEXFADE) || defined(PROXYFADE)
+        oFade = float4(screenFade, texFade * proxyFade, texFadeUv);
     #endif
 
     // Compute position
     #ifdef OBJECTPROXY
-        float3 worldPos = oFade.y > 0 ? GetProxyWorldPosition(iPos, iSize.xy, eye, modelUp, modelMatrix, 0.3) : 0.0;
+        float3 worldPos = proxyFade > 0 ? GetProxyWorldPosition(iPos, iSize.xy, eye, modelUp, modelMatrix, 0.3) : 0.0;
     #else
         float3 worldPos = GetWorldPos(modelMatrix);
     #endif
@@ -94,7 +118,9 @@ void PS(
     #else
         float2 iTexCoord : TEXCOORD0,
     #endif
-    float4 iFade : COLOR1,
+    #if defined(SCREENFADE) || defined(TEXFADE) || defined(PROXYFADE)
+        float4 iFade : COLOR1,
+    #endif
     #ifndef D3D11
         float2 iFragPos : VPOS,
     #else
@@ -102,7 +128,9 @@ void PS(
     #endif
     out float4 oColor : OUTCOLOR0)
 {
-    DiscardByFade(iFade, iFragPos.xy);
+    #if defined(SCREENFADE) || defined(TEXFADE) || defined(PROXYFADE)
+        DiscardByFade(iFade, iFragPos.xy);
+    #endif
 
     #ifdef ALPHAMASK
         float alpha = Sample2D(DiffMap, iTexCoord.xy).a;

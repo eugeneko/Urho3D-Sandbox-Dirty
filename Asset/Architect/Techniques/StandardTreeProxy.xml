@@ -1,4 +1,4 @@
-<technique vs="StandardShader" ps="StandardShader" vsdefines="OBJECTPROXY WIND " psdefines="OBJECTPROXY " >
+<technique vs="StandardShader" ps="StandardShader" vsdefines="OBJECTPROXY WIND SCREENFADE PROXYFADE INSTANCEDATA " psdefines="OBJECTPROXY SCREENFADE PROXYFADE " >
     <pass name="base" />
     <pass name="litbase" psdefines="AMBIENT" />
     <pass name="light" depthtest="equal" depthwrite="false" blend="add" />
@@ -6,5 +6,5 @@
     <pass name="material" psdefines="MATERIAL" depthtest="equal" depthwrite="false" />
     <pass name="deferred" psdefines="DEFERRED" />
     <pass name="depth" vs="Depth" ps="Depth" />
-    <pass name="shadow" vs="StandardDepth" ps="StandardDepth" vsdefines="OBJECTPROXY WIND " psdefines="OBJECTPROXY " vsexcludes="DIFFMAP NORMALMAP " psexcludes="DIFFMAP NORMALMAP " />
+    <pass name="shadow" vs="StandardDepth" ps="StandardDepth" vsdefines="OBJECTPROXY WIND SCREENFADE PROXYFADE INSTANCEDATA " psdefines="OBJECTPROXY SCREENFADE PROXYFADE " vsexcludes="DIFFMAP NORMALMAP " psexcludes="DIFFMAP NORMALMAP " />
 </technique>
