@@ -23,7 +23,7 @@ namespace FlexEngine
 
 ScriptedResource::ScriptedResource(Context* context)
     : ProceduralComponent(context)
-    , resources_(ScriptFile::GetTypeStatic(), StringVector(1))
+    , resources_(ScriptFile::GetTypeStatic())
 {
 }
 

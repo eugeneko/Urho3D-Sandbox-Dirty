@@ -300,6 +300,15 @@ void PS(
         diffColor *= iColor;
     #endif
 
+    #ifdef TERRAINNOISE
+        // TODO Don't use emissive map
+        float3 terrainNoise;
+        terrainNoise.x = Sample2D(EmissiveMap, iTexCoord.xy).r;
+        terrainNoise.y = Sample2D(EmissiveMap, iTexCoord.xy * 25).r;
+        terrainNoise.z = Sample2D(EmissiveMap, iTexCoord.xy * 125).r;
+        diffColor *= terrainNoise.x * terrainNoise.y * terrainNoise.z * 4;
+    #endif
+
     // Get material specular albedo
     #ifdef SPECMAP
         float3 specColor = cMatSpecColor.rgb * Sample2D(SpecMap, iTexCoord.xy).rgb;
