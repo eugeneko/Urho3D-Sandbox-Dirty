@@ -1,3 +1,7 @@
+#define _CRTDBG_MAP_ALLOC
+#include <stdlib.h>
+#include <crtdbg.h>
+
 #include "FlexEnginePlayer.h"
 
 // #TODO Fix me
@@ -25,6 +29,7 @@ URHO3D_DEFINE_APPLICATION_MAIN(FlexEnginePlayer);
 FlexEnginePlayer::FlexEnginePlayer(Context* context) :
     Urho3DPlayer(context)
 {
+    _CrtSetDbgFlag ( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
 }
 
 void FlexEnginePlayer::Start()
