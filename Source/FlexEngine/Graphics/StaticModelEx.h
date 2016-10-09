@@ -78,6 +78,9 @@ public:
     /// Return LOD switch duration.
     float GetLodSwitchDuration() const { return lodSwitchDuration_; }
 
+    /// Return materials attribute.
+    const ResourceRefList& GetMaterialsAttr() const;
+
 private:
     /// Handle scene being assigned. This may happen several times during the component's lifetime. Scene-wide subsystems and events are subscribed to here.
     virtual void OnSceneSet(Scene* scene) override;

@@ -99,10 +99,10 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="StaticModelEx" id="4">
-				<attribute name="Apply Wind" value="true" />
-				<attribute name="Clone Materials" value="true" />
 				<attribute name="Model" value="Model;Objects/WhiteTree/Tree29A.mdl" />
 				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree29AMaterial.xml" />
+				<attribute name="Apply Wind" value="true" />
+				<attribute name="Clone Materials" value="true" />
 				<attribute name="Cast Shadows" value="true" />
 			</component>
 			<component type="TreeHost" id="3">
@@ -262,10 +262,10 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="StaticModelEx" id="90">
-				<attribute name="Apply Wind" value="true" />
-				<attribute name="Clone Materials" value="true" />
 				<attribute name="Model" value="Model;Objects/WhiteTree/Tree19A.mdl" />
 				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree19AMaterial.xml" />
+				<attribute name="Apply Wind" value="true" />
+				<attribute name="Clone Materials" value="true" />
 				<attribute name="Cast Shadows" value="true" />
 			</component>
 			<component type="TreeHost" id="91">
@@ -425,10 +425,10 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="StaticModelEx" id="131">
-				<attribute name="Apply Wind" value="true" />
-				<attribute name="Clone Materials" value="true" />
 				<attribute name="Model" value="Model;Objects/WhiteTree/Tree11A.mdl" />
 				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree11AMaterial.xml" />
+				<attribute name="Apply Wind" value="true" />
+				<attribute name="Clone Materials" value="true" />
 				<attribute name="Cast Shadows" value="true" />
 			</component>
 			<component type="TreeHost" id="132">
@@ -698,10 +698,10 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="StaticModelEx" id="64">
-				<attribute name="Apply Wind" value="true" />
-				<attribute name="Clone Materials" value="true" />
 				<attribute name="Model" value="Model;Objects/WhiteTree/Tree29A.mdl" />
 				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree29AMaterial.xml" />
+				<attribute name="Apply Wind" value="true" />
+				<attribute name="Clone Materials" value="true" />
 				<attribute name="Cast Shadows" value="true" />
 			</component>
 		</node>
@@ -714,10 +714,10 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="StaticModelEx" id="65">
-				<attribute name="Apply Wind" value="true" />
-				<attribute name="Clone Materials" value="true" />
 				<attribute name="Model" value="Model;Objects/WhiteTree/Tree29A.mdl" />
 				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree29AMaterial.xml" />
+				<attribute name="Apply Wind" value="true" />
+				<attribute name="Clone Materials" value="true" />
 				<attribute name="Cast Shadows" value="true" />
 			</component>
 		</node>
@@ -730,10 +730,10 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="StaticModelEx" id="66">
-				<attribute name="Apply Wind" value="true" />
-				<attribute name="Clone Materials" value="true" />
 				<attribute name="Model" value="Model;Objects/WhiteTree/Tree29A.mdl" />
 				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree29AMaterial.xml" />
+				<attribute name="Apply Wind" value="true" />
+				<attribute name="Clone Materials" value="true" />
 				<attribute name="Cast Shadows" value="true" />
 			</component>
 		</node>
@@ -746,10 +746,10 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="StaticModelEx" id="67">
-				<attribute name="Apply Wind" value="true" />
-				<attribute name="Clone Materials" value="true" />
 				<attribute name="Model" value="Model;Objects/WhiteTree/Tree29A.mdl" />
 				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree29AMaterial.xml" />
+				<attribute name="Apply Wind" value="true" />
+				<attribute name="Clone Materials" value="true" />
 				<attribute name="Cast Shadows" value="true" />
 			</component>
 		</node>
@@ -762,10 +762,10 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="StaticModelEx" id="68">
-				<attribute name="Apply Wind" value="true" />
-				<attribute name="Clone Materials" value="true" />
 				<attribute name="Model" value="Model;Objects/WhiteTree/Tree29A.mdl" />
 				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree29AMaterial.xml" />
+				<attribute name="Apply Wind" value="true" />
+				<attribute name="Clone Materials" value="true" />
 				<attribute name="Cast Shadows" value="true" />
 			</component>
 		</node>
@@ -778,10 +778,10 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="StaticModelEx" id="69">
-				<attribute name="Apply Wind" value="true" />
-				<attribute name="Clone Materials" value="true" />
 				<attribute name="Model" value="Model;Objects/WhiteTree/Tree29A.mdl" />
 				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree29AMaterial.xml" />
+				<attribute name="Apply Wind" value="true" />
+				<attribute name="Clone Materials" value="true" />
 				<attribute name="Cast Shadows" value="true" />
 			</component>
 		</node>
@@ -794,10 +794,10 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="StaticModelEx" id="70">
-				<attribute name="Apply Wind" value="true" />
-				<attribute name="Clone Materials" value="true" />
 				<attribute name="Model" value="Model;Objects/WhiteTree/Tree29A.mdl" />
 				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree29AMaterial.xml" />
+				<attribute name="Apply Wind" value="true" />
+				<attribute name="Clone Materials" value="true" />
 				<attribute name="Cast Shadows" value="true" />
 			</component>
 		</node>
@@ -810,10 +810,10 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="StaticModelEx" id="71">
-				<attribute name="Apply Wind" value="true" />
-				<attribute name="Clone Materials" value="true" />
 				<attribute name="Model" value="Model;Objects/WhiteTree/Tree29A.mdl" />
 				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree29AMaterial.xml" />
+				<attribute name="Apply Wind" value="true" />
+				<attribute name="Clone Materials" value="true" />
 				<attribute name="Cast Shadows" value="true" />
 			</component>
 		</node>
@@ -826,10 +826,10 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="StaticModelEx" id="140">
-				<attribute name="Apply Wind" value="true" />
-				<attribute name="Clone Materials" value="true" />
 				<attribute name="Model" value="Model;Objects/WhiteTree/Tree19A.mdl" />
 				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree19AMaterial.xml" />
+				<attribute name="Apply Wind" value="true" />
+				<attribute name="Clone Materials" value="true" />
 				<attribute name="Cast Shadows" value="true" />
 			</component>
 		</node>
@@ -842,10 +842,10 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="StaticModelEx" id="141">
-				<attribute name="Apply Wind" value="true" />
-				<attribute name="Clone Materials" value="true" />
 				<attribute name="Model" value="Model;Objects/WhiteTree/Tree19A.mdl" />
 				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree19AMaterial.xml" />
+				<attribute name="Apply Wind" value="true" />
+				<attribute name="Clone Materials" value="true" />
 				<attribute name="Cast Shadows" value="true" />
 			</component>
 		</node>
@@ -858,10 +858,10 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="StaticModelEx" id="142">
-				<attribute name="Apply Wind" value="true" />
-				<attribute name="Clone Materials" value="true" />
 				<attribute name="Model" value="Model;Objects/WhiteTree/Tree19A.mdl" />
 				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree19AMaterial.xml" />
+				<attribute name="Apply Wind" value="true" />
+				<attribute name="Clone Materials" value="true" />
 				<attribute name="Cast Shadows" value="true" />
 			</component>
 		</node>
@@ -874,10 +874,10 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="StaticModelEx" id="143">
-				<attribute name="Apply Wind" value="true" />
-				<attribute name="Clone Materials" value="true" />
 				<attribute name="Model" value="Model;Objects/WhiteTree/Tree19A.mdl" />
 				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree19AMaterial.xml" />
+				<attribute name="Apply Wind" value="true" />
+				<attribute name="Clone Materials" value="true" />
 				<attribute name="Cast Shadows" value="true" />
 			</component>
 		</node>
@@ -890,10 +890,10 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="StaticModelEx" id="144">
-				<attribute name="Apply Wind" value="true" />
-				<attribute name="Clone Materials" value="true" />
 				<attribute name="Model" value="Model;Objects/WhiteTree/Tree19A.mdl" />
 				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree19AMaterial.xml" />
+				<attribute name="Apply Wind" value="true" />
+				<attribute name="Clone Materials" value="true" />
 				<attribute name="Cast Shadows" value="true" />
 			</component>
 		</node>
@@ -906,10 +906,10 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="StaticModelEx" id="145">
-				<attribute name="Apply Wind" value="true" />
-				<attribute name="Clone Materials" value="true" />
 				<attribute name="Model" value="Model;Objects/WhiteTree/Tree19A.mdl" />
 				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree19AMaterial.xml" />
+				<attribute name="Apply Wind" value="true" />
+				<attribute name="Clone Materials" value="true" />
 				<attribute name="Cast Shadows" value="true" />
 			</component>
 		</node>
@@ -922,10 +922,10 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="StaticModelEx" id="146">
-				<attribute name="Apply Wind" value="true" />
-				<attribute name="Clone Materials" value="true" />
 				<attribute name="Model" value="Model;Objects/WhiteTree/Tree19A.mdl" />
 				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree19AMaterial.xml" />
+				<attribute name="Apply Wind" value="true" />
+				<attribute name="Clone Materials" value="true" />
 				<attribute name="Cast Shadows" value="true" />
 			</component>
 		</node>
@@ -938,10 +938,10 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="StaticModelEx" id="147">
-				<attribute name="Apply Wind" value="true" />
-				<attribute name="Clone Materials" value="true" />
 				<attribute name="Model" value="Model;Objects/WhiteTree/Tree19A.mdl" />
 				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree19AMaterial.xml" />
+				<attribute name="Apply Wind" value="true" />
+				<attribute name="Clone Materials" value="true" />
 				<attribute name="Cast Shadows" value="true" />
 			</component>
 		</node>
@@ -954,10 +954,10 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="StaticModelEx" id="148">
-				<attribute name="Apply Wind" value="true" />
-				<attribute name="Clone Materials" value="true" />
 				<attribute name="Model" value="Model;Objects/WhiteTree/Tree19A.mdl" />
 				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree19AMaterial.xml" />
+				<attribute name="Apply Wind" value="true" />
+				<attribute name="Clone Materials" value="true" />
 				<attribute name="Cast Shadows" value="true" />
 			</component>
 		</node>
@@ -970,10 +970,10 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="StaticModelEx" id="149">
-				<attribute name="Apply Wind" value="true" />
-				<attribute name="Clone Materials" value="true" />
 				<attribute name="Model" value="Model;Objects/WhiteTree/Tree19A.mdl" />
 				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree19AMaterial.xml" />
+				<attribute name="Apply Wind" value="true" />
+				<attribute name="Clone Materials" value="true" />
 				<attribute name="Cast Shadows" value="true" />
 			</component>
 		</node>
@@ -986,10 +986,10 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="StaticModelEx" id="150">
-				<attribute name="Apply Wind" value="true" />
-				<attribute name="Clone Materials" value="true" />
 				<attribute name="Model" value="Model;Objects/WhiteTree/Tree29A.mdl" />
 				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree29AMaterial.xml" />
+				<attribute name="Apply Wind" value="true" />
+				<attribute name="Clone Materials" value="true" />
 				<attribute name="Cast Shadows" value="true" />
 			</component>
 		</node>
@@ -1002,10 +1002,10 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="StaticModelEx" id="151">
-				<attribute name="Apply Wind" value="true" />
-				<attribute name="Clone Materials" value="true" />
 				<attribute name="Model" value="Model;Objects/WhiteTree/Tree11A.mdl" />
 				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree11AMaterial.xml" />
+				<attribute name="Apply Wind" value="true" />
+				<attribute name="Clone Materials" value="true" />
 				<attribute name="Cast Shadows" value="true" />
 			</component>
 		</node>
@@ -1018,10 +1018,10 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="StaticModelEx" id="152">
-				<attribute name="Apply Wind" value="true" />
-				<attribute name="Clone Materials" value="true" />
 				<attribute name="Model" value="Model;Objects/WhiteTree/Tree11A.mdl" />
 				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree11AMaterial.xml" />
+				<attribute name="Apply Wind" value="true" />
+				<attribute name="Clone Materials" value="true" />
 				<attribute name="Cast Shadows" value="true" />
 			</component>
 		</node>
@@ -1034,10 +1034,10 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="StaticModelEx" id="153">
-				<attribute name="Apply Wind" value="true" />
-				<attribute name="Clone Materials" value="true" />
 				<attribute name="Model" value="Model;Objects/WhiteTree/Tree11A.mdl" />
 				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree11AMaterial.xml" />
+				<attribute name="Apply Wind" value="true" />
+				<attribute name="Clone Materials" value="true" />
 				<attribute name="Cast Shadows" value="true" />
 			</component>
 		</node>
@@ -1050,10 +1050,10 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="StaticModelEx" id="154">
-				<attribute name="Apply Wind" value="true" />
-				<attribute name="Clone Materials" value="true" />
 				<attribute name="Model" value="Model;Objects/WhiteTree/Tree11A.mdl" />
 				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree11AMaterial.xml" />
+				<attribute name="Apply Wind" value="true" />
+				<attribute name="Clone Materials" value="true" />
 				<attribute name="Cast Shadows" value="true" />
 			</component>
 		</node>
@@ -1066,10 +1066,10 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="StaticModelEx" id="155">
-				<attribute name="Apply Wind" value="true" />
-				<attribute name="Clone Materials" value="true" />
 				<attribute name="Model" value="Model;Objects/WhiteTree/Tree11A.mdl" />
 				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree11AMaterial.xml" />
+				<attribute name="Apply Wind" value="true" />
+				<attribute name="Clone Materials" value="true" />
 				<attribute name="Cast Shadows" value="true" />
 			</component>
 		</node>
@@ -1082,10 +1082,10 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="StaticModelEx" id="156">
-				<attribute name="Apply Wind" value="true" />
-				<attribute name="Clone Materials" value="true" />
 				<attribute name="Model" value="Model;Objects/WhiteTree/Tree11A.mdl" />
 				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree11AMaterial.xml" />
+				<attribute name="Apply Wind" value="true" />
+				<attribute name="Clone Materials" value="true" />
 				<attribute name="Cast Shadows" value="true" />
 			</component>
 		</node>
@@ -1098,10 +1098,10 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="StaticModelEx" id="157">
-				<attribute name="Apply Wind" value="true" />
-				<attribute name="Clone Materials" value="true" />
 				<attribute name="Model" value="Model;Objects/WhiteTree/Tree11A.mdl" />
 				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree11AMaterial.xml" />
+				<attribute name="Apply Wind" value="true" />
+				<attribute name="Clone Materials" value="true" />
 				<attribute name="Cast Shadows" value="true" />
 			</component>
 		</node>
@@ -1114,10 +1114,10 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="StaticModelEx" id="158">
-				<attribute name="Apply Wind" value="true" />
-				<attribute name="Clone Materials" value="true" />
 				<attribute name="Model" value="Model;Objects/WhiteTree/Tree11A.mdl" />
 				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree11AMaterial.xml" />
+				<attribute name="Apply Wind" value="true" />
+				<attribute name="Clone Materials" value="true" />
 				<attribute name="Cast Shadows" value="true" />
 			</component>
 		</node>
@@ -1130,10 +1130,10 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="StaticModelEx" id="159">
-				<attribute name="Apply Wind" value="true" />
-				<attribute name="Clone Materials" value="true" />
 				<attribute name="Model" value="Model;Objects/WhiteTree/Tree11A.mdl" />
 				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree11AMaterial.xml" />
+				<attribute name="Apply Wind" value="true" />
+				<attribute name="Clone Materials" value="true" />
 				<attribute name="Cast Shadows" value="true" />
 			</component>
 		</node>
@@ -1146,10 +1146,10 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="StaticModelEx" id="160">
-				<attribute name="Apply Wind" value="true" />
-				<attribute name="Clone Materials" value="true" />
 				<attribute name="Model" value="Model;Objects/WhiteTree/Tree11A.mdl" />
 				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree11AMaterial.xml" />
+				<attribute name="Apply Wind" value="true" />
+				<attribute name="Clone Materials" value="true" />
 				<attribute name="Cast Shadows" value="true" />
 			</component>
 		</node>
@@ -1162,10 +1162,10 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="StaticModelEx" id="161">
-				<attribute name="Apply Wind" value="true" />
-				<attribute name="Clone Materials" value="true" />
 				<attribute name="Model" value="Model;Objects/WhiteTree/Tree11A.mdl" />
 				<attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/LargeFoliageMaterial.xml;Objects/WhiteTree/Tree11AMaterial.xml" />
+				<attribute name="Apply Wind" value="true" />
+				<attribute name="Clone Materials" value="true" />
 				<attribute name="Cast Shadows" value="true" />
 			</component>
 		</node>

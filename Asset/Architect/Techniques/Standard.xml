@@ -1,4 +1,4 @@
-<technique vs="StandardShader" ps="StandardShader" vsdefines=" " psdefines=" " >
+<technique vs="StandardShader" ps="StandardShader" vsdefines="SCREENFADE INSTANCEDATA " psdefines="SCREENFADE " >
     <pass name="base" />
     <pass name="litbase" psdefines="AMBIENT" />
     <pass name="light" depthtest="equal" depthwrite="false" blend="add" />
@@ -6,5 +6,5 @@
     <pass name="material" vs="StandardShader" ps="StandardShader" psdefines="MATERIAL" depthtest="equal" depthwrite="false" />
     <pass name="deferred" psdefines="DEFERRED" />
     <pass name="depth" vs="Depth" ps="Depth" />
-    <pass name="shadow" vs="StandardDepth" ps="StandardDepth" vsdefines=" " psdefines=" " vsexcludes="DIFFMAP NORMALMAP " psexcludes="DIFFMAP NORMALMAP "/>
+    <pass name="shadow" vs="StandardDepth" ps="StandardDepth" vsdefines="SCREENFADE INSTANCEDATA " psdefines="SCREENFADE " vsexcludes="DIFFMAP NORMALMAP " psexcludes="DIFFMAP NORMALMAP "/>
 </technique>
