@@ -31,7 +31,6 @@ include (Urho3D-CMake-common)
 set (SOURCE_FOLDER ${CMAKE_SOURCE_DIR}/Source/)
 include_directories (${SOURCE_FOLDER})
 include (SourceLists.cmake)
-check_source_files ()
 
 # Setup folders
 foreach (SOURCE_FILE ${SOURCE_FILES})

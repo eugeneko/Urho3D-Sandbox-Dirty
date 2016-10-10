@@ -47,11 +47,11 @@ float4 SmoothTriangleWave(float4 iVec)
 /// @param iModelUp Direction of up direction of the model.
 /// @param iModelMatrix Model matrix.
 /// @param iMagicFactor Factor that adjusts rotation of degenerate billboards.
-float3 GetProxyWorldPosition(float4 iPos, float2 iOffset, float3 iEye, float3 iModelUp, float4x3 iModelMatrix, float iMagicFactor)
+float3 GetProxyWorldPosition(float4 iPos, float2 iOffset, float3 iEye, float3 iModelUp, float3 iModelPosition, float iMagicFactor)
 {
     float4 right = float4(normalize(cross(iEye, iModelUp)), 0);
     float4 up = float4(normalize(lerp(iModelUp, normalize(cross(right.xyz, iEye)), iMagicFactor)), 0);
-    return mul(iPos + iOffset.x * right + iOffset.y * up, iModelMatrix);
+    return iPos + iOffset.x * right + iOffset.y * up + iModelPosition;
 }
 
 /// Get fade factor of proxy billboard.

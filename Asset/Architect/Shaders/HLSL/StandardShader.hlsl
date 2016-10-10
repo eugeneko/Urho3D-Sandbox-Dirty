@@ -142,7 +142,7 @@ void VS(float4 iPos : POSITION,
 
     // Compute position
     #ifdef OBJECTPROXY
-        float3 worldPos = proxyFade > 0 ? GetProxyWorldPosition(iPos, iSize.xy, eye, modelUp, modelMatrix, 0.3) : 0.0;
+        float3 worldPos = proxyFade > 0 ? GetProxyWorldPosition(iPos, iSize.xy, eye, modelUp, modelPosition, 0.3) : 0.0;
     #else
         float3 worldPos = GetWorldPos(modelMatrix);
     #endif
@@ -172,9 +172,9 @@ void VS(float4 iPos : POSITION,
     #ifdef NORMALMAP
         // Object proxy always have world-space normals
         #ifdef OBJECTPROXY
-            float3 tangent = float3(1, 0, 0);
-            float3 bitangent = float3(0, 1, 0);
-            oNormal = float3(0, 0, 1);
+            float3 tangent = normalize(iModelMatrix._m00_m01_m02);
+            float3 bitangent = modelUp;
+            oNormal = normalize(iModelMatrix._m20_m21_m22);
         #else
             float3 tangent = GetWorldTangent(modelMatrix);
             float3 bitangent = cross(tangent, oNormal) * iTangent.w;

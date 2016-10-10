@@ -88,7 +88,7 @@ void VS(float4 iPos : POSITION,
 
     // Compute position
     #ifdef OBJECTPROXY
-        float3 worldPos = proxyFade > 0 ? GetProxyWorldPosition(iPos, iSize.xy, eye, modelUp, modelMatrix, 0.3) : 0.0;
+        float3 worldPos = proxyFade > 0 ? GetProxyWorldPosition(iPos, iSize.xy, eye, modelUp, modelPosition, 0.3) : 0.0;
     #else
         float3 worldPos = GetWorldPos(modelMatrix);
     #endif
