@@ -212,6 +212,9 @@ void TODO_CoverTerrainWithObjects(Node* terrainNode, Node* destNode, XMLFile* pr
     Octree* octree = scene->GetComponent<Octree>();
     Terrain* terrain = terrainNode->GetComponent<Terrain>();
 
+    Node* prefabNode = scene->InstantiateXML(prefab->GetRoot(), Vector3::ZERO, Quaternion::IDENTITY);
+    prefabNode->SetTemporary(true);
+
     PODVector<Drawable*> result;
     for (const Vector2& pos2 : points)
     {
@@ -233,9 +236,12 @@ void TODO_CoverTerrainWithObjects(Node* terrainNode, Node* destNode, XMLFile* pr
             continue;
         
         float angle = rand() % 1000 / 1000.0f * 360;
-        Node* child = scene->InstantiateXML(prefab->GetRoot(), position, Quaternion(0, angle, 0));
+        Node* child = prefabNode->Clone();
+        child->SetTransform(position, Quaternion(0, angle, 0));
         destNode->AddChild(child);
     }
+
+    scene->RemoveChild(prefabNode);
 }
 
 void RegisterScriptContext(asIScriptEngine* engine, const char* name)

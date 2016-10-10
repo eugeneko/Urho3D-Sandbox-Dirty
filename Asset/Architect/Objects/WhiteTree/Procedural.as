@@ -64,9 +64,10 @@ void GenerateFoliage(ModelFactoryWrapper& model, FoliageDesc desc)
     }
 }
 
-void MainFoliageMask(ModelFactory@ dest)
+Model@ MainFoliageMask(ProceduralContext@ context)
 {
-    ModelFactoryWrapper model(dest);
+    ModelFactory@ factory = context.CreateModelFactory();
+    ModelFactoryWrapper model(factory);
 
     FoliageDesc desc;
     desc.leafSize_ = Vector2(1, 1) * 0.02;
@@ -80,6 +81,8 @@ void MainFoliageMask(ModelFactory@ dest)
     desc.leafNoise_ = Vector2(0.1, 0.05);
 
     GenerateFoliage(model, desc);
+    
+    return context.CreateModel(factory);
 }
 
 class LeafDesc
@@ -124,9 +127,10 @@ void GenerateLeaf(ModelFactoryWrapper& model, LeafDesc desc)
     model.AddRect2D(Vector3(0.0, desc.positionRange_.x, 0.0), 0.0, trunkScale, Vector2(-0.5, 0.0), Vector2(0.5, 1.0), Vector2(0, 1), desc.segmentMaskInfo_);
 }
 
-void MainLeafMask(ModelFactory@ dest)
+Model@ MainLeafMask(ProceduralContext@ context)
 {
-    ModelFactoryWrapper model(dest);
+    ModelFactory@ factory = context.CreateModelFactory();
+    ModelFactoryWrapper model(factory);
 
     LeafDesc desc;
     desc.numSegments_ = 30;
@@ -138,6 +142,8 @@ void MainLeafMask(ModelFactory@ dest)
     desc.segmentMaskInfo_ = Vector4(1.0, 10.0, 0.1, 1.0);
 
     GenerateLeaf(model, desc);
+    
+    return context.CreateModel(factory);
 }
 
 void MainFoliage(ProceduralContext@ context)
@@ -153,15 +159,11 @@ void MainFoliage(ProceduralContext@ context)
     Material@ mixColorMaterial = cache.GetResource("Material", "Materials/Procedural/MixColor.xml");
     Model@ quadModel = context.CreateQuadModel();
 
-    ModelFactory@ leafMaskModelFactory = context.CreateModelFactory();
-    MainLeafMask(leafMaskModelFactory);
-    Model@ leafMaskModel = context.CreateModel(leafMaskModelFactory);
+    Model@ leafMaskModel = MainLeafMask(context);
     Texture2D@ leafMask = context.RenderTexture(
         64, 64, BLACK, opaqueRP, leafMaskModel, maskAddMaterial, Vector3(0.5, 0, 0.5));
 
-    ModelFactory@ foliageMaskModelFactory = context.CreateModelFactory();
-    MainFoliageMask(foliageMaskModelFactory);
-    Model@ foliageMaskModel = context.CreateModel(foliageMaskModelFactory);
+    Model@ foliageMaskModel = MainFoliageMask(context);
     Texture2D@ foliageMask = context.RenderTexture(
         1024, 1024, BLACK, opaqueRP, foliageMaskModel, superMaskMaterial, Vector3(0.5, 0, 0.5), Array<Texture2D@> = {leafMask});
 

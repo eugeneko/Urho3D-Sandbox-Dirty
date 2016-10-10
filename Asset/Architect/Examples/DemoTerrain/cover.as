@@ -4,8 +4,9 @@ if (terrainNodes.empty)
 Node@ terrain = terrainNodes[0];
 
 Node@ destNode = scene.GetChild("Forest");
-if (destNode is null)
-    destNode = scene.CreateChild("Forest");
+if (destNode !is null)
+    destNode.Remove();
+destNode = scene.CreateChild("Forest");
 
 destNode.RemoveAllChildren();
 
