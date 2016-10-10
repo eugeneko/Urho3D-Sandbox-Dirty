@@ -3,11 +3,17 @@
 #include <FlexEngine/Factory/ModelFactory.h>
 #include <FlexEngine/Factory/ScriptedResource.h>
 #include <FlexEngine/Factory/TextureFactory.h>
+#include <FlexEngine/Math/PoissonRandom.h>
 
 #include <Urho3D/AngelScript/APITemplates.h>
 #include <Urho3D/AngelScript/Script.h>
 #include <Urho3D/Graphics/Model.h>
+#include <Urho3D/Graphics/Octree.h>
+#include <Urho3D/Graphics/OctreeQuery.h>
+#include <Urho3D/Graphics/Terrain.h>
 #include <Urho3D/Resource/Image.h>
+#include <Urho3D/Scene/Node.h>
+#include <Urho3D/Scene/Scene.h>
 
 namespace FlexEngine
 {
@@ -188,6 +194,50 @@ Texture2D* Image_GetTexture2D(const Image* image)
     return ConvertImageToTexture(image).Detach();
 }
 
+static const float TODO_poissonStep = 0.05f;
+const PointCloud2DNorm& TODO_GetDefaultCloud()
+{
+    static PoissonRandom TODO_random(0);
+    static const PointCloud2DNorm TODO_cloud = TODO_random.generate(TODO_poissonStep, 30, 10000);
+    return TODO_cloud;
+}
+
+void TODO_CoverTerrainWithObjects(Node* terrainNode, Node* destNode, XMLFile* prefab,
+    float minDistance, float objectRadius, const Vector2& begin, const Vector2& end)
+{
+    const float scale = minDistance / TODO_poissonStep;
+    PointCloud2D points = samplePointCloud(TODO_GetDefaultCloud(), begin, end, scale);
+
+    Scene* scene = terrainNode->GetScene();
+    Octree* octree = scene->GetComponent<Octree>();
+    Terrain* terrain = terrainNode->GetComponent<Terrain>();
+
+    PODVector<Drawable*> result;
+    for (const Vector2& pos2 : points)
+    {
+        Vector3 position = Vector3(pos2.x_, 0, pos2.y_);
+        position.y_ = terrain->GetHeight(position);
+        result.Clear();
+        SphereOctreeQuery query(result, Sphere(position, objectRadius));
+        octree->GetDrawables(query);
+        bool skip = false;
+        for (Drawable* drawable : result)
+        {
+            if ((drawable->GetNode()->GetWorldPosition() - position).Length() < objectRadius)
+            {
+                skip = true;
+                break;
+            }
+        }
+        if (skip)
+            continue;
+        
+        float angle = rand() % 1000 / 1000.0f * 360;
+        Node* child = scene->InstantiateXML(prefab->GetRoot(), position, Quaternion(0, angle, 0));
+        destNode->AddChild(child);
+    }
+}
+
 void RegisterScriptContext(asIScriptEngine* engine, const char* name)
 {
     engine->RegisterObjectType(name, sizeof(ScriptContext), asOBJ_REF);
@@ -230,6 +280,8 @@ void RegisterAPI(asIScriptEngine* engine)
     engine->RegisterObjectMethod("Image", "void BuildNormalMapAlpha()", asFUNCTION(Image_BuildNormalMapAlpha), asCALL_CDECL_OBJLAST);
     engine->RegisterObjectMethod("Image", "void FillGaps(uint=0)", asFUNCTION(Image_FillGaps), asCALL_CDECL_OBJLAST);
     engine->RegisterObjectMethod("Image", "Texture2D@+ GetTexture2D() const", asFUNCTION(Image_GetTexture2D), asCALL_CDECL_OBJLAST);
+
+    engine->RegisterGlobalFunction("void TODO_CoverTerrainWithObjects(Node@+, Node@+, XMLFile@+, float, float, const Vector2&in, const Vector2&in)", asFUNCTION(TODO_CoverTerrainWithObjects), asCALL_CDECL);
 }
 
 }
