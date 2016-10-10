@@ -49,6 +49,8 @@ set (SOURCE_FILES
     "${SOURCE_FOLDER}FlexEngine/Math/MathDefs.h"
     "${SOURCE_FOLDER}FlexEngine/Math/MathFunction.cpp"
     "${SOURCE_FOLDER}FlexEngine/Math/MathFunction.h"
+    "${SOURCE_FOLDER}FlexEngine/Math/PoissonRandom.cpp"
+    "${SOURCE_FOLDER}FlexEngine/Math/PoissonRandom.h"
     "${SOURCE_FOLDER}FlexEngine/Math/StandardRandom.cpp"
     "${SOURCE_FOLDER}FlexEngine/Math/StandardRandom.h"
     "${SOURCE_FOLDER}FlexEngine/Resource/ResourceCacheHelpers.cpp"

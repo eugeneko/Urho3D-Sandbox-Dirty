@@ -17,6 +17,18 @@ class MathFunction;
 /// Shared pointer on math function.
 using MathFunctionSPtr = SharedPtr<MathFunction>;
 
+/// Per-component lerp for 2D vector.
+inline Vector2 VectorLerp(const Vector2& first, const Vector2& second, const Vector2& value)
+{
+    return Vector2(Lerp(first.x_, second.x_, value.x_), Lerp(first.y_, second.y_, value.y_));
+}
+
+/// Per-component lerp for 3D vector.
+inline Vector3 VectorLerp(const Vector3& first, const Vector3& second, const Vector3& value)
+{
+    return Vector3(Lerp(first.x_, second.x_, value.x_), Lerp(first.y_, second.y_, value.y_), Lerp(first.z_, second.z_, value.z_));
+}
+
 /// Revert linear interpolation (scalars only).
 template <class T>
 T UnLerp(const T& first, const T& second, const T& value)
@@ -118,11 +130,29 @@ template <class T> T Fract(T value) { T intpart; return modf(value, &intpart); }
 /// Round value down.
 template <class T> T Floor(T x) { return floor(x); }
 
+/// Per-component floor for 2D vector.
+inline Vector2 VectorFloor(const Vector2& vec) { return Vector2(Floor(vec.x_), Floor(vec.y_)); }
+
+/// Per-component floor for 3D vector.
+inline Vector3 VectorFloor(const Vector3& vec) { return Vector3(Floor(vec.x_), Floor(vec.y_), Floor(vec.z_)); }
+
 /// Round value to nearest integer.
 template <class T> T Round(T x) { return floor(x + 0.5f); }
 
+/// Per-component round for 2D vector.
+inline Vector2 VectorRound(const Vector2& vec) { return Vector2(Round(vec.x_), Round(vec.y_)); }
+
+/// Per-component round for 3D vector.
+inline Vector3 VectorRound(const Vector3& vec) { return Vector3(Round(vec.x_), Round(vec.y_), Round(vec.z_)); }
+
 /// Round value up.
 template <class T> T Ceil(T x) { return ceil(x); }
+
+/// Per-component ceil for 2D vector.
+inline Vector2 VectorCeil(const Vector2& vec) { return Vector2(Ceil(vec.x_), Ceil(vec.y_)); }
+
+/// Per-component ceil for 3D vector.
+inline Vector3 VectorCeil(const Vector3& vec) { return Vector3(Ceil(vec.x_), Ceil(vec.y_), Ceil(vec.z_)); }
 
 /// Return hash of 2D vector.
 inline unsigned MakeHash(const Vector2& v)
