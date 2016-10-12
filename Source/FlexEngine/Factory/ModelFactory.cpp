@@ -72,9 +72,10 @@ DefaultVertex LerpVertices(const DefaultVertex& lhs, const DefaultVertex& rhs, f
     DefaultVertex result;
 
     result.position_ = Lerp(lhs.position_, rhs.position_, factor);
-    result.tangent_ = Lerp(lhs.tangent_, rhs.tangent_, factor);
-    result.binormal_ = Lerp(lhs.binormal_, rhs.binormal_, factor);
-    result.normal_ = Lerp(lhs.normal_, rhs.normal_, factor);
+    result.geometryNormal_ = Lerp(lhs.geometryNormal_, rhs.geometryNormal_, factor).Normalized();
+    result.tangent_ = Lerp(lhs.tangent_, rhs.tangent_, factor).Normalized();
+    result.binormal_ = Lerp(lhs.binormal_, rhs.binormal_, factor).Normalized();
+    result.normal_ = Lerp(lhs.normal_, rhs.normal_, factor).Normalized();
     for (unsigned i = 0; i < MAX_VERTEX_TEXCOORD; ++i)
     {
         result.uv_[i] = Lerp(lhs.uv_[i], rhs.uv_[i], factor);

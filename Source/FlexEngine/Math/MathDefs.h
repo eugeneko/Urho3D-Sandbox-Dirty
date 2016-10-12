@@ -113,15 +113,30 @@ auto ProjectOntoAxis(const T& axis, const T& vector) -> decltype(axis.x_)
 template <class T> T Pow(T x, T y) { return pow(x, y); }
 
 /// Per-component power for 2D vector.
-inline Vector2 Pow(const Vector2& left, const Vector2& right)
+inline Vector2 VectorPow(const Vector2& left, const Vector2& right)
 {
     return Vector2(Pow(left.x_, right.x_), Pow(left.y_, right.y_));
 }
 
 /// Per-component power for 3D vector.
-inline Vector3 Pow(const Vector3& left, const Vector3& right)
+inline Vector3 VectorPow(const Vector3& left, const Vector3& right)
 {
     return Vector3(Pow(left.x_, right.x_), Pow(left.y_, right.y_), Pow(left.z_, right.z_));
+}
+
+/// Return square root of X.
+template <class T> T Sqrt(T x) { return sqrt(x); }
+
+/// Per-component square root of 2D vector.
+inline Vector2 VectorSqrt(const Vector2& vec)
+{
+    return Vector2(Sqrt(vec.x_), Sqrt(vec.y_));
+}
+
+/// Per-component square root of 3D vector.
+inline Vector3 VectorSqrt(const Vector3& vec)
+{
+    return Vector3(Sqrt(vec.x_), Sqrt(vec.y_), Sqrt(vec.z_));
 }
 
 /// Return fractional part of passed value.
@@ -206,6 +221,24 @@ template <class T, class U>
 T QLerp(const T& v0, const T& v1, const T& v2, const T& v3, const U factor1, const U factor2)
 {
     return Lerp(Lerp(v0, v1, factor1), Lerp(v2, v3, factor1), factor2);
+}
+
+/// Pseudo-random generator.
+inline float PseudoRandom(const Vector2& vec)
+{
+    return Fract(Sin(vec.DotProduct(Vector2(12.9898f, 78.233f)) * M_RADTODEG) * 43758.5453f);
+}
+
+/// Pseudo-random generator.
+inline float PseudoRandom(float value)
+{
+    return PseudoRandom(Vector2(value, value));
+}
+
+/// Pseudo-random generator.
+inline float PseudoRandom(const Vector3& vec)
+{
+    return PseudoRandom(Vector2(PseudoRandom(Vector2(vec.x_, vec.y_)), vec.z_));
 }
 
 /// Float range.

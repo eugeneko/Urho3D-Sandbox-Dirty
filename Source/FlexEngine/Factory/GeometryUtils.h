@@ -15,11 +15,23 @@ BoundingBox CalculateBoundingBox(DefaultVertex vertices[], unsigned numVertices)
 /// Calculate normals.
 void CalculateNormals(DefaultVertex vertices[], unsigned numVertices, const unsigned indices[], unsigned numTriangles);
 
+/// Calculate normals.
+inline void CalculateNormals(PODVector<DefaultVertex>& vertices, PODVector<unsigned>& indices)
+{
+    CalculateNormals(vertices.Buffer(), vertices.Size(), indices.Buffer(), indices.Size() / 3);
+}
+
 /// Calculate triangle tangent space.
 void CalculateTangent(const DefaultVertex& v0, const DefaultVertex& v1, const DefaultVertex& v2, Vector3& tangent, Vector3& binormal);
 
 /// Calculate mesh tangent space.
 void CalculateTangents(DefaultVertex vertices[], unsigned numVertices, const unsigned indices[], unsigned numTriangles);
+
+/// Calculate mesh tangent space.
+inline void CalculateTangents(PODVector<DefaultVertex>& vertices, PODVector<unsigned>& indices)
+{
+    CalculateTangents(vertices.Buffer(), vertices.Size(), indices.Buffer(), indices.Size() / 3);
+}
 
 /// Append quad as pair of triangles to index data.
 ///

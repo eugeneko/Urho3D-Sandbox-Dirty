@@ -10,16 +10,14 @@ class FoliageDesc
     Vector4 branchHeight_;
     /// Leaf trails stride distance.
     float trailStride_;
-    /// Trail length above branch.
-    Vector4 trailLengthAbove_;
-    /// Trail length below branch.
-    Vector4 trailLengthBelow_;
-    /// Trail length noise.
-    Vector2 trailLengthNoise_;
     /// Leaf stride distance.
     float leafStride_;
     /// Leaf noise.
     Vector2 leafNoise_;
+    /// Fade out start.
+    float fadeOutStart_;
+    /// Fade out end.
+    float fadeOutEnd_;
 }
 
 float VectorPower(float x, Vector4 power)
@@ -32,6 +30,11 @@ float Fract(float value)
     return value - Floor(value);
 }
 
+float UnLerpClamped(float value, float lhs, float rhs)
+{
+    return Clamp((value - lhs) / (rhs - lhs), 0.0, 1.0);
+}
+
 float PseudoRandom(Vector2 uv)
 {
     return Fract(Sin(uv.DotProduct(Vector2(12.9898, 78.233)) * M_RADTODEG) * 43758.5453);
@@ -42,45 +45,40 @@ Vector2 PseudoRandom2(Vector2 uv)
     return Vector2(PseudoRandom(uv), PseudoRandom(uv + Vector2(1, 3)));
 }
 
-void GenerateFoliage(ModelFactoryWrapper& model, FoliageDesc desc)
+void GenerateFoliage(ModelFactoryWrapper& model, FoliageDesc desc, float height)
 {
     for (float x = -desc.branchSize_/2; x <= desc.branchSize_/2; x += desc.trailStride_)
     {
-        Vector2 trailBase = Vector2(x, VectorPower(2*x, desc.branchHeight_));
-        Vector2 noise = PseudoRandom2(Vector2(x, 1)) * desc.trailLengthNoise_;
-        float yFrom = VectorPower(2*x, desc.trailLengthAbove_) - noise.x;
-        float yTo = VectorPower(2*x, desc.trailLengthBelow_) + noise.y;
-        if (yFrom >= yTo)
+        for (float y = height; y >= 0; y -= desc.leafStride_)
         {
-            for (float y = yFrom; y >= yTo; y -= desc.leafStride_)
-            {
-                Vector2 leafBase = Vector2(0, y);
-                Vector2 position = trailBase + leafBase;
+            Vector2 position = Vector2(x, y);
+            Vector2 relativePosition = Vector2(Abs(position.x), Max(0.0, Abs(position.y - height / 2) - Max(0.0, height / 2 - 0.5)));
+            float fadeOut = UnLerpClamped(relativePosition.length, desc.fadeOutStart_, desc.fadeOutEnd_);
+            if (PseudoRandom(position) < fadeOut)
+                continue;
 
-                position += (PseudoRandom2(trailBase + leafBase) - Vector2(0.5, 0.5)) * desc.leafNoise_;
-                model.AddRect2D(Vector3(position, PseudoRandom(position) * 0.1), 0.0, desc.leafSize_, Vector2(0, 0), Vector2(1, 1), Vector2(0, 1), Vector4());
-            }
+            position += (PseudoRandom2(Vector2(x, y)) - Vector2(0.5, 0.5)) * desc.leafNoise_;
+            model.AddRect2D(Vector3(position, PseudoRandom(position) * 0.1), 0.0, desc.leafSize_, Vector2(0, 0), Vector2(1, 1), Vector2(0, 1), Vector4());
         }
     }
 }
 
-Model@ MainFoliageMask(ProceduralContext@ context)
+Model@ MainFoliageMask(ProceduralContext@ context, float scale, float height)
 {
     ModelFactory@ factory = context.CreateModelFactory();
     ModelFactoryWrapper model(factory);
 
     FoliageDesc desc;
-    desc.leafSize_ = Vector2(1, 1) * 0.02;
+    desc.leafSize_ = Vector2(1, 1) * 0.02 / scale;
     desc.branchHeight_ = Vector4(0.7, -0.2, 0, 0);
     desc.branchSize_ = 0.8;
-    desc.trailStride_ = 0.05;
-    desc.trailLengthAbove_ = Vector4(0.2, 0, -0.2, 0);
-    desc.trailLengthBelow_ = Vector4(-0.7, 0.2, 0, 0);
-    desc.trailLengthNoise_ = Vector2(0.1, 0.2);
-    desc.leafStride_ = 0.015;
+    desc.trailStride_ = 0.05 / scale;
+    desc.leafStride_ = 0.015 / scale;
     desc.leafNoise_ = Vector2(0.1, 0.05);
+    desc.fadeOutStart_ = 0.3;
+    desc.fadeOutEnd_ = 0.5;
 
-    GenerateFoliage(model, desc);
+    GenerateFoliage(model, desc, height);
     
     return context.CreateModel(factory);
 }
@@ -146,7 +144,7 @@ Model@ MainLeafMask(ProceduralContext@ context)
     return context.CreateModel(factory);
 }
 
-void MainFoliage(ProceduralContext@ context)
+void MainFoliage(ProceduralContext@ context, float scale, float height)
 {
     context[0] = Variant(1);
     context[1] = Variant(StringHash("Texture2D"));
@@ -161,14 +159,14 @@ void MainFoliage(ProceduralContext@ context)
 
     Model@ leafMaskModel = MainLeafMask(context);
     Texture2D@ leafMask = context.RenderTexture(
-        64, 64, BLACK, opaqueRP, leafMaskModel, maskAddMaterial, Vector3(0.5, 0, 0.5));
+        64, 64, BLACK, opaqueRP, leafMaskModel, maskAddMaterial, Vector3(0.5, 0, 0.5), Vector2(1, 1));
 
-    Model@ foliageMaskModel = MainFoliageMask(context);
+    Model@ foliageMaskModel = MainFoliageMask(context, scale, height);
     Texture2D@ foliageMask = context.RenderTexture(
-        1024, 1024, BLACK, opaqueRP, foliageMaskModel, superMaskMaterial, Vector3(0.5, 0, 0.5), Array<Texture2D@> = {leafMask});
+        512, 1024, BLACK, opaqueRP, foliageMaskModel, superMaskMaterial, Vector3(0.5, 0.5 - height/2, 0.5), Vector2(1, height), Array<Texture2D@> = {leafMask});
 
     Texture2D@ foliageDiffuse = context.RenderTexture(
-        1024, 1024, BLACK, transparentRP, quadModel, mixColorMaterial, Vector3(), Array<Texture2D@> =
+        512, 1024, BLACK, transparentRP, quadModel, mixColorMaterial, Vector3(), Vector2(1, 1), Array<Texture2D@> =
         {
             foliageMask,
             context.RenderTexture(Color(0.204, 0.502, 0.09, 1)),
@@ -179,9 +177,19 @@ void MainFoliage(ProceduralContext@ context)
     Image@ foliageDiffuseImage = foliageDiffuse.GetImage();
     foliageDiffuseImage.FillGaps(2);
     foliageDiffuseImage.PrecalculateLevels();
-    foliageDiffuseImage.AdjustAlpha(1.16);
+    foliageDiffuseImage.AdjustAlpha(1.18);
 
     context[3] = Variant(foliageDiffuseImage);
+}
+
+void MainLargeFoliage(ProceduralContext@ context)
+{
+    MainFoliage(context, 1.0, 2);
+}
+
+void MainSmallFoliage(ProceduralContext@ context)
+{
+    MainFoliage(context, 1.0, 1);
 }
 
 void MainBark(ProceduralContext@ context)
@@ -208,7 +216,7 @@ void MainBark(ProceduralContext@ context)
         transparentRP, quadModel, perlinNoiseMaterial).GetTexture2D();
     Texture2D@ tickColor = context.RenderTexture(Color(0.518, 0.518, 0.51));
     Texture2D@ white = context.RenderTexture(
-        256, 1024, BLACK, transparentRP, quadModel, mixColorMaterial, Vector3(),
+        256, 1024, BLACK, transparentRP, quadModel, mixColorMaterial, Vector3(), Vector2(1, 1),
         Array<Texture2D@> = { tickMap, whiteColor, tickColor, whiteColor });
 
     Texture2D@ dark = context.GeneratePerlinNoise(256, 1024, BLACK, Color(0.126, 0.106, 0.09), Vector2(32, 8),
@@ -220,7 +228,7 @@ void MainBark(ProceduralContext@ context)
         transparentRP, quadModel, perlinNoiseMaterial).GetTexture2D();
 
     Image@ barkDiffuseImage = context.RenderTexture(
-        256, 1024, BLACK, transparentRP, quadModel, superMixColorMaterial, Vector3(),
+        256, 1024, BLACK, transparentRP, quadModel, superMixColorMaterial, Vector3(), Vector2(1, 1),
         Array<Texture2D@> = { crackMap, white, dark, noise }).GetImage();
 
     barkDiffuseImage.PrecalculateLevels();

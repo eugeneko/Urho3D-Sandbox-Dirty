@@ -175,7 +175,7 @@ void StaticModelEx::SetMaterialImpl(unsigned index, Material* material)
     geometryDataEx_[index].originalMaterial_ = material;
     geometryDataEx_[index].clonedMaterial_.Reset();
     if (cloneMaterials_)
-        geometryDataEx_[index].clonedMaterial_ = material->Clone();
+        geometryDataEx_[index].clonedMaterial_ = material ? material->Clone() : nullptr;
 }
 
 void StaticModelEx::SetBatchMaterial(unsigned index)

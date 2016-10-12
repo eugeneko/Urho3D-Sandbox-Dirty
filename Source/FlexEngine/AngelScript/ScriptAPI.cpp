@@ -85,7 +85,7 @@ Model* ProceduralContext_CreateModel(ModelFactory* modelFactory, ScriptContext* 
 }
 
 Texture2D* ProceduralContext_RenderTextureBase(unsigned width, unsigned height, const Color& color,
-    XMLFile* renderPath, Model* model, const Vector<Material*>& materials, const Vector3& modelPosition,
+    XMLFile* renderPath, Model* model, const Vector<Material*>& materials, const Vector3& modelPosition, const Vector2& size,
     const Vector<Texture2D*>& inputTextures, const Vector<Vector4>& inputParameters, ScriptContext* ptr)
 {
     TextureDescription desc;
@@ -106,7 +106,9 @@ Texture2D* ProceduralContext_RenderTextureBase(unsigned width, unsigned height, 
     }
 
     // Setup input cameras
-    desc.cameras_.Push(OrthoCameraDescription::Identity(desc.width_, desc.height_, -modelPosition));
+    OrthoCameraDescription camera = OrthoCameraDescription::Identity(desc.width_, desc.height_, -modelPosition);
+    camera.size_ = size;
+    desc.cameras_.Push(camera);
 
     // Setup input textures
     TextureMap inputMap;
@@ -132,32 +134,32 @@ Texture2D* ProceduralContext_RenderTextureBase(unsigned width, unsigned height, 
 }
 
 Texture2D* ProceduralContext_RenderTexture0(unsigned width, unsigned height, const Color& color,
-    XMLFile* renderPath, Model* model, CScriptArray* materials, const Vector3& modelPosition,
+    XMLFile* renderPath, Model* model, CScriptArray* materials, const Vector3& modelPosition, const Vector2& size,
     CScriptArray* inputTextures, CScriptArray* inputParameters, ScriptContext* ptr)
 {
     return ProceduralContext_RenderTextureBase(width, height, color, renderPath, model, ArrayToVector<Material*>(materials),
-        modelPosition, ArrayToVector<Texture2D*>(inputTextures), ArrayToVector<Vector4>(inputParameters), ptr);
+        modelPosition, size, ArrayToVector<Texture2D*>(inputTextures), ArrayToVector<Vector4>(inputParameters), ptr);
 }
 
 Texture2D* ProceduralContext_RenderTexture1(unsigned width, unsigned height, const Color& color,
-    XMLFile* renderPath, Model* model, Material* material, const Vector3& modelPosition,
+    XMLFile* renderPath, Model* model, Material* material, const Vector3& modelPosition, const Vector2& size,
     CScriptArray* inputTextures, const Vector4& inputParameter, ScriptContext* ptr)
 {
     return ProceduralContext_RenderTextureBase(width, height, color, renderPath, model, { material },
-        modelPosition, ArrayToVector<Texture2D*>(inputTextures), { inputParameter }, ptr);
+        modelPosition, size, ArrayToVector<Texture2D*>(inputTextures), { inputParameter }, ptr);
 }
 
 Texture2D* ProceduralContext_RenderTexture2(unsigned width, unsigned height, const Color& color,
-    XMLFile* renderPath, Model* model, Material* material, const Vector3& modelPosition,
+    XMLFile* renderPath, Model* model, Material* material, const Vector3& modelPosition, const Vector2& size,
     const Vector4& inputParameter, ScriptContext* ptr)
 {
     return ProceduralContext_RenderTextureBase(width, height, color, renderPath, model, { material },
-        modelPosition, { }, { inputParameter }, ptr);
+        modelPosition, size, { }, { inputParameter }, ptr);
 }
 
 Texture2D* ProceduralContext_RenderTexture3(const Color& color, unsigned width, unsigned height, ScriptContext* ptr)
 {
-    return ProceduralContext_RenderTextureBase(width, height, color, nullptr, nullptr, { }, Vector3::ZERO, { }, { }, ptr);
+    return ProceduralContext_RenderTextureBase(width, height, color, nullptr, nullptr, { }, Vector3::ZERO, Vector2::ZERO, { }, { }, ptr);
 }
 
 Image* ProceduralContext_GeneratePerlinNoise(unsigned width, unsigned height, const Color& firstColor, const Color& secondColor,
@@ -275,9 +277,9 @@ void RegisterAPI(asIScriptEngine* engine)
     engine->RegisterObjectMethod("ProceduralContext", "ModelFactory@ CreateModelFactory()", asFUNCTION(ProceduralContext_CreateModelFactory), asCALL_CDECL_OBJLAST);
     engine->RegisterObjectMethod("ProceduralContext", "Model@+ CreateModel(ModelFactory@)", asFUNCTION(ProceduralContext_CreateModel), asCALL_CDECL_OBJLAST);
     engine->RegisterObjectMethod("ProceduralContext", "Model@+ CreateQuadModel()", asFUNCTION(ProceduralContext_CreateQuadModel), asCALL_CDECL_OBJLAST);
-    engine->RegisterObjectMethod("ProceduralContext", "Texture2D@+ RenderTexture(uint, uint, const Color&in, XMLFile@+, Model@+, Array<Material@>@+, const Vector3&in, Array<Texture2D@>@+, Array<Vector4>@+)", asFUNCTION(ProceduralContext_RenderTexture0), asCALL_CDECL_OBJLAST);
-    engine->RegisterObjectMethod("ProceduralContext", "Texture2D@+ RenderTexture(uint, uint, const Color&in, XMLFile@+, Model@+, Material@+, const Vector3&in, Array<Texture2D@>@+, const Vector4&in = Vector4(1,1,1,1))", asFUNCTION(ProceduralContext_RenderTexture1), asCALL_CDECL_OBJLAST);
-    engine->RegisterObjectMethod("ProceduralContext", "Texture2D@+ RenderTexture(uint, uint, const Color&in, XMLFile@+, Model@+, Material@+, const Vector3&in, const Vector4&in = Vector4(1,1,1,1))", asFUNCTION(ProceduralContext_RenderTexture2), asCALL_CDECL_OBJLAST);
+    engine->RegisterObjectMethod("ProceduralContext", "Texture2D@+ RenderTexture(uint, uint, const Color&in, XMLFile@+, Model@+, Array<Material@>@+, const Vector3&in, const Vector2&in, Array<Texture2D@>@+, Array<Vector4>@+)", asFUNCTION(ProceduralContext_RenderTexture0), asCALL_CDECL_OBJLAST);
+    engine->RegisterObjectMethod("ProceduralContext", "Texture2D@+ RenderTexture(uint, uint, const Color&in, XMLFile@+, Model@+, Material@+, const Vector3&in, const Vector2&in, Array<Texture2D@>@+, const Vector4&in = Vector4(1,1,1,1))", asFUNCTION(ProceduralContext_RenderTexture1), asCALL_CDECL_OBJLAST);
+    engine->RegisterObjectMethod("ProceduralContext", "Texture2D@+ RenderTexture(uint, uint, const Color&in, XMLFile@+, Model@+, Material@+, const Vector3&in, const Vector2&in, const Vector4&in = Vector4(1,1,1,1))", asFUNCTION(ProceduralContext_RenderTexture2), asCALL_CDECL_OBJLAST);
     engine->RegisterObjectMethod("ProceduralContext", "Texture2D@+ RenderTexture(const Color&in, uint=1, uint=1)", asFUNCTION(ProceduralContext_RenderTexture3), asCALL_CDECL_OBJLAST);
     engine->RegisterObjectMethod("ProceduralContext", "Image@+ GeneratePerlinNoise(uint, uint, const Color&in, const Color&in, const Vector2&in, Array<Vector4>@+, float, float, const Vector2&in, XMLFile@+, Model@+, Material@+)", asFUNCTION(ProceduralContext_GeneratePerlinNoise), asCALL_CDECL_OBJLAST);
 

@@ -138,10 +138,14 @@ public:
     /// Get branches.
     const Vector<BranchDescription>& GetBranches() const { return branches_; }
 
-    /// Set material attribute.
-    void SetMaterialAttr(const ResourceRef& value);
-    /// Return material attribute.
-    ResourceRef GetMaterialAttr() const;
+    /// Set branch material attribute.
+    void SetBranchMaterialAttr(const ResourceRef& value);
+    /// Return branch material attribute.
+    ResourceRef GetBranchMaterialAttr() const;
+    /// Set frond material attribute.
+    void SetFrondMaterialAttr(const ResourceRef& value);
+    /// Return frond material attribute.
+    ResourceRef GetFrondMaterialAttr() const;
 
 private:
     /// Compute hash.
@@ -151,10 +155,18 @@ private:
     virtual void DoTriangulate(ModelFactory& factory, TreeHost& host, TreeLevelOfDetail& lod) const override;
 
 protected:
+    /// Whether to generate branch geometry.
+    bool generateBranch_ = true;
     /// Branch material.
-    SharedPtr<Material> material_;
-    /// Shape settings.
-    BranchShapeSettings shape_;
+    SharedPtr<Material> branchMaterial_;
+    /// Branch shape settings.
+    BranchShapeSettings branchShape_;
+    /// Whether to generate frond geometry.
+    bool generateFrond_ = false;
+    /// Frond material.
+    SharedPtr<Material> frondMaterial_;
+    /// Frond shape settings.
+    FrondShapeSettings frondShape_;
     /// Min number of knots for branch curves. Default value is 5.
     unsigned minNumKnots_ = 5;
     /// Branches.

@@ -283,6 +283,7 @@ void TreeElement::RegisterObject(Context* context)
     URHO3D_MEMBER_ATTRIBUTE("Twirl angle step", float, distribution_.twirlStep_, 180.0f, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Twirl angle random", float, distribution_.twirlNoise_, 0.0f, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Twirl angle base", float, distribution_.twirlBase_, 0.0f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Twirl angle skew", float, distribution_.twirlSkew_, 0.0f, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Growth Scale", Vector2, distribution_.growthScale_, GetResultRange, SetResultRange, Vector2::ONE, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Growth Scale Curve", String, distribution_.growthScale_, GetCurveString, SetCurveString, "linear", AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Growth Angle", Vector2, distribution_.growthAngle_, GetResultRange, SetResultRange, Vector2::ZERO, AM_DEFAULT);
@@ -309,6 +310,7 @@ bool TreeElement::ComputeHash(Hash& hash) const
     hash.HashFloat(distribution_.twirlStep_);
     hash.HashFloat(distribution_.twirlNoise_);
     hash.HashFloat(distribution_.twirlBase_);
+    hash.HashFloat(distribution_.twirlSkew_);
     hash.HashString(distribution_.growthScale_.GetCurveString());
     hash.HashVector2(distribution_.growthScale_.GetResultRange());
     hash.HashString(distribution_.growthAngle_.GetCurveString());
@@ -333,19 +335,26 @@ void BranchGroup::RegisterObject(Context* context)
 
     URHO3D_COPY_BASE_ATTRIBUTES(TreeElement);
 
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Material", GetMaterialAttr, SetMaterialAttr, ResourceRef, ResourceRef(Material::GetTypeStatic()), AM_DEFAULT);
-    URHO3D_MEMBER_ATTRIBUTE("UV Scale", Vector2, shape_.textureScale_, Vector2::ONE, AM_DEFAULT);
-    URHO3D_MEMBER_ATTRIBUTE("Quality", float, shape_.quality_, 1.0f, AM_DEFAULT);
-    URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Length", Vector2, shape_.length_, GetVector, SetVector, Vector2::ONE, AM_DEFAULT);
-    URHO3D_MEMBER_ATTRIBUTE("Relative Length", bool, shape_.relativeLength_, true, AM_DEFAULT);
-    URHO3D_MEMBER_ATTRIBUTE("Fake Ending", bool, shape_.fakeEnding_, false, AM_DEFAULT);
-    URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Radius", Vector2, shape_.radius_, GetResultRange, SetResultRange, Vector2(0.5f, 0.1f), AM_DEFAULT);
-    URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Radius Curve", String, shape_.radius_, GetCurveString, SetCurveString, "linear", AM_DEFAULT);
-    URHO3D_MEMBER_ATTRIBUTE("Resistance", float, shape_.resistance_, 0.5f, AM_DEFAULT);
-    URHO3D_MEMBER_ATTRIBUTE("Gravity Intensity", float, shape_.gravityIntensity_, 0.0f, AM_DEFAULT);
-    URHO3D_MEMBER_ATTRIBUTE("Wind Main", float, shape_.windMainMagnitude_, 0.0f, AM_DEFAULT);
-    URHO3D_MEMBER_ATTRIBUTE("Wind Turbulence", float, shape_.windTurbulenceMagnitude_, 0.0f, AM_DEFAULT);
-    URHO3D_MEMBER_ATTRIBUTE("Wind Phase", float, shape_.windPhaseOffset_, 0.0f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Generate Branch", bool, generateBranch_, true, AM_DEFAULT);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Branch Material", GetBranchMaterialAttr, SetBranchMaterialAttr, ResourceRef, ResourceRef(Material::GetTypeStatic()), AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("UV Scale", Vector2, branchShape_.textureScale_, Vector2::ONE, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Quality", float, branchShape_.quality_, 1.0f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Length", Vector2, branchShape_.length_, GetVector, SetVector, Vector2::ONE, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Relative Length", bool, branchShape_.relativeLength_, true, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Fake Ending", bool, branchShape_.fakeEnding_, false, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Radius", Vector2, branchShape_.radius_, GetResultRange, SetResultRange, Vector2(0.5f, 0.1f), AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Radius Curve", String, branchShape_.radius_, GetCurveString, SetCurveString, "linear", AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Resistance", float, branchShape_.resistance_, 0.5f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Gravity Intensity", float, branchShape_.gravityIntensity_, 0.0f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Wind Main", float, branchShape_.windMainMagnitude_, 0.0f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Wind Turbulence", float, branchShape_.windTurbulenceMagnitude_, 0.0f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Wind Phase", float, branchShape_.windPhaseOffset_, 0.0f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Generate Frond", bool, generateFrond_, false, AM_DEFAULT);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Frond Material", GetFrondMaterialAttr, SetFrondMaterialAttr, ResourceRef, ResourceRef(Material::GetTypeStatic()), AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Frond Size", Vector2, frondShape_.size_, GetResultRange, SetResultRange, Vector2(1.0f, 1.0f), AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Frond Size Curve", String, frondShape_.size_, GetCurveString, SetCurveString, "linear", AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Frond Bending", float, frondShape_.bendingAngle_, 0.0f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Frond Rotation", Vector2, frondShape_.rotationAngle_, GetVector, SetVector, Vector2::ZERO, AM_DEFAULT);
 }
 
 void BranchGroup::Generate(TreeHost& host)
@@ -358,7 +367,7 @@ void BranchGroup::Generate(TreeHost& host)
     branches_.Clear();
     if (distribution_.frequency_ == 0)
     {
-        branches_ = InstantiateBranchGroup(BranchDescription(), distribution_, shape_, minNumKnots_);
+        branches_ = InstantiateBranchGroup(BranchDescription(), distribution_, branchShape_, frondShape_, minNumKnots_);
     }
     else
     {
@@ -370,14 +379,14 @@ void BranchGroup::Generate(TreeHost& host)
         }
         for (const BranchDescription& parentBranch : parentGroup->GetBranches())
         {
-            branches_ += InstantiateBranchGroup(parentBranch, distribution_, shape_, minNumKnots_);
+            branches_ += InstantiateBranchGroup(parentBranch, distribution_, branchShape_, frondShape_, minNumKnots_);
         }
     }
 
     // Notify host
     for (const BranchDescription& branch : branches_)
     {
-        host.OnBranchGenerated(branch, shape_);
+        host.OnBranchGenerated(branch, branchShape_);
     }
 
     // Generate children
@@ -387,19 +396,26 @@ void BranchGroup::Generate(TreeHost& host)
 bool BranchGroup::ComputeHash(Hash& hash) const
 {
     TreeElement::ComputeHash(hash);
-    hash.HashString(material_ ? material_->GetName() : String::EMPTY);
-    hash.HashVector2(shape_.textureScale_);
-    hash.HashFloat(shape_.quality_);
-    hash.HashVector2(shape_.length_);
-    hash.HashUInt(shape_.relativeLength_);
-    hash.HashUInt(shape_.fakeEnding_);
-    hash.HashString(shape_.radius_.GetCurveString());
-    hash.HashVector2(shape_.radius_.GetResultRange());
-    hash.HashFloat(shape_.resistance_);
-    hash.HashFloat(shape_.gravityIntensity_);
-    hash.HashFloat(shape_.windMainMagnitude_);
-    hash.HashFloat(shape_.windTurbulenceMagnitude_);
-    hash.HashFloat(shape_.windPhaseOffset_);
+    hash.HashUInt(generateBranch_);
+    hash.HashString(branchMaterial_ ? branchMaterial_->GetName() : String::EMPTY);
+    hash.HashVector2(branchShape_.textureScale_);
+    hash.HashFloat(branchShape_.quality_);
+    hash.HashVector2(branchShape_.length_);
+    hash.HashUInt(branchShape_.relativeLength_);
+    hash.HashUInt(branchShape_.fakeEnding_);
+    hash.HashString(branchShape_.radius_.GetCurveString());
+    hash.HashVector2(branchShape_.radius_.GetResultRange());
+    hash.HashFloat(branchShape_.resistance_);
+    hash.HashFloat(branchShape_.gravityIntensity_);
+    hash.HashFloat(branchShape_.windMainMagnitude_);
+    hash.HashFloat(branchShape_.windTurbulenceMagnitude_);
+    hash.HashFloat(branchShape_.windPhaseOffset_);
+    hash.HashUInt(generateFrond_);
+    hash.HashString(frondMaterial_ ? frondMaterial_->GetName() : String::EMPTY);
+    hash.HashString(frondShape_.size_.GetCurveString());
+    hash.HashVector2(frondShape_.size_.GetResultRange());
+    hash.HashFloat(frondShape_.bendingAngle_);
+    hash.HashVector2(frondShape_.rotationAngle_);
     return true;
 }
 
@@ -410,28 +426,54 @@ void BranchGroup::DoTriangulate(ModelFactory& factory, TreeHost& host, TreeLevel
     lodDesc.branchTessellationQuality_.minNumSegments_ = lod.GetMinBranchSegments();
     lodDesc.branchTessellationQuality_.minAngle_ = lod.GetMinAngle();
 
-    factory.AddGeometry(material_);
-    for (const BranchDescription& branch : branches_)
-    {
-        if (!branch.fake_)
-        {
-            const TessellatedBranchPoints tessellatedPoints =
-                TessellateBranch(branch, shape_.quality_, lodDesc.branchTessellationQuality_);
+    // Tessellate branches
+    Vector<TessellatedBranchPoints> tessellatedBranches(branches_.Size());
+    for (unsigned i = 0; i < branches_.Size(); ++i)
+        tessellatedBranches[i] = TessellateBranch(branches_[i], branchShape_.quality_, lodDesc.branchTessellationQuality_);
 
-            GenerateBranchGeometry(factory, branch, tessellatedPoints, shape_, lod.GetNumRadialSegments());
+    // Generate branches
+    if (generateBranch_)
+    {
+        factory.AddGeometry(branchMaterial_);
+        for (unsigned i = 0; i < branches_.Size(); ++i)
+        {
+            if (!branches_[i].fake_)
+                GenerateBranchGeometry(factory, branches_[i], tessellatedBranches[i], branchShape_, lod.GetNumRadialSegments());
+        }
+    }
+
+    // Generate fronds
+    if (generateFrond_)
+    {
+        factory.AddGeometry(frondMaterial_);
+        for (unsigned i = 0; i < branches_.Size(); ++i)
+        {
+            if (!branches_[i].fake_)
+                GenerateFrondGeometry(factory, branches_[i], tessellatedBranches[i], frondShape_);
         }
     }
 }
 
-void BranchGroup::SetMaterialAttr(const ResourceRef& value)
+void BranchGroup::SetBranchMaterialAttr(const ResourceRef& value)
 {
     ResourceCache* cache = GetSubsystem<ResourceCache>();
-    material_ = cache->GetResource<Material>(value.name_);
+    branchMaterial_ = cache->GetResource<Material>(value.name_);
 }
 
-ResourceRef BranchGroup::GetMaterialAttr() const
+ResourceRef BranchGroup::GetBranchMaterialAttr() const
 {
-    return GetResourceRef(material_, Material::GetTypeStatic());
+    return GetResourceRef(branchMaterial_, Material::GetTypeStatic());
+}
+
+void BranchGroup::SetFrondMaterialAttr(const ResourceRef& value)
+{
+    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    frondMaterial_ = cache->GetResource<Material>(value.name_);
+}
+
+ResourceRef BranchGroup::GetFrondMaterialAttr() const
+{
+    return GetResourceRef(frondMaterial_, Material::GetTypeStatic());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -458,9 +500,9 @@ void LeafGroup::RegisterObject(Context* context)
     URHO3D_MEMBER_ATTRIBUTE("Scale", Vector3, shape_.scale_, Vector3::ONE, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Adjust to Global", Vector2, shape_.adjustToGlobal_, GetVector, SetVector, Vector2::ZERO, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Align Vertical", Vector2, shape_.alignVertical_, GetVector, SetVector, Vector2::ZERO, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Rotate Z", Vector2, shape_.rotateZ_, GetVector, SetVector, Vector2::ZERO, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Junction Offset", Vector3, shape_.junctionOffset_, Vector3::ZERO, AM_DEFAULT);
-    URHO3D_MEMBER_ATTRIBUTE("Gravity Intensity", Vector3, shape_.gravityIntensity_, Vector3::ZERO, AM_DEFAULT);
-    URHO3D_MEMBER_ATTRIBUTE("Gravity Resistance", Vector3, shape_.gravityResistance_, Vector3::ONE * 0.5f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Bending", float, shape_.bending_, 0.0f, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Bump Normals", float, shape_.bumpNormals_, 0.0f, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Wind Main", Vector2, shape_.windMainMagnitude_, Vector2::ZERO, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Wind Turbulence", Vector2, shape_.windTurbulenceMagnitude_, Vector2::ZERO, AM_DEFAULT);
@@ -508,9 +550,9 @@ bool LeafGroup::ComputeHash(Hash& hash) const
     hash.HashVector3(shape_.scale_);
     hash.HashVector2(shape_.adjustToGlobal_);
     hash.HashVector2(shape_.alignVertical_);
+    hash.HashVector2(shape_.rotateZ_);
     hash.HashVector3(shape_.junctionOffset_);
-    hash.HashVector3(shape_.gravityIntensity_);
-    hash.HashVector3(shape_.gravityResistance_);
+    hash.HashFloat(shape_.bending_);
     hash.HashFloat(shape_.bumpNormals_);
     hash.HashVector2(shape_.windMainMagnitude_);
     hash.HashVector2(shape_.windTurbulenceMagnitude_);

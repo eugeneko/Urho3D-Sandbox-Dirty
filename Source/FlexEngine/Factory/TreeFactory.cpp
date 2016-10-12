@@ -77,8 +77,10 @@ PODVector<float> ComputeChildAngles(const TreeElementDistribution& distribution,
         const float baseAngle = idx % 2 ? 180.0f : 0.0f;
         for (unsigned i = 0; i < count; ++i)
         {
-            const float randomPad = random.FloatFrom01() * distribution.twirlNoise_;
-            result.Push(distribution.twirlStep_ * i + distribution.twirlBase_ + randomPad + baseAngle);
+            const float randomPad = random.FloatFrom11() * distribution.twirlNoise_;
+            const float angle = distribution.twirlStep_ * i + distribution.twirlBase_ + randomPad + baseAngle;
+            const bool parity = Fract((angle + 90) / 360) < 0.5;
+            result.Push(angle + distribution.twirlSkew_ * (parity ? -1 : 1));
         }
         break;
     }
@@ -97,6 +99,12 @@ int GetMaterialIndex(const Vector<String>& materials, const String& name)
         : iter - materials.Begin();
 }
 
+}
+
+//////////////////////////////////////////////////////////////////////////
+Vector3 TessellatedBranchPoint::GetPosition(float angle) const
+{
+    return (xAxis_ * Cos(angle) + yAxis_ * Sin(angle)).Normalized();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -133,7 +141,7 @@ PODVector<VertexElement> VegetationVertex::Format()
 
 //////////////////////////////////////////////////////////////////////////
 BranchDescription GenerateBranch(const Vector3& initialPosition, const Vector3& initialDirection, const Vector2& initialAdherence,
-    float length, float baseRadius, const BranchShapeSettings& shape, unsigned minNumKnots)
+    float length, float baseRadius, const BranchShapeSettings& branchShape, const FrondShapeSettings& frondShape, unsigned minNumKnots)
 {
     // Compute parameters
     const unsigned numKnots = minNumKnots;
@@ -146,9 +154,11 @@ BranchDescription GenerateBranch(const Vector3& initialPosition, const Vector3& 
     Vector3 direction = initialDirection;
     for (unsigned i = 0; i < numKnots; ++i)
     {
+        const float t = i / (numKnots - 1.0f);
         result.positions_.Push(position);
-        result.radiuses_.Push(shape.radius_.ComputeValue(i / (numKnots - 1.0f)) * baseRadius);
+        result.radiuses_.Push(branchShape.radius_.ComputeValue(t) * baseRadius);
         result.adherences_.Push(initialAdherence);
+        result.frondSizes_.Push(frondShape.size_.ComputeValue(t));
 
         direction = direction.Normalized();
         position += direction * step;
@@ -157,16 +167,16 @@ BranchDescription GenerateBranch(const Vector3& initialPosition, const Vector3& 
     for (unsigned i = 0; i < numKnots; ++i)
     {
         const float factor = static_cast<float>(i) / (numKnots + 1);
-        float degree = Pow(factor, 1.0f / (1.0f - shape.resistance_));
+        float degree = Pow(factor, 1.0f / (1.0f - branchShape.resistance_));
 
         // Apply gravity and restore shape
         const float len = (result.positions_[i] - initialPosition).Length();
-        result.positions_[i].y_ -= shape.gravityIntensity_ * degree;
+        result.positions_[i].y_ -= branchShape.gravityIntensity_ * degree;
         result.positions_[i] = (result.positions_[i] - initialPosition).Normalized() * len + initialPosition;
 
         // Update adherence
-        result.adherences_[i].x_ += shape.windMainMagnitude_ * degree;
-        result.adherences_[i].y_ += shape.windTurbulenceMagnitude_ * degree;
+        result.adherences_[i].x_ += branchShape.windMainMagnitude_ * degree;
+        result.adherences_[i].y_ += branchShape.windTurbulenceMagnitude_ * degree;
     }
 
     result.length_ = length;
@@ -202,6 +212,7 @@ TessellatedBranchPoints TessellateBranch(const BranchDescription& branch,
     // Point is forcedly committed after specified number of skipped points
     const unsigned maxNumSkipped = (quality.maxNumSegments_ + minNumSegments - 1) / minNumSegments - 1;
 
+    // Generate points
     Vector3 prevDirection;
     unsigned prevIndex = 0;
     for (unsigned i = 0; i <= quality.maxNumSegments_; ++i)
@@ -215,46 +226,29 @@ TessellatedBranchPoints TessellateBranch(const BranchDescription& branch,
             prevDirection = SampleBezierCurveDerivative(branch.positionsCurve_, t);
 
             TessellatedBranchPoint point;
+            point.location_ = t;
             point.position_ = SampleBezierCurve(branch.positionsCurve_, t);
             point.radius_ = SampleBezierCurve(branch.radiusesCurve_, t);
             point.adherence_ = SampleBezierCurve(branch.adherencesCurve_, t);
+            point.frondSize_ = SampleBezierCurve(branch.frondSizesCurve_, t);
             result.Push(point);
         }
     }
-    return result;
-}
 
-PODVector<DefaultVertex> GenerateBranchVertices(const TessellatedBranchPoints& points, const BranchDescription& branch,
-    const BranchShapeSettings& shape, unsigned numRadialSegments)
-{
-    PODVector<DefaultVertex> result;
-    if (points.Empty())
-    {
-        URHO3D_LOGERROR("Points array must not be empty");
-        return result;
-    }
-    if (numRadialSegments < 3)
-    {
-        URHO3D_LOGERROR("Number of segments must be greater or equal than 3");
-        return result;
-    }
-
-    // Emit vertices
+    // Compute additional info
     float prevRadius = 0.0f;
     Vector3 prevPosition = Vector3::ZERO;
     float relativeDistance = 0.0f;
-
-    for (unsigned i = 0; i < points.Size(); ++i)
+    for (unsigned i = 0; i < result.Size(); ++i)
     {
-        const float location = points[i].location_ / (points.Size() - 1);
-        const float radius = points[i].radius_;
+        const float radius = result[i].radius_;
 
         // Compute point position and orientation
-        const Vector3 position = points[i].position_;
-        const Vector3 zAxis = (points[Min(i + 1, points.Size() - 1)].position_ - points[i == 0 ? 0 : i - 1].position_).Normalized();
-        const Quaternion basis = MakeBasisFromDirection(zAxis);
-        const Vector3 xAxis = GetBasisX(basis.RotationMatrix());
-        const Vector3 yAxis = GetBasisY(basis.RotationMatrix());
+        const Vector3 position = result[i].position_;
+        result[i].zAxis_ = (result[Min(i + 1, result.Size() - 1)].position_ - result[i == 0 ? 0 : i - 1].position_).Normalized();
+        result[i].basis_ = MakeBasisFromDirection(result[i].zAxis_);
+        result[i].xAxis_ = GetBasisX(result[i].basis_.RotationMatrix());
+        result[i].yAxis_ = GetBasisY(result[i].basis_.RotationMatrix());
 
         // Compute relative distance
         if (i > 0)
@@ -271,33 +265,53 @@ PODVector<DefaultVertex> GenerateBranchVertices(const TessellatedBranchPoints& p
             relativeDistance += k * L / (2 * M_PI * r0);
         }
 
-        for (unsigned j = 0; j <= numRadialSegments; ++j)
-        {
-            const float factor = static_cast<float>(j) / numRadialSegments;
-            const float angle = factor * 360;
-            const Vector3 normal = (xAxis * Cos(angle) + yAxis * Sin(angle)).Normalized();
-
-            DefaultVertex vertex;
-            vertex.position_ = position + radius * normal;
-            vertex.geometryNormal_ = normal;
-            vertex.normal_ = normal;
-            vertex.tangent_ = zAxis;
-            vertex.binormal_ = CrossProduct(vertex.normal_, vertex.tangent_);
-            vertex.uv_[0] = Vector4(factor / shape.textureScale_.x_, relativeDistance / shape.textureScale_.y_, 0, 0);
-            vertex.colors_[0].r_ = points[i].adherence_.x_;
-            vertex.colors_[0].g_ = points[i].adherence_.y_;
-            vertex.colors_[0].b_ = branch.phase_;
-            vertex.colors_[0].a_ = 0.0f;
-//             vertex.branchAdherence_ = param.windAdherence_;
-//             vertex.phase_ = param.windPhase_;
-//             vertex.edgeOscillation_ = 0.0f;
-
-            result.Push(vertex);
-        }
+        result[i].relativeDistance_ = relativeDistance;
 
         // Update previous values
         prevPosition = position;
         prevRadius = radius;
+    }
+    return result;
+}
+
+PODVector<DefaultVertex> GenerateBranchVertices(const BranchDescription& branch, const TessellatedBranchPoints& points,
+    const BranchShapeSettings& shape, unsigned numRadialSegments)
+{
+    PODVector<DefaultVertex> result;
+    if (points.Empty())
+    {
+        URHO3D_LOGERROR("Points array must not be empty");
+        return result;
+    }
+    if (numRadialSegments < 3)
+    {
+        URHO3D_LOGERROR("Number of segments must be greater or equal than 3");
+        return result;
+    }
+
+    // Emit vertices
+    for (unsigned i = 0; i < points.Size(); ++i)
+    {
+        for (unsigned j = 0; j <= numRadialSegments; ++j)
+        {
+            const float factor = static_cast<float>(j) / numRadialSegments;
+            const float angle = factor * 360;
+            const Vector3 normal = (points[i].xAxis_ * Cos(angle) + points[i].yAxis_ * Sin(angle)).Normalized();
+
+            DefaultVertex vertex;
+            vertex.position_ = points[i].position_ + points[i].radius_ * normal;
+            vertex.geometryNormal_ = normal;
+            vertex.normal_ = normal;
+            vertex.tangent_ = points[i].zAxis_;
+            vertex.binormal_ = CrossProduct(vertex.normal_, vertex.tangent_);
+            vertex.uv_[0] = Vector4(factor / shape.textureScale_.x_, points[i].relativeDistance_ / shape.textureScale_.y_, 0, 0);
+            vertex.colors_[0].r_ = points[i].adherence_.x_;
+            vertex.colors_[0].g_ = points[i].adherence_.y_;
+            vertex.colors_[0].b_ = branch.phase_;
+            vertex.colors_[0].a_ = 0.0f;
+
+            result.Push(vertex);
+        }
     }
 
     return result;
@@ -352,15 +366,85 @@ PODVector<unsigned> GenerateBranchIndices(const PODVector<unsigned>& numRadialSe
     return result;
 }
 
+PODVector<DefaultVertex> GenerateFrondVertices(const BranchDescription& branch, const TessellatedBranchPoints& points,
+    const FrondShapeSettings& shape)
+{
+    PODVector<DefaultVertex> result;
+    if (points.Empty())
+    {
+        URHO3D_LOGERROR("Points array must not be empty");
+        return result;
+    }
+
+    const float rotationAngle = shape.rotationAngle_.Get(PseudoRandom(branch.positions_[0]));
+    for (unsigned i = 0; i < points.Size(); ++i)
+    {
+        // Left vertex
+        const float leftAngle = 180.0f - shape.bendingAngle_ + rotationAngle;
+        DefaultVertex vers[3];
+        vers[0].position_ = points[i].position_ + points[i].GetPosition(leftAngle) * points[i].frondSize_;
+        vers[0].uv_[0] = Vector4(0.0f, points[i].location_, 0, 0);
+        vers[0].colors_[0].r_ = points[i].adherence_.x_;
+        vers[0].colors_[0].g_ = points[i].adherence_.y_;
+        vers[0].colors_[0].b_ = branch.phase_;
+        vers[0].colors_[0].a_ = 0.0f;
+
+        // Right vertex
+        const float rightAngle = shape.bendingAngle_ + rotationAngle;
+        vers[2].position_ = points[i].position_ + points[i].GetPosition(rightAngle) * points[i].frondSize_;
+        vers[2].uv_[0] = Vector4(1.0f, points[i].location_, 0, 0);
+        vers[2].colors_[0].r_ = points[i].adherence_.x_;
+        vers[2].colors_[0].g_ = points[i].adherence_.y_;
+        vers[2].colors_[0].b_ = branch.phase_;
+        vers[2].colors_[0].a_ = 0.0f;
+
+        // Center vertex
+        vers[1] = LerpVertices(vers[0], vers[2], 0.5f);
+        vers[1].position_ = points[i].position_;
+        vers[1].colors_[0].r_ = points[i].adherence_.x_;
+        vers[1].colors_[0].g_ = points[i].adherence_.y_;
+        vers[1].colors_[0].b_ = branch.phase_;
+        vers[1].colors_[0].a_ = 0.0f;
+
+        result.Push(vers[0]);
+        result.Push(vers[1]);
+        result.Push(vers[2]);
+    }
+    return result;
+}
+
+PODVector<unsigned> GenerateFrondIndices(unsigned numPoints)
+{
+    PODVector<unsigned> result;
+    for (unsigned i = 1; i < numPoints; ++i)
+    {
+        AppendQuadToIndices(result, (i - 1) * 3, 0, 1, 3, 4);
+        AppendQuadToIndices(result, (i - 1) * 3, 1, 2, 4, 5);
+    }
+    return result;
+}
+
 void GenerateBranchGeometry(ModelFactory& factory, const BranchDescription& branch, const TessellatedBranchPoints& points,
     const BranchShapeSettings& shape, unsigned numRadialSegments)
 {
     numRadialSegments = Max(3u, static_cast<unsigned>(numRadialSegments * shape.quality_));
     const PODVector<DefaultVertex> tempVertices =
-        GenerateBranchVertices(points, branch, shape, numRadialSegments);
+        GenerateBranchVertices(branch, points, shape, numRadialSegments);
     const PODVector<unsigned> tempIndices =
         GenerateBranchIndices(ConstructPODVector(points.Size(), numRadialSegments), tempVertices.Size());
     factory.AddPrimitives(tempVertices, tempIndices, true);
+}
+
+void GenerateFrondGeometry(ModelFactory& factory, const BranchDescription& branch, const TessellatedBranchPoints& points,
+    const FrondShapeSettings& shape)
+{
+    PODVector<DefaultVertex> vertices = GenerateFrondVertices(branch, points, shape);
+    PODVector<unsigned> indices = GenerateFrondIndices(points.Size());
+    CalculateNormals(vertices, indices);
+    CalculateTangents(vertices, indices);
+    for (unsigned i = 0; i < vertices.Size(); ++i)
+        vertices[i].normal_ = vertices[i].geometryNormal_;
+    factory.AddPrimitives(vertices, indices, true);
 }
 
 PODVector<TreeElementLocation> DistributeElementsOverParent(const BranchDescription& parent, const TreeElementDistribution& distrib)
@@ -453,11 +537,12 @@ PODVector<float> IntegrateDensityFunction(const CubicCurveWrapper& density, unsi
 }
 
 Vector<BranchDescription> InstantiateBranchGroup(const BranchDescription& parent,
-    const TreeElementDistribution& distribution, const BranchShapeSettings& shape, unsigned minNumKnots)
+    const TreeElementDistribution& distribution, const BranchShapeSettings& branchShape, const FrondShapeSettings& frondShape,
+    unsigned minNumKnots)
 {
     const PODVector<TreeElementLocation> elements = DistributeElementsOverParent(parent, distribution);
-    const FloatRange lengthRange(shape.length_.x_, Max(shape.length_.x_, shape.length_.y_));
-    const float parentLength = distribution.frequency_ == 0 || !shape.relativeLength_ ? 1.0f : parent.length_;
+    const FloatRange lengthRange(branchShape.length_.x_, branchShape.length_.y_);
+    const float parentLength = distribution.frequency_ == 0 || !branchShape.relativeLength_ ? 1.0f : parent.length_;
 
     Vector<BranchDescription> result;
     for (unsigned i = 0; i < elements.Size(); ++i)
@@ -467,15 +552,15 @@ Vector<BranchDescription> InstantiateBranchGroup(const BranchDescription& parent
         const float length = parentLength * // #TODO Move this code to DistributeElementsOverParent
             lengthRange.Get(element.noise_.w_) * distribution.growthScale_.ComputeValue(element.location_);
         BranchDescription branch = GenerateBranch(
-            element.position_, direction, element.adherence_, length, element.baseRadius_, shape, minNumKnots);
-        branch.phase_ = element.phase_ + element.noise_.w_ * shape.windPhaseOffset_;
+            element.position_, direction, element.adherence_, length, element.baseRadius_, branchShape, frondShape, minNumKnots);
+        branch.phase_ = element.phase_ + element.noise_.w_ * branchShape.windPhaseOffset_;
         branch.index_ = i;
         result.Push(branch);
     }
 
 
     // Create fake ending branch
-    if (shape.fakeEnding_ && distribution.frequency_ != 0)
+    if (branchShape.fakeEnding_ && distribution.frequency_ != 0)
     {
         BranchDescription branch;
 
@@ -495,6 +580,7 @@ Vector<BranchDescription> InstantiateBranchGroup(const BranchDescription& parent
             branch.positions_.Push(SampleBezierCurve(parent.positionsCurve_, t));
             branch.radiuses_.Push(SampleBezierCurve(parent.radiusesCurve_, t));
             branch.adherences_.Push(SampleBezierCurve(parent.adherencesCurve_, t));
+            branch.frondSizes_.Push(SampleBezierCurve(parent.frondSizesCurve_, t));
         }
         branch.GenerateCurves();
 
@@ -550,7 +636,9 @@ void GenerateLeafGeometry(ModelFactory& factory,
     const Quaternion verticalRotation = Quaternion(GetBasisZ(baseRotation.RotationMatrix()), Vector3::DOWN).Normalized();
     const Quaternion alignVerticalRotation = Quaternion::IDENTITY.Slerp(verticalRotation, alignVerical).Normalized();
 
-    const Matrix3 rotationMatrix = (alignVerticalRotation * baseRotation).RotationMatrix();
+    const Quaternion zRotation = Quaternion(shape.rotateZ_.Get(location.noise_.w_), Vector3::FORWARD);
+
+    const Matrix3 rotationMatrix = (alignVerticalRotation * baseRotation * zRotation).RotationMatrix();
     const Vector3 xAxis = GetBasisX(rotationMatrix);
     const Vector3 yAxis = GetBasisY(rotationMatrix);
     const Vector3 zAxis = GetBasisZ(rotationMatrix);
@@ -564,7 +652,7 @@ void GenerateLeafGeometry(ModelFactory& factory,
 //     const Vector3 downNormal = (baseNormal + Vector3::DOWN).Normalized();
 
     // #TODO Use custom geometry
-    DefaultVertex vers[4];
+    DefaultVertex vers[5];
 
     vers[0].position_ = Vector3(-0.5f, 0.0f, 0.0f);
     vers[0].normal_ = Vector3::UP;
@@ -598,50 +686,41 @@ void GenerateLeafGeometry(ModelFactory& factory,
     vers[3].colors_[0].b_ = location.phase_;
     vers[3].colors_[0].a_ = shape.windOscillationMagnitude_.x_;
 
-    PODVector<DefaultVertex> newVertices;
-    PODVector<unsigned> newIndices;
-    AppendQuadGridToVertices(newVertices, newIndices, vers[0], vers[1], vers[2], vers[3], 2, 2);
+    vers[4] = LerpVertices(vers[0], vers[3], 0.5f);
+    vers[4].position_.y_ += shape.bending_;
+
+    const unsigned inds[4*3] =
+    {
+        0, 4, 1,
+        1, 4, 3,
+        3, 4, 2,
+        2, 4, 0
+    };
 
     // Compute max gravity factor
     const Vector3 junctionAdherenceFactor = Vector3(1.0f, 0.0f, 1.0f);
     Vector3 maxFactor = Vector3::ONE * M_EPSILON;
-    for (const DefaultVertex& vertex : newVertices)
+    for (const DefaultVertex& vertex : vers)
     {
         maxFactor = VectorMax(maxFactor, vertex.position_.Abs());
     }
 
-    // Apply gravity factor to position
+    // Compute position in global space
     const Vector3 geometryScale = shape.scale_ * shape.size_.Get(location.noise_.z_);
     const Vector3 basePosition = position + rotationMatrix * shape.junctionOffset_;
-    for (DefaultVertex& vertex : newVertices)
-    {
-        // Compute factor of junction adherence
-        const Vector3 factor = vertex.position_.Abs() / maxFactor;
-
-        // Compute position in global space
-        vertex.position_ = basePosition + rotationMatrix * vertex.position_ * geometryScale;
-
-        // Compute distance to junction
-        const float len = (vertex.position_ - position).Length();
-
-        // Apply gravity
-        const Vector3 perComponentGravity = shape.gravityIntensity_ * Pow(factor, Vector3::ONE / shape.gravityResistance_);
-        vertex.position_.y_ -= perComponentGravity.DotProduct(Vector3::ONE);
-
-        // Restore shape
-        vertex.position_ = (vertex.position_ - position).Normalized() * len + position;
-    }
+    for (DefaultVertex& vertex : vers)
+        vertex.position_ = basePosition + rotationMatrix * (vertex.position_ * geometryScale);
 
     // Compute real and fake normals
-    CalculateNormals(newVertices.Buffer(), newVertices.Size(), newIndices.Buffer(), newIndices.Size() / 3);
-    for (DefaultVertex& vertex : newVertices)
+    CalculateNormals(vers, 5, inds, 4);
+    for (DefaultVertex& vertex : vers)
     {
         const Vector3 newNormal = (vertex.position_ - Lerp(foliageCenter, basePosition, shape.bumpNormals_)).Normalized();
         const float factor = vertex.normal_.Length();
         vertex.normal_ = Lerp(newNormal, vertex.normal_, factor);
     }
 
-    factory.AddPrimitives(newVertices, newIndices, true);
+    factory.AddPrimitives(vers, inds, true);
 }
 // 
 // //////////////////////////////////////////////////////////////////////////

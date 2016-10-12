@@ -64,7 +64,7 @@ struct BranchShapeSettings
     Vector2 textureScale_;
     /// Multiplier for quality settings.
     float quality_ = 0.0f;
-    /// The length of the branch is randomly taken from range [begin, max(begin, end)].
+    /// The length of the branch is randomly taken from range [begin, end].
     FloatRange length_ = 1.0f;
     /// Specifies whether the length of the branch depends on the length of the parent branch.
     bool relativeLength_ = false;
@@ -86,6 +86,17 @@ struct BranchShapeSettings
     float windPhaseOffset_ = 0.0f;
 };
 
+/// Frond shape settings.
+struct FrondShapeSettings
+{
+    /// Size of the frond.
+    CubicCurveWrapper size_;
+    /// Bending angle.
+    float bendingAngle_ = 0.0f;
+    /// Rotation angle range.
+    FloatRange rotationAngle_;
+};
+
 /// Branch description.
 struct BranchDescription
 {
@@ -99,6 +110,8 @@ struct BranchDescription
     PODVector<float> radiuses_;
     /// Adherences of branch knots.
     PODVector<Vector2> adherences_;
+    /// Sizes of frond.
+    PODVector<float> frondSizes_;
     /// Branch length.
     float length_ = 0.0f;
     /// Branch oscillation phase.
@@ -110,6 +123,7 @@ struct BranchDescription
         positionsCurve_ = CreateBezierCurve(positions_);
         radiusesCurve_ = CreateBezierCurve(radiuses_);
         adherencesCurve_ = CreateBezierCurve(adherences_);
+        frondSizesCurve_ = CreateBezierCurve(frondSizes_);
     }
     /// Bezier curve for positions.
     BezierCurve3D positionsCurve_;
@@ -117,11 +131,13 @@ struct BranchDescription
     BezierCurve1D radiusesCurve_;
     /// Bezier curve for adherences.
     BezierCurve2D adherencesCurve_;
+    /// Bezier curve for frond size.
+    BezierCurve1D frondSizesCurve_;
 };
 
 /// Generate branch using specified parameters. Return Bezier curve knots. Number of knots is computed automatically.
 BranchDescription GenerateBranch(const Vector3& initialPosition, const Vector3& initialDirection, const Vector2& initialAdherence,
-    float length, float baseRadius, const BranchShapeSettings& shape, unsigned minNumKnots);
+    float length, float baseRadius, const BranchShapeSettings& branchShape, const FrondShapeSettings& frondShape, unsigned minNumKnots);
 
 /// Branch tessellation quality parameters.
 struct BranchTessellationQualityParameters 
@@ -145,6 +161,23 @@ struct TessellatedBranchPoint
     Vector3 position_;
     /// Adherence.
     Vector2 adherence_;
+    /// Frond size.
+    float frondSize_;
+
+    /// Branch point distance.
+    Quaternion basis_;
+    /// X-axis of branch point basis.
+    Vector3 xAxis_;
+    /// Y-axis of branch point basis.
+    Vector3 yAxis_;
+    /// Z-axis of branch point basis.
+    Vector3 zAxis_;
+    /// Relative uv distance from branch point.
+    float relativeDistance_;
+
+    /// Get relative position at the unit distance and specified angle.
+    Vector3 GetPosition(float angle) const;
+
 };
 
 /// Tessellated branch points.
@@ -161,9 +194,20 @@ PODVector<DefaultVertex> GenerateBranchVertices(const BranchDescription& branch,
 /// Generate branch geometry vertices.
 PODVector<unsigned> GenerateBranchIndices(const PODVector<unsigned>& numRadialSegments, unsigned maxVertices);
 
+/// Generate branch fronds vertices.
+PODVector<DefaultVertex> GenerateFrondVertices(const BranchDescription& branch, const TessellatedBranchPoints& points,
+    const FrondShapeSettings& shape);
+
+/// Generate branch fronds vertices.
+PODVector<unsigned> GenerateFrondIndices(unsigned numPoints);
+
 /// Generate branch geometry.
 void GenerateBranchGeometry(ModelFactory& factory, const BranchDescription& branch, const TessellatedBranchPoints& points,
     const BranchShapeSettings& shape, unsigned numRadialSegments);
+
+/// Generate frond geometry.
+void GenerateFrondGeometry(ModelFactory& factory, const BranchDescription& branch, const TessellatedBranchPoints& points,
+    const FrondShapeSettings& shape);
 
 /// Tree element distribution settings.
 struct TreeElementDistribution
@@ -190,6 +234,8 @@ struct TreeElementDistribution
     float twirlNoise_ = 0.0f;
     /// Base rotation angle of all children branches.
     float twirlBase_ = 0.0f;
+    /// Vertical rotation of children branches.
+    float twirlSkew_ = 0.0f;
 
     /// Scale of child elements size or length.
     CubicCurveWrapper growthScale_;
@@ -226,7 +272,8 @@ PODVector<float> IntegrateDensityFunction(const CubicCurveWrapper& density, unsi
 
 /// Instantiate branch group.
 Vector<BranchDescription> InstantiateBranchGroup(const BranchDescription& parent, 
-    const TreeElementDistribution& distribution, const BranchShapeSettings& shape, unsigned minNumKnots);
+    const TreeElementDistribution& distribution, const BranchShapeSettings& branchShape, const FrondShapeSettings& frondShape,
+    unsigned minNumKnots);
 
 /// Leaf shape settings.
 struct LeafShapeSettings
@@ -241,10 +288,10 @@ struct LeafShapeSettings
     FloatRange alignVertical_ = 0.0f;
     /// Offset of the leaf junction point.
     Vector3 junctionOffset_ = Vector3::ZERO;
-    /// Intensity of deformation caused by gravity along specified dimensions.
-    Vector3 gravityIntensity_ = Vector3::ZERO;
-    /// Measure of frond geometry bending along specified dimensions. Should be in range (0, 1].
-    Vector3 gravityResistance_ = Vector3::ONE;
+    /// Rotation of the leaf along Z axis is randomly taken from the range.
+    FloatRange rotateZ_ = 1.0f;
+    /// Degree of leaf geometry bending.
+    float bending_ = 0.0f;
     /// Adjusts intensity of bumping fake leaf normals.
     float bumpNormals_ = 0.0f;
     /// Value of deformations caused by main wind, minimum and maximum values.
