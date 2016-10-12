@@ -676,7 +676,7 @@ void GenerateLeafGeometry(ModelFactory& factory,
     vers[2].colors_[0].r_ = location.adherence_.x_ + shape.windMainMagnitude_.y_;
     vers[2].colors_[0].g_ = location.adherence_.y_ + shape.windTurbulenceMagnitude_.y_;
     vers[2].colors_[0].b_ = location.phase_;
-    vers[2].colors_[0].a_ = shape.windOscillationMagnitude_.x_;
+    vers[2].colors_[0].a_ = shape.windOscillationMagnitude_.y_;
 
     vers[3].position_ = Vector3(0.5f, 0.0f, 1.0f);
     vers[3].normal_ = Vector3::ZERO;
@@ -684,7 +684,7 @@ void GenerateLeafGeometry(ModelFactory& factory,
     vers[3].colors_[0].r_ = location.adherence_.x_ + shape.windMainMagnitude_.y_;
     vers[3].colors_[0].g_ = location.adherence_.y_ + shape.windTurbulenceMagnitude_.y_;
     vers[3].colors_[0].b_ = location.phase_;
-    vers[3].colors_[0].a_ = shape.windOscillationMagnitude_.x_;
+    vers[3].colors_[0].a_ = shape.windOscillationMagnitude_.y_;
 
     vers[4] = LerpVertices(vers[0], vers[3], 0.5f);
     vers[4].position_.y_ += shape.bending_;
