@@ -8,8 +8,8 @@
     <attribute name="Scale" value="1 1 1" />
     <attribute name="Variables" />
     <component type="StaticModelEx" id="158">
-        <attribute name="Model" value="Model;Objects/WhiteTree/Tree11A.mdl" />
-        <attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/SmallFoliageMaterial.xml;Objects/WhiteTree/Tree11AMaterial.xml" />
+        <attribute name="Model" value="Model;Objects/WhiteTree/Tree5A.mdl" />
+        <attribute name="Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml;Objects/WhiteTree/SmallFoliageMaterial.xml;Objects/WhiteTree/Tree5AMaterial.xml" />
         <attribute name="Apply Wind" value="true" />
         <attribute name="Clone Materials" value="true" />
         <attribute name="Cast Shadows" value="true" />
