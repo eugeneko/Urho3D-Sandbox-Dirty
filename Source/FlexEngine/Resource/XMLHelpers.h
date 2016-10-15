@@ -1,9 +1,9 @@
 #pragma once
 
 #include <FlexEngine/Common.h>
-#include <FlexEngine/Core/StringUtils.h>
 #include <FlexEngine/Math/MathDefs.h>
 
+#include <Urho3D/Core/StringUtils.h>
 #include <Urho3D/Resource/XMLElement.h>
 
 namespace FlexEngine
@@ -15,7 +15,7 @@ bool LoadValue(const XMLElement& elem, T& variable)
 {
     if (elem)
     {
-        variable = To<T>(elem.GetValue());
+        variable = FromString<T>(elem.GetValue().CString());
         return true;
     }
     return false;
@@ -25,7 +25,7 @@ bool LoadValue(const XMLElement& elem, T& variable)
 template <class T>
 T GetValue(const XMLElement& elem, const T& defaultValue)
 {
-    return elem ? To<T>(elem.GetValue()) : defaultValue;
+    return elem ? FromString<T>(elem.GetValue().CString()) : defaultValue;
 }
 
 /// Load XML attribute value into variable if element is not empty.
@@ -35,7 +35,7 @@ bool LoadAttribute(const XMLElement& elem, const String& attributeName, T& varia
     const String& value = elem.GetAttribute(attributeName);
     if (!value.Empty())
     {
-        variable = To<T>(value);
+        variable = FromString<T>(value.CString());
         return true;
     }
     return false;

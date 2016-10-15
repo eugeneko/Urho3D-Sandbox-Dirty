@@ -1,7 +1,8 @@
 #pragma once
 
 #include <FlexEngine/Common.h>
-#include <FlexEngine/Container/Ptr.h>
+
+#include <Urho3D/Container/Ptr.h>
 
 namespace FlexEngine
 {

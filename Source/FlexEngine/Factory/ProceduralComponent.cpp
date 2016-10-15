@@ -1,6 +1,5 @@
 #include <FlexEngine/Factory/ProceduralComponent.h>
 
-#include <FlexEngine/Container/Ptr.h>
 #include <FlexEngine/Math/Hash.h>
 #include <FlexEngine/Resource/ResourceCacheHelpers.h>
 #include <FlexEngine/Resource/ResourceHash.h>

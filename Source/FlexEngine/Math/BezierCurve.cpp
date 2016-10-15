@@ -1,8 +1,8 @@
 #include <FlexEngine/Math/BezierCurve.h>
 
-#include <FlexEngine/Container/Ptr.h>
 #include <FlexEngine/Container/Utility.h>
 
+#include <Urho3D/Container/Ptr.h>
 #include <Urho3D/Container/Sort.h>
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/Math/MathDefs.h>
@@ -263,7 +263,7 @@ float SampleCubicCurve(const CubicCurve& curve, float location)
     const Vector4& p = curve.segments_[base - 1];
     const float t0 = curve.locations_[base - 1];
     const float t1 = curve.locations_[base];
-    const float t = UnLerpClamped(t0, t1, location);
+    const float t = Clamp(InverseLerp(t0, t1, location), 0.0f, 1.0f);
     const float q = 1.0f - t;
 
     return q*q*q*p.x_ + 3 * q*q*t*p.y_ + 3 * q*t*t*p.z_ + t*t*t*p.w_;

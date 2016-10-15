@@ -50,7 +50,6 @@ static const HashMap<String, FactoryFunction> factories =
     { "geometry",   &GenerateTempGeometryFromXML    },
     { "material",   &GenerateMaterialsFromXML       },
     { "texture",    &GenerateTexturesFromXML        },
-    { "tree",       &GenerateTreeFromXML            },
 };
 
 }

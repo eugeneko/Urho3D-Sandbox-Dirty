@@ -1,7 +1,6 @@
 #pragma once
 
 #include <FlexEngine/Common.h>
-#include <FlexEngine/Container/Ptr.h>
 
 #include <Urho3D/Graphics/Texture2D.h>
 #include <Urho3D/Resource/Resource.h>

@@ -421,15 +421,15 @@ bool BranchGroup::ComputeHash(Hash& hash) const
 
 void BranchGroup::DoTriangulate(ModelFactory& factory, TreeHost& host, TreeLevelOfDetail& lod) const
 {
-    TreeLodDescription lodDesc;
-    lodDesc.branchTessellationQuality_.maxNumSegments_ = lod.GetMaxBranchSegments();
-    lodDesc.branchTessellationQuality_.minNumSegments_ = lod.GetMinBranchSegments();
-    lodDesc.branchTessellationQuality_.minAngle_ = lod.GetMinAngle();
+    BranchTessellationQualityParameters branchQuality;
+    branchQuality.maxNumSegments_ = lod.GetMaxBranchSegments();
+    branchQuality.minNumSegments_ = lod.GetMinBranchSegments();
+    branchQuality.minAngle_ = lod.GetMinAngle();
 
     // Tessellate branches
     Vector<TessellatedBranchPoints> tessellatedBranches(branches_.Size());
     for (unsigned i = 0; i < branches_.Size(); ++i)
-        tessellatedBranches[i] = TessellateBranch(branches_[i], branchShape_.quality_, lodDesc.branchTessellationQuality_);
+        tessellatedBranches[i] = TessellateBranch(branches_[i], branchShape_.quality_, branchQuality);
 
     // Generate branches
     if (generateBranch_)

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <FlexEngine/Common.h>
-#include <FlexEngine/Container/Ptr.h>
 #include <FlexEngine/Factory/ProceduralComponent.h>
 
 namespace Urho3D

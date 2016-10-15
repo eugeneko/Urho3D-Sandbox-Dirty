@@ -22,7 +22,7 @@ float ComputeDiagonalHeight(float width, float height, float skewAngle)
 {
     const Vector2 axis = Vector2(Sin(skewAngle), Cos(skewAngle));
     const Vector2 size = Vector2(width, height);
-    return ProjectOntoAxis(axis, size);
+    return size.ProjectOntoAxis(axis);
 }
 
 /// Expand region to meet the width/height ratio.

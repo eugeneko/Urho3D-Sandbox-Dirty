@@ -1,6 +1,5 @@
 #include <FlexEngine/Factory/GeometryFactory.h>
 
-#include <FlexEngine/Container/Ptr.h>
 #include <FlexEngine/Factory/FactoryContext.h>
 #include <FlexEngine/Factory/GeometryUtils.h>
 #include <FlexEngine/Factory/ModelFactory.h>

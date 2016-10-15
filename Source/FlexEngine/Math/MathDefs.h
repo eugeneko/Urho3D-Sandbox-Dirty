@@ -12,37 +12,6 @@
 namespace FlexEngine
 {
 
-class MathFunction;
-
-/// Shared pointer on math function.
-using MathFunctionSPtr = SharedPtr<MathFunction>;
-
-/// Per-component lerp for 2D vector.
-inline Vector2 VectorLerp(const Vector2& first, const Vector2& second, const Vector2& value)
-{
-    return Vector2(Lerp(first.x_, second.x_, value.x_), Lerp(first.y_, second.y_, value.y_));
-}
-
-/// Per-component lerp for 3D vector.
-inline Vector3 VectorLerp(const Vector3& first, const Vector3& second, const Vector3& value)
-{
-    return Vector3(Lerp(first.x_, second.x_, value.x_), Lerp(first.y_, second.y_, value.y_), Lerp(first.z_, second.z_, value.z_));
-}
-
-/// Revert linear interpolation (scalars only).
-template <class T>
-T UnLerp(const T& first, const T& second, const T& value)
-{
-    return (value - first) / (second - first);
-}
-
-/// Revert linear interpolation (scalars only) and clamp result to [0, 1] range.
-template <class T>
-T UnLerpClamped(const T& first, const T& second, const T& value)
-{
-    return Clamp(UnLerp(first, second, value), T(0), T(1));
-}
-
 /// Generalization of Hermite interpolation with variable degree of smoothing.
 inline float SmoothStepEx(float t, float k)
 {
@@ -58,116 +27,11 @@ inline Vector3 ConstructOrthogonalVector(const Vector3& vec)
         : Vector3(-vec.y_, vec.x_,   0.0f).Normalized();
 }
 
-/// Dot product of two vectors.
-template <class T>
-auto DotProduct(const T& left, const T& right) -> decltype(left.x_)
-{
-    return left.DotProduct(right);
-}
-
 /// Cross product of two 3D vectors.
 inline Vector3 CrossProduct(const Vector3& left, const Vector3& right)
 {
     return left.CrossProduct(right);
 }
-
-/// Angle between two vectors.
-template <class T>
-auto AngleBetween(const T& left, const T& right) -> decltype(left.x_)
-{
-    return left.Angle(right);
-}
-
-/// Per-component max for 2D vector.
-inline Vector2 VectorMax(const Vector2& left, const Vector2& right)
-{
-    return Vector2(Max(left.x_, right.x_), Max(left.y_, right.y_));
-}
-
-/// Per-component max for 3D vector.
-inline Vector3 VectorMax(const Vector3& left, const Vector3& right)
-{
-    return Vector3(Max(left.x_, right.x_), Max(left.y_, right.y_), Max(left.z_, right.z_));
-}
-
-/// Per-component min for 2D vector.
-inline Vector2 VectorMin(const Vector2& left, const Vector2& right)
-{
-    return Vector2(Min(left.x_, right.x_), Min(left.y_, right.y_));
-}
-
-/// Per-component min for 3D vector.
-inline Vector3 VectorMin(const Vector3& left, const Vector3& right)
-{
-    return Vector3(Min(left.x_, right.x_), Min(left.y_, right.y_), Min(left.z_, right.z_));
-}
-
-/// Project vector onto axis
-template <class T>
-auto ProjectOntoAxis(const T& axis, const T& vector) -> decltype(axis.x_)
-{
-    return DotProduct(vector, axis) / axis.Length();
-}
-
-/// Return X in power Y.
-template <class T> T Pow(T x, T y) { return pow(x, y); }
-
-/// Per-component power for 2D vector.
-inline Vector2 VectorPow(const Vector2& left, const Vector2& right)
-{
-    return Vector2(Pow(left.x_, right.x_), Pow(left.y_, right.y_));
-}
-
-/// Per-component power for 3D vector.
-inline Vector3 VectorPow(const Vector3& left, const Vector3& right)
-{
-    return Vector3(Pow(left.x_, right.x_), Pow(left.y_, right.y_), Pow(left.z_, right.z_));
-}
-
-/// Return square root of X.
-template <class T> T Sqrt(T x) { return sqrt(x); }
-
-/// Per-component square root of 2D vector.
-inline Vector2 VectorSqrt(const Vector2& vec)
-{
-    return Vector2(Sqrt(vec.x_), Sqrt(vec.y_));
-}
-
-/// Per-component square root of 3D vector.
-inline Vector3 VectorSqrt(const Vector3& vec)
-{
-    return Vector3(Sqrt(vec.x_), Sqrt(vec.y_), Sqrt(vec.z_));
-}
-
-/// Return fractional part of passed value.
-template <class T> T Fract(T value) { T intpart; return modf(value, &intpart); }
-
-/// Round value down.
-template <class T> T Floor(T x) { return floor(x); }
-
-/// Per-component floor for 2D vector.
-inline Vector2 VectorFloor(const Vector2& vec) { return Vector2(Floor(vec.x_), Floor(vec.y_)); }
-
-/// Per-component floor for 3D vector.
-inline Vector3 VectorFloor(const Vector3& vec) { return Vector3(Floor(vec.x_), Floor(vec.y_), Floor(vec.z_)); }
-
-/// Round value to nearest integer.
-template <class T> T Round(T x) { return floor(x + 0.5f); }
-
-/// Per-component round for 2D vector.
-inline Vector2 VectorRound(const Vector2& vec) { return Vector2(Round(vec.x_), Round(vec.y_)); }
-
-/// Per-component round for 3D vector.
-inline Vector3 VectorRound(const Vector3& vec) { return Vector3(Round(vec.x_), Round(vec.y_), Round(vec.z_)); }
-
-/// Round value up.
-template <class T> T Ceil(T x) { return ceil(x); }
-
-/// Per-component ceil for 2D vector.
-inline Vector2 VectorCeil(const Vector2& vec) { return Vector2(Ceil(vec.x_), Ceil(vec.y_)); }
-
-/// Per-component ceil for 3D vector.
-inline Vector3 VectorCeil(const Vector3& vec) { return Vector3(Ceil(vec.x_), Ceil(vec.y_), Ceil(vec.z_)); }
 
 /// Return hash of 2D vector.
 inline unsigned MakeHash(const Vector2& v)

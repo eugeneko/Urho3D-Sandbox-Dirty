@@ -1,6 +1,5 @@
 #include <FlexEngine/Resource/ResourceHash.h>
 
-#include <FlexEngine/Container/Ptr.h>
 #include <FlexEngine/Math/Hash.h>
 
 #include <Urho3D/Graphics/Geometry.h>

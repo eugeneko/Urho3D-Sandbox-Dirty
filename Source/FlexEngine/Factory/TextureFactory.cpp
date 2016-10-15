@@ -1,6 +1,5 @@
 #include <FlexEngine/Factory/TextureFactory.h>
 
-#include <FlexEngine/Core/StringUtils.h>
 #include <FlexEngine/Factory/FactoryContext.h>
 #include <FlexEngine/Factory/ModelFactory.h>
 #include <FlexEngine/Factory/ProxyGeometryFactory.h>

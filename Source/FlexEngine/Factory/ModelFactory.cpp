@@ -2,7 +2,6 @@
 
 #include <FlexEngine/Factory/ModelFactory.h>
 
-#include <FlexEngine/Container/Ptr.h>
 #include <FlexEngine/Math/MathDefs.h>
 // #include <FlexEngine/Factory/FactoryContext.h>
 // #include <FlexEngine/Factory/FatVertex.h>
@@ -64,7 +63,7 @@ const PODVector<VertexElement>& DefaultVertex::GetVertexElements()
 
 Vector4 DefaultVertex::GetPackedTangentBinormal() const
 {
-    return Vector4(tangent_, DotProduct(CrossProduct(tangent_, normal_), binormal_) > 0 ? 1.0f : -1.0f);
+    return Vector4(tangent_, CrossProduct(tangent_, normal_).DotProduct(binormal_) > 0 ? 1.0f : -1.0f);
 }
 
 DefaultVertex LerpVertices(const DefaultVertex& lhs, const DefaultVertex& rhs, float factor)
