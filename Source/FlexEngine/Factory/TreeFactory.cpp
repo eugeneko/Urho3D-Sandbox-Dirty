@@ -99,6 +99,12 @@ int GetMaterialIndex(const Vector<String>& materials, const String& name)
         : iter - materials.Begin();
 }
 
+/// Project vector onto plane.
+Vector3 ProjectVectorOnPlane(const Vector3& vec, const Vector3& normal)
+{
+    return (vec - normal * normal.DotProduct(vec)).Normalized();
+}
+
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -655,7 +661,6 @@ void GenerateLeafGeometry(ModelFactory& factory,
     DefaultVertex vers[5];
 
     vers[0].position_ = Vector3(-0.5f, 0.0f, 0.0f);
-    vers[0].normal_ = Vector3::UP;
     vers[0].uv_[0] = Vector4(0, 0, 0, 0);
     vers[0].colors_[0].r_ = location.adherence_.x_ + shape.windMainMagnitude_.x_;
     vers[0].colors_[0].g_ = location.adherence_.y_ + shape.windTurbulenceMagnitude_.x_;
@@ -663,7 +668,6 @@ void GenerateLeafGeometry(ModelFactory& factory,
     vers[0].colors_[0].a_ = shape.windOscillationMagnitude_.x_;
 
     vers[1].position_ = Vector3(0.5f, 0.0f, 0.0f);
-    vers[1].normal_ = Vector3::UP;
     vers[1].uv_[0] = Vector4(1, 0, 0, 0);
     vers[1].colors_[0].r_ = location.adherence_.x_ + shape.windMainMagnitude_.x_;
     vers[1].colors_[0].g_ = location.adherence_.y_ + shape.windTurbulenceMagnitude_.x_;
@@ -671,7 +675,6 @@ void GenerateLeafGeometry(ModelFactory& factory,
     vers[1].colors_[0].a_ = shape.windOscillationMagnitude_.x_;
 
     vers[2].position_ = Vector3(-0.5f, 0.0f, 1.0f);
-    vers[2].normal_ = Vector3::ZERO;
     vers[2].uv_[0] = Vector4(0, 1, 0, 0);
     vers[2].colors_[0].r_ = location.adherence_.x_ + shape.windMainMagnitude_.y_;
     vers[2].colors_[0].g_ = location.adherence_.y_ + shape.windTurbulenceMagnitude_.y_;
@@ -679,7 +682,6 @@ void GenerateLeafGeometry(ModelFactory& factory,
     vers[2].colors_[0].a_ = shape.windOscillationMagnitude_.y_;
 
     vers[3].position_ = Vector3(0.5f, 0.0f, 1.0f);
-    vers[3].normal_ = Vector3::ZERO;
     vers[3].uv_[0] = Vector4(1, 1, 0, 0);
     vers[3].colors_[0].r_ = location.adherence_.x_ + shape.windMainMagnitude_.y_;
     vers[3].colors_[0].g_ = location.adherence_.y_ + shape.windTurbulenceMagnitude_.y_;
@@ -689,6 +691,23 @@ void GenerateLeafGeometry(ModelFactory& factory,
     vers[4] = LerpVertices(vers[0], vers[3], 0.5f);
     vers[4].position_.y_ += shape.bending_;
 
+    // Compute position in global space
+    const Vector3 geometryScale = shape.scale_ * shape.size_.Get(location.noise_.z_);
+    const Vector3 basePosition = position + rotationMatrix * shape.junctionOffset_;
+    for (DefaultVertex& vertex : vers)
+        vertex.position_ = basePosition + rotationMatrix * (vertex.position_ * geometryScale);
+
+    // Compute normals
+    const Vector3 flatNormal = ((vers[4].position_ - foliageCenter) * Vector3(1, 0, 1)).Normalized();
+    const Vector3 globalNormal = Lerp(flatNormal, Vector3::UP, 0.5f).Normalized();
+
+    vers[4].normal_ = globalNormal;
+    for (unsigned i = 0; i < 4; ++i)
+    {
+        const Vector3 bumpedNormal = ProjectVectorOnPlane(vers[i].position_ - vers[4].position_, globalNormal).Normalized();
+        vers[i].normal_ = Lerp(globalNormal, bumpedNormal, shape.bumpNormals_).Normalized();
+    }
+
     const unsigned inds[4*3] =
     {
         0, 4, 1,
@@ -697,28 +716,8 @@ void GenerateLeafGeometry(ModelFactory& factory,
         2, 4, 0
     };
 
-    // Compute max gravity factor
-    const Vector3 junctionAdherenceFactor = Vector3(1.0f, 0.0f, 1.0f);
-    Vector3 maxFactor = Vector3::ONE * M_EPSILON;
-    for (const DefaultVertex& vertex : vers)
-    {
-        maxFactor = VectorMax(maxFactor, vertex.position_.Abs());
-    }
-
-    // Compute position in global space
-    const Vector3 geometryScale = shape.scale_ * shape.size_.Get(location.noise_.z_);
-    const Vector3 basePosition = position + rotationMatrix * shape.junctionOffset_;
-    for (DefaultVertex& vertex : vers)
-        vertex.position_ = basePosition + rotationMatrix * (vertex.position_ * geometryScale);
-
-    // Compute real and fake normals
+    // Compute real normals
     CalculateNormals(vers, 5, inds, 4);
-    for (DefaultVertex& vertex : vers)
-    {
-        const Vector3 newNormal = (vertex.position_ - Lerp(foliageCenter, basePosition, shape.bumpNormals_)).Normalized();
-        const float factor = vertex.normal_.Length();
-        vertex.normal_ = Lerp(newNormal, vertex.normal_, factor);
-    }
 
     factory.AddPrimitives(vers, inds, true);
 }
