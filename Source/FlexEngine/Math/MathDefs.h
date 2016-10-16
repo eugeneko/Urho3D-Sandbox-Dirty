@@ -87,24 +87,6 @@ T QLerp(const T& v0, const T& v1, const T& v2, const T& v3, const U factor1, con
     return Lerp(Lerp(v0, v1, factor1), Lerp(v2, v3, factor1), factor2);
 }
 
-/// Pseudo-random generator.
-inline float PseudoRandom(const Vector2& vec)
-{
-    return Fract(Sin(vec.DotProduct(Vector2(12.9898f, 78.233f)) * M_RADTODEG) * 43758.5453f);
-}
-
-/// Pseudo-random generator.
-inline float PseudoRandom(float value)
-{
-    return PseudoRandom(Vector2(value, value));
-}
-
-/// Pseudo-random generator.
-inline float PseudoRandom(const Vector3& vec)
-{
-    return PseudoRandom(Vector2(PseudoRandom(Vector2(vec.x_, vec.y_)), vec.z_));
-}
-
 /// Float range.
 class FloatRange : public Vector2
 {

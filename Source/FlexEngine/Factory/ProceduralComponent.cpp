@@ -183,7 +183,7 @@ ProceduralComponent::~ProceduralComponent()
 void ProceduralComponent::RegisterObject(Context* context)
 {
     URHO3D_COPY_BASE_ATTRIBUTES(Component);
-    
+
     URHO3D_ACCESSOR_ATTRIBUTE("Resources Hashes", GetResourcesHashesAttr, SetResourcesHashesAttr, VariantVector, Variant::emptyVariantVector, AM_FILE | AM_NOEDIT);
     URHO3D_ACCESSOR_ATTRIBUTE("Hash", GetHashAttr, SetHashAttr, unsigned, 0, AM_FILE | AM_NOEDIT);
 

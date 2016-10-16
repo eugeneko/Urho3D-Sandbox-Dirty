@@ -65,32 +65,12 @@ bool SaveResource(Resource& resource, bool reloadAfter)
     CreateDirectoriesToFile(*cache, outputFileName);
 
     // Save file
-    if (resource.IsInstanceOf<Image>())
+    if (resource.Save(outputFileName))
     {
-        // #TODO Remove this hack
-        if (SaveImage(cache, static_cast<Image&>(resource)))
-        {
-            if (reloadAfter)
-                cache->ReloadResourceWithDependencies(resourceName);
-            return true;
-        }
-    }
-    else
-    {
-        File file(resource.GetContext(), outputFileName, FILE_WRITE);
-        if (file.IsOpen())
-        {
-            if (resource.Save(file))
-            {
-                // Reload resource
-                if (reloadAfter)
-                {
-                    file.Close();
-                    cache->ReloadResourceWithDependencies(resourceName);
-                }
-                return true;
-            }
-        }
+        // Reload resource
+        if (reloadAfter)
+            cache->ReloadResourceWithDependencies(resourceName);
+        return true;
     }
     return false;
 }

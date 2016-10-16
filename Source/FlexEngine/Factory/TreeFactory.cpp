@@ -382,7 +382,7 @@ PODVector<DefaultVertex> GenerateFrondVertices(const BranchDescription& branch, 
         return result;
     }
 
-    const float rotationAngle = shape.rotationAngle_.Get(PseudoRandom(branch.positions_[0]));
+    const float rotationAngle = shape.rotationAngle_.Get(StableRandom(branch.positions_[0]));
     for (unsigned i = 0; i < points.Size(); ++i)
     {
         // Left vertex

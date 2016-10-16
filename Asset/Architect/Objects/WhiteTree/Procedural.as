@@ -25,24 +25,9 @@ float VectorPower(float x, Vector4 power)
     return power.x + power.y * x ** 2 + power.z * x ** 4 + power.w * x ** 6;
 }
 
-float Fract(float value)
+Vector2 StableRandom2(Vector2 uv)
 {
-    return value - Floor(value);
-}
-
-float UnLerpClamped(float value, float lhs, float rhs)
-{
-    return Clamp((value - lhs) / (rhs - lhs), 0.0, 1.0);
-}
-
-float PseudoRandom(Vector2 uv)
-{
-    return Fract(Sin(uv.DotProduct(Vector2(12.9898, 78.233)) * M_RADTODEG) * 43758.5453);
-}
-
-Vector2 PseudoRandom2(Vector2 uv)
-{
-    return Vector2(PseudoRandom(uv), PseudoRandom(uv + Vector2(1, 3)));
+    return Vector2(StableRandom(uv), StableRandom(uv + Vector2(1, 3)));
 }
 
 void GenerateFoliage(ModelFactoryWrapper& model, FoliageDesc desc, float height)
@@ -53,12 +38,12 @@ void GenerateFoliage(ModelFactoryWrapper& model, FoliageDesc desc, float height)
         {
             Vector2 position = Vector2(x, y);
             Vector2 relativePosition = Vector2(Abs(position.x), Max(0.0, Abs(position.y - height / 2) - Max(0.0, height / 2 - 0.5)));
-            float fadeOut = UnLerpClamped(relativePosition.length, desc.fadeOutStart_, desc.fadeOutEnd_);
-            if (PseudoRandom(position) < fadeOut)
+            float fadeOut = Clamp(InverseLerp(relativePosition.length, desc.fadeOutStart_, desc.fadeOutEnd_), 0, 1);
+            if (StableRandom(position) < fadeOut)
                 continue;
 
-            position += (PseudoRandom2(Vector2(x, y)) - Vector2(0.5, 0.5)) * desc.leafNoise_;
-            model.AddRect2D(Vector3(position, PseudoRandom(position) * 0.1), 0.0, desc.leafSize_, Vector2(0, 0), Vector2(1, 1), Vector2(0, 1), Vector4());
+            position += (StableRandom2(Vector2(x, y)) - Vector2(0.5, 0.5)) * desc.leafNoise_;
+            model.AddRect2D(Vector3(position, StableRandom(position) * 0.1), 0.0, desc.leafSize_, Vector2(0, 0), Vector2(1, 1), Vector2(0, 1), Vector4());
         }
     }
 }

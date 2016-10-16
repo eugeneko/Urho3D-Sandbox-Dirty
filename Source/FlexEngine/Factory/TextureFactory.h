@@ -67,12 +67,6 @@ unsigned GetNumImageLevels(const Image& image);
 /// a' = a * k^i, where i is a number of level.
 void AdjustImageLevelsAlpha(Image& image, float factor);
 
-/// Save RGBA8 image to DDS file.
-bool SaveImageToDDS(const Image& image, const String& fileName);
-
-/// Save RGBA8 image to BMP, JPG, PNG, TGA or DDS file depending on file extension.
-bool SaveImage(ResourceCache* cache, const Image& image);
-
 /// Orthogonal camera description.
 struct OrthoCameraDescription
 {

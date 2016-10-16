@@ -31,7 +31,7 @@ struct DefaultVertex;
 class ModelFactory;
 
 /// Vegetation Vertex.
-struct VegetationVertex 
+struct VegetationVertex
 {
     Vector3 position_;
     Vector3 tangent_;
@@ -139,7 +139,7 @@ BranchDescription GenerateBranch(const Vector3& initialPosition, const Vector3& 
     float length, float baseRadius, const BranchShapeSettings& branchShape, const FrondShapeSettings& frondShape, unsigned minNumKnots);
 
 /// Branch tessellation quality parameters.
-struct BranchTessellationQualityParameters 
+struct BranchTessellationQualityParameters
 {
     /// New point is emitted if Bezier curve direction change is at least minAngle_.
     float minAngle_ = 0.0f;
@@ -150,7 +150,7 @@ struct BranchTessellationQualityParameters
 };
 
 /// Tessellated branch point.
-struct TessellatedBranchPoint 
+struct TessellatedBranchPoint
 {
     /// Location on curve.
     float location_;
@@ -270,7 +270,7 @@ PODVector<TreeElementLocation> DistributeElementsOverParent(const BranchDescript
 PODVector<float> IntegrateDensityFunction(const CubicCurveWrapper& density, unsigned count);
 
 /// Instantiate branch group.
-Vector<BranchDescription> InstantiateBranchGroup(const BranchDescription& parent, 
+Vector<BranchDescription> InstantiateBranchGroup(const BranchDescription& parent,
     const TreeElementDistribution& distribution, const BranchShapeSettings& branchShape, const FrondShapeSettings& frondShape,
     unsigned minNumKnots);
 

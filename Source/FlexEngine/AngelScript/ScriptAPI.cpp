@@ -236,7 +236,7 @@ void TODO_CoverTerrainWithObjects(Node* terrainNode, Node* destNode, XMLFile* pr
         }
         if (skip)
             continue;
-        
+
         float angle = rand() % 1000 / 1000.0f * 360;
         Node* child = prefabNode->Clone();
         child->SetTransform(position, Quaternion(0, angle, 0));

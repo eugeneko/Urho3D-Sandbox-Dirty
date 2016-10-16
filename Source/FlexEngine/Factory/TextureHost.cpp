@@ -249,11 +249,7 @@ void TextureElement::GenerateTexture()
         image->PrecalculateLevels();
         AdjustImageLevelsAlpha(*image, adjustAlpha_);
 
-        ResourceCache* cache = GetSubsystem<ResourceCache>();
-        if (SaveImage(cache, *image))
-        {
-            cache->ReloadResourceWithDependencies(destinationTextureName_);
-        }
+        SaveResource(*image);
     }
 }
 
