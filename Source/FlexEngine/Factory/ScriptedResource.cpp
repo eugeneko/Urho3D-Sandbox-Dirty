@@ -41,7 +41,9 @@ void ScriptedResource::RegisterObject(Context* context)
 
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Script", GetScriptAttr, SetScriptAttr, ResourceRef, ResourceRef(ScriptFile::GetTypeStatic()), AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Entry Point", GetEntryPoint, SetEntryPoint, String, String::EMPTY, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Resources", GetResourcesAttr, SetResourcesAttr, ResourceRefList, ResourceRefList(ScriptFile::GetTypeStatic(), StringVector(1)), AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Resources", GetResourcesAttr, SetResourcesAttr, ResourceRefList, ResourceRefList(ScriptFile::GetTypeStatic()), AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Num Parameters", GetNumParametersAttr, SetNumParametersAttr, unsigned, 0, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Parameters", GetParametersAttr, SetParametersAttr, VariantMap, Variant::emptyVariantVector, AM_DEFAULT);
 }
 
 void ScriptedResource::EnumerateResources(Vector<ResourceRef>& resources)
@@ -61,6 +63,23 @@ ResourceRef ScriptedResource::GetScriptAttr() const
     return GetResourceRef(script_, ScriptFile::GetTypeStatic());
 }
 
+void ScriptedResource::SetParametersAttr(const VariantMap& parameters)
+{
+    for (unsigned i = 0; i < Min(parameters.Size(), parameters_.Size()); ++i)
+    {
+        const Variant* elem = parameters[StringHash(i)];
+        parameters_[i] = elem ? elem->GetVector4() : Vector4::ZERO;
+    }
+}
+
+const VariantMap& ScriptedResource::GetParametersAttr() const
+{
+    parametersAttr_.Clear();
+    for (unsigned i = 0; i < parameters_.Size(); ++i)
+        parametersAttr_[StringHash(i)] = parameters_[i];
+    return parametersAttr_;
+}
+
 bool ScriptedResource::ComputeHash(Hash& hash) const
 {
     if (script_)
@@ -74,6 +93,9 @@ bool ScriptedResource::ComputeHash(Hash& hash) const
     hash.HashUInt(resources_.names_.Size());
     for (unsigned i = 0; i < resources_.names_.Size(); ++i)
         hash.HashString(resources_.names_[i]);
+    hash.HashUInt(parameters_.Size());
+    for (unsigned i = 0; i < parameters_.Size(); ++i)
+        hash.HashVector4(parameters_[i]);
     return true;
 }
 
@@ -81,9 +103,14 @@ void ScriptedResource::DoGenerateResources(Vector<SharedPtr<Resource>>& resource
 {
     static const unsigned startParam = 3;
 
-    // Call script
+    // Prepare context
     ScriptContext output;
     output.context_ = GetContext();
+    output.items_.Resize(parameters_.Size());
+    for (unsigned i = 0; i < parameters_.Size(); ++i)
+        output.items_[i] = parameters_[i];
+
+    // Call script
     if (script_)
     {
         const String entryPoint = entryPoint_.Empty() ? "Main" : entryPoint_;
