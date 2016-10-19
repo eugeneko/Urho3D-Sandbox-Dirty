@@ -10,15 +10,17 @@
 #include <FlexEngine/Factory/ScriptedResource.h>
 #include <FlexEngine/Factory/TextureHost.h>
 #include <FlexEngine/Factory/TreeHost.h>
+#include <FlexEngine/Graphics/Grass.h>
 #include <FlexEngine/Graphics/StaticModelEx.h>
 #include <FlexEngine/Graphics/Wind.h>
 #include <FlexEngine/Scene/DynamicComponent.h>
 
-#include <Urho3D/DebugNew.h>
 #include <Urho3D/AngelScript/Script.h>
 #include <Urho3D/Graphics/Renderer.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/Resource/ResourceCache.h>
+
+#include <Urho3D/DebugNew.h>
 
 URHO3D_DEFINE_APPLICATION_MAIN(FlexEnginePlayer);
 
@@ -40,19 +42,24 @@ void FlexEnginePlayer::Start()
     ProceduralComponent::RegisterObject(context_);
     ProceduralComponentAgent::RegisterObject(context_);
     ScriptedResource::RegisterObject(context_);
+
     TreeHost::RegisterObject(context_);
     TreeElement::RegisterObject(context_);
     BranchGroup::RegisterObject(context_);
     LeafGroup::RegisterObject(context_);
     TreeLevelOfDetail::RegisterObject(context_);
     TreeProxy::RegisterObject(context_);
+
     TextureHost::RegisterObject(context_);
     TextureElement::RegisterObject(context_);
     InputTexture::RegisterObject(context_);
     RenderedModelTexture::RegisterObject(context_);
     PerlinNoiseTexture::RegisterObject(context_);
     FillGapFilter::RegisterObject(context_);
+
     StaticModelEx::RegisterObject(context_);
+    Grass::RegisterObject(context_);
+    GrassPatch::RegisterObject(context_);
     WindSystem::RegisterObject(context_);
     WindZone::RegisterObject(context_);
 

@@ -8,9 +8,9 @@ namespace FlexEngine
 {
 
 /// @brief Point Cloud 2D
-using PointCloud2D = Vector<Vector2>;
+using PointCloud2D = PODVector<Vector2>;
 /// @brief Point Cloud 2D (normalized)
-using PointCloud2DNorm = Vector<Vector2>;
+using PointCloud2DNorm = PODVector<Vector2>;
 /// @brief Sample Point Cloud
 /// @pre @a cloud should be normalized to [0, 1] range
 PointCloud2D samplePointCloud(const PointCloud2DNorm& cloud,

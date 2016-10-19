@@ -26,7 +26,7 @@ public:
     /// Get update period attribute.
     float GetUpdatePeriodAttr() const;
 
-    /// Mark resource as dirty.
+    /// Mark component as dirty.
     void MarkNeedUpdate();
     /// Is dirty?
     bool DoesNeedUpdate() const;
@@ -37,7 +37,7 @@ public:
 private:
     /// Implementation of procedural generator. May be called from a worker thread.
     virtual void DoUpdate() = 0;
-    /// Completely re-generate resource.
+    /// Handle force component update.
     void OnUpdate(bool);
     /// Handle update event and update component if needed.
     void HandleUpdate(StringHash eventType, VariantMap& eventData);

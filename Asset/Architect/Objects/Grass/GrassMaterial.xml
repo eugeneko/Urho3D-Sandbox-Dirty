@@ -1,0 +1,6 @@
+<material>
+    <technique name="Techniques/Standard.xml" />
+    <shader vsdefines="DIFFMAP " psdefines="DIFFMAP ALPHAMASK " />
+    <texture unit="diffuse" name="Objects/Grass/GrassDiffuse.dds" />
+    <cull value="none" />
+</material>

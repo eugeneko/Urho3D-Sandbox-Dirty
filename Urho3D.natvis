@@ -26,6 +26,20 @@
     </Expand>
   </Type>
 
+  <!-- Urho3D::List<> -->
+  <Type Name="Urho3D::List&lt;*&gt;">
+    <DisplayString>{{ size={size_} }}</DisplayString>
+    <Expand>
+      <Item Name="[size]" ExcludeView="simple">size_</Item>
+      <LinkedListItems>
+        <Size>size_</Size>
+        <HeadPointer>head_</HeadPointer>
+        <NextPointer>next_</NextPointer>
+        <ValueNode>(*(List&lt;$T1&gt;::Node*)this).value_</ValueNode>
+      </LinkedListItems>
+    </Expand>
+  </Type>
+
   <!-- Urho3D::RandomAccessIterator<> -->
   <!-- Urho3D::RandomAccessConstIterator<> -->
   <Type Name = "Urho3D::RandomAccessIterator&lt;*&gt;">

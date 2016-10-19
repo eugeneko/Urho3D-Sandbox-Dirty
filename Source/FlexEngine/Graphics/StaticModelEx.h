@@ -7,6 +7,7 @@
 
 namespace FlexEngine
 {
+
 /// Static model per-geometry extra data (extended).
 /// @see Urho3D::StaticModelGeometryData
 struct StaticModelGeometryDataEx
@@ -30,7 +31,7 @@ struct StaticModelGeometryDataEx
     Vector4 secondaryInstanceData_;
 };
 
-/// Wind zone.
+/// Static model with extended functionality.
 class StaticModelEx : public StaticModel
 {
     URHO3D_OBJECT(StaticModelEx, StaticModel);
