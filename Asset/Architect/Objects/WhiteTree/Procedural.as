@@ -38,7 +38,7 @@ void GenerateFoliage(ModelFactoryWrapper& model, FoliageDesc desc, float height)
         {
             Vector2 position = Vector2(x, y);
             Vector2 relativePosition = Vector2(Abs(position.x), Max(0.0, Abs(position.y - height / 2) - Max(0.0, height / 2 - 0.5)));
-            float fadeOut = Clamp(InverseLerp(relativePosition.length, desc.fadeOutStart_, desc.fadeOutEnd_), 0, 1);
+            float fadeOut = Clamp(InverseLerp(desc.fadeOutStart_, desc.fadeOutEnd_, relativePosition.length), 0.0, 1.0);
             if (StableRandom(position) < fadeOut)
                 continue;
 
@@ -54,7 +54,7 @@ Model@ MainFoliageMask(ProceduralContext@ context, float scale, float height)
     ModelFactoryWrapper model(factory);
 
     FoliageDesc desc;
-    desc.leafSize_ = Vector2(1, 1) * 0.02 / scale;
+    desc.leafSize_ = Vector2(1, 1) * 0.025 / scale;
     desc.branchHeight_ = Vector4(0.7, -0.2, 0, 0);
     desc.branchSize_ = 0.8;
     desc.trailStride_ = 0.05 / scale;
@@ -64,7 +64,7 @@ Model@ MainFoliageMask(ProceduralContext@ context, float scale, float height)
     desc.fadeOutEnd_ = 0.5;
 
     GenerateFoliage(model, desc, height);
-    
+
     return context.CreateModel(factory);
 }
 
@@ -125,12 +125,15 @@ Model@ MainLeafMask(ProceduralContext@ context)
     desc.segmentMaskInfo_ = Vector4(1.0, 10.0, 0.1, 1.0);
 
     GenerateLeaf(model, desc);
-    
+
     return context.CreateModel(factory);
 }
 
 void MainFoliage(ProceduralContext@ context, float scale, float height)
 {
+    Vector4 color1 = context[0].GetVector4();
+    Vector4 color2 = context[1].GetVector4();
+
     context[0] = Variant(1);
     context[1] = Variant(StringHash("Texture2D"));
     context[2] = Variant(StringHash("Image"));
@@ -154,15 +157,15 @@ void MainFoliage(ProceduralContext@ context, float scale, float height)
         512, 1024, BLACK, transparentRP, quadModel, mixColorMaterial, Vector3(), Vector2(1, 1), Array<Texture2D@> =
         {
             foliageMask,
-            context.RenderTexture(Color(0.204, 0.502, 0.09, 1)),
-            context.RenderTexture(Color(0.298, 0.769, 0.09, 1)),
+            context.RenderTexture(Color(color1.x, color1.y, color1.z, color1.w)),
+            context.RenderTexture(Color(color2.x, color2.y, color2.z, color2.w)),
             context.RenderTexture(Color(0, 0, 0, 0))
         });
 
     Image@ foliageDiffuseImage = foliageDiffuse.GetImage();
     foliageDiffuseImage.FillGaps(2);
     foliageDiffuseImage.PrecalculateLevels();
-    foliageDiffuseImage.AdjustAlpha(1.18);
+    foliageDiffuseImage.AdjustAlpha(1.12);
 
     context[3] = Variant(foliageDiffuseImage);
 }

@@ -100,8 +100,8 @@ void MainGrass(ProceduralContext@ context)
         256, 256, BLACK, transparentRP, quadModel, mixColorMaterial, Vector3(), Vector2(1, 1), Array<Texture2D@> =
         {
             grassMask,
-            context.RenderTexture(Color(0.204, 0.502, 0.09, 1)),
-            context.RenderTexture(Color(0.298, 0.769, 0.09, 1)),
+            context.RenderTexture(Color(0.2, 0.6, 0.1, 1)),
+            context.RenderTexture(Color(0.2, 0.6, 0.1, 1)),
             context.RenderTexture(Color(0, 0, 0, 0))
         });
 

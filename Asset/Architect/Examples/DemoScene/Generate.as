@@ -10,10 +10,10 @@ destNode = scene.CreateChild("Forest");
 
 destNode.RemoveAllChildren();
 
-XMLFile@ t29 = cache.GetResource("XMLFile", "Examples/DemoTerrain/t29.xml");
-XMLFile@ t19 = cache.GetResource("XMLFile", "Examples/DemoTerrain/t19.xml");
-XMLFile@ t11 = cache.GetResource("XMLFile", "Examples/DemoTerrain/t11.xml");
-XMLFile@ t5  = cache.GetResource("XMLFile", "Examples/DemoTerrain/t5.xml");
+XMLFile@ t29 = cache.GetResource("XMLFile", "Examples/DemoScene/Tree29.xml");
+XMLFile@ t19 = cache.GetResource("XMLFile", "Examples/DemoScene/Tree19.xml");
+XMLFile@ t11 = cache.GetResource("XMLFile", "Examples/DemoScene/Tree11.xml");
+XMLFile@ t5  = cache.GetResource("XMLFile", "Examples/DemoScene/Tree5.xml");
 
 float size = 200;
 TODO_CoverTerrainWithObjects(terrain, destNode, t29, 30.0, 13.0, Vector2(-size, -size), Vector2(size, size));
