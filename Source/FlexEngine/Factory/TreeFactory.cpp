@@ -708,6 +708,12 @@ void GenerateLeafGeometry(ModelFactory& factory,
         vers[i].normal_ = Lerp(globalNormal, bumpedNormal, shape.bumpNormals_).Normalized();
     }
 
+    for (unsigned i = 0; i < 5; ++i)
+    {
+        vers[i].tangent_ = ConstructOrthogonalVector(vers[i].normal_);
+        vers[i].binormal_ = vers[i].normal_.CrossProduct(vers[i].tangent_);
+    }
+
     const unsigned inds[4 * 3] =
     {
         0, 4, 1,

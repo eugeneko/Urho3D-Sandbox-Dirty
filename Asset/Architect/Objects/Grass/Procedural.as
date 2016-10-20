@@ -10,16 +10,6 @@ class InstanceLinearStripParam
     float cfAngleNoise;
 };
 
-Vector2 StableRandom2(Vector2 uv)
-{
-    return Vector2(StableRandom(uv), StableRandom(uv + Vector2(1, 3)));
-}
-
-Vector4 StableRandom4(Vector2 uv)
-{
-    return Vector4(StableRandom(uv), StableRandom(uv + Vector2(1, 1)), StableRandom(uv + Vector2(2, 2)), StableRandom(uv + Vector2(3, 3)));
-}
-
 void ComputeInstanceLinearStrip(InstanceLinearStripParam sParam,
     Array<Vector2>& positions, Array<float>& rotations, Array<Vector2>& sizes, Array<float>& noises)
 {
@@ -54,9 +44,6 @@ void ComputeInstanceLinearStrip(InstanceLinearStripParam sParam,
 
 Model@ MainGrassMask(ProceduralContext@ context)
 {
-    ModelFactory@ factory = context.CreateModelFactory();
-    ModelFactoryWrapper model(factory);
-
     InstanceLinearStripParam sParam;
     sParam.cvLocation       = Vector2(0.1, 0.9);
     sParam.cfStep           = 0.02;
@@ -71,12 +58,13 @@ Model@ MainGrassMask(ProceduralContext@ context)
     Array<float> noises;
     ComputeInstanceLinearStrip(sParam, positions, rotations, sizes, noises);
     
+    QuadList@ dest = QuadList();
     for (uint i = 0; i < positions.length; ++i)
     {
-        model.AddRect2D(Vector3(positions[i], noises[i]), 0.0, sizes[i], Vector2(0, 0), Vector2(1, 1), Vector2(0, 1), Vector4(1.0, 10.0, 1.0, 1.0));
+        dest.AddQuad(Vector3(positions[i], noises[i]), 0.0, sizes[i], Vector2(0, 0), Vector2(1, 1), Vector2(0, 1), Vector4(1.0, 10.0, 1.0, 1.0));
     }
 
-    return context.CreateModel(factory);
+    return CreateModel(context, dest);
 }
 
 void MainGrass(ProceduralContext@ context)

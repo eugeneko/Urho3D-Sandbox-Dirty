@@ -1,71 +1,15 @@
 #include "Scripts/ModelFactoryWrapper.as"
 
-class FoliageDesc
+QuadList@ MainFoliageMask(float scale, float height)
 {
-    /// Leaf size.
-    Vector2 leafSize_;
-    /// Relative branch size.
-    float branchSize_;
-    /// Relative branch height.
-    Vector4 branchHeight_;
-    /// Leaf trails stride distance.
-    float trailStride_;
-    /// Leaf stride distance.
-    float leafStride_;
-    /// Leaf noise.
-    Vector2 leafNoise_;
-    /// Fade out start.
-    float fadeOutStart_;
-    /// Fade out end.
-    float fadeOutEnd_;
-}
-
-float VectorPower(float x, Vector4 power)
-{
-    return power.x + power.y * x ** 2 + power.z * x ** 4 + power.w * x ** 6;
-}
-
-Vector2 StableRandom2(Vector2 uv)
-{
-    return Vector2(StableRandom(uv), StableRandom(uv + Vector2(1, 3)));
-}
-
-void GenerateFoliage(ModelFactoryWrapper& model, FoliageDesc desc, float height)
-{
-    for (float x = -desc.branchSize_/2; x <= desc.branchSize_/2; x += desc.trailStride_)
-    {
-        for (float y = height; y >= 0; y -= desc.leafStride_)
-        {
-            Vector2 position = Vector2(x, y);
-            Vector2 relativePosition = Vector2(Abs(position.x), Max(0.0, Abs(position.y - height / 2) - Max(0.0, height / 2 - 0.5)));
-            float fadeOut = Clamp(InverseLerp(desc.fadeOutStart_, desc.fadeOutEnd_, relativePosition.length), 0.0, 1.0);
-            if (StableRandom(position) < fadeOut)
-                continue;
-
-            position += (StableRandom2(Vector2(x, y)) - Vector2(0.5, 0.5)) * desc.leafNoise_;
-            model.AddRect2D(Vector3(position, StableRandom(position) * 0.1), 0.0, desc.leafSize_, Vector2(0, 0), Vector2(1, 1), Vector2(0, 1), Vector4());
-        }
-    }
-}
-
-Model@ MainFoliageMask(ProceduralContext@ context, float scale, float height)
-{
-    ModelFactory@ factory = context.CreateModelFactory();
-    ModelFactoryWrapper model(factory);
-
-    FoliageDesc desc;
-    desc.leafSize_ = Vector2(1, 1) * 0.025 / scale;
-    desc.branchHeight_ = Vector4(0.7, -0.2, 0, 0);
-    desc.branchSize_ = 0.8;
-    desc.trailStride_ = 0.05 / scale;
-    desc.leafStride_ = 0.015 / scale;
-    desc.leafNoise_ = Vector2(0.1, 0.05);
-    desc.fadeOutStart_ = 0.3;
-    desc.fadeOutEnd_ = 0.5;
-
-    GenerateFoliage(model, desc, height);
-
-    return context.CreateModel(factory);
+    Vector2 leafSize = Vector2(1, 1) * 0.025 / scale;
+    Vector2 stripRange(0.9, height);
+    Vector2 stripStride = Vector2(0.05, 0.015) / scale;
+    Vector2 leafNoise = Vector2(0.1, 0.05);
+    Vector2 filterRange(1, height);
+    float filterRadius = 0.5;
+    Vector2 filterFade(0.3, 0.5);
+    return FilterRoundQuadArea(GenerateQuadStrips(leafSize, stripRange, stripStride, leafNoise), filterRange, filterRadius, filterFade);
 }
 
 class LeafDesc
@@ -87,8 +31,10 @@ class LeafDesc
     Vector4 segmentMaskInfo_;
 }
 
-void GenerateLeaf(ModelFactoryWrapper& model, LeafDesc desc)
+QuadList@ GenerateLeaf(LeafDesc desc)
 {
+    QuadList@ dest = QuadList();
+
     float shapePowerPos = desc.shapePower_.x;
     float shapePowerNeg = desc.shapePower_.y;
     float lengthScaleY = Pow(shapePowerPos / shapePowerNeg, 1 / (shapePowerNeg - shapePowerPos));
@@ -102,19 +48,18 @@ void GenerateLeaf(ModelFactoryWrapper& model, LeafDesc desc)
         float len = (Pow(1.0 - position.y, shapePowerPos) - Pow(1.0 - position.y, shapePowerNeg)) / lengthScale * desc.width_;
         Vector2 scale = Vector2(desc.segmentWidth_ / desc.numSegments_, 0.5 * len);
 
-        model.AddRect2D(Vector3(position), +angle, scale, Vector2(-0.5, 1.0 - len), Vector2(0.5, 1.0), Vector2(0, 1), desc.segmentMaskInfo_);
-        model.AddRect2D(Vector3(position), -angle, scale, Vector2(-0.5, 1.0 - len), Vector2(0.5, 1.0), Vector2(0, 1), desc.segmentMaskInfo_);
+        dest.AddQuad(Vector3(position), +angle, scale, Vector2(-0.5, 1.0 - len), Vector2(0.5, 1.0), Vector2(0, 1), desc.segmentMaskInfo_);
+        dest.AddQuad(Vector3(position), -angle, scale, Vector2(-0.5, 1.0 - len), Vector2(0.5, 1.0), Vector2(0, 1), desc.segmentMaskInfo_);
     }
 
     Vector2 trunkScale = Vector2(desc.segmentWidth_ / desc.numSegments_, Lerp(1.0, desc.positionRange_.y, 0.5) - desc.positionRange_.x);
-    model.AddRect2D(Vector3(0.0, desc.positionRange_.x, 0.0), 0.0, trunkScale, Vector2(-0.5, 0.0), Vector2(0.5, 1.0), Vector2(0, 1), desc.segmentMaskInfo_);
+    dest.AddQuad(Vector3(0.0, desc.positionRange_.x, 0.0), 0.0, trunkScale, Vector2(-0.5, 0.0), Vector2(0.5, 1.0), Vector2(0, 1), desc.segmentMaskInfo_);
+
+    return dest;
 }
 
 Model@ MainLeafMask(ProceduralContext@ context)
 {
-    ModelFactory@ factory = context.CreateModelFactory();
-    ModelFactoryWrapper model(factory);
-
     LeafDesc desc;
     desc.numSegments_ = 30;
     desc.segmentWidth_ = 2.5;
@@ -124,7 +69,10 @@ Model@ MainLeafMask(ProceduralContext@ context)
     desc.width_ = 0.8;
     desc.segmentMaskInfo_ = Vector4(1.0, 10.0, 0.1, 1.0);
 
-    GenerateLeaf(model, desc);
+    QuadList@ quadList = GenerateLeaf(desc);
+    ModelFactory@ factory = context.CreateModelFactory();
+    ModelFactoryWrapper model(factory);
+    quadList.Deploy(model);
 
     return context.CreateModel(factory);
 }
@@ -134,40 +82,61 @@ void MainFoliage(ProceduralContext@ context, float scale, float height)
     Vector4 color1 = context[0].GetVector4();
     Vector4 color2 = context[1].GetVector4();
 
-    context[0] = Variant(1);
+    context[0] = Variant(2);
     context[1] = Variant(StringHash("Texture2D"));
     context[2] = Variant(StringHash("Image"));
 
     XMLFile@ opaqueRP = cache.GetResource("XMLFile", "RenderPaths/BakeOpaque.xml");
     XMLFile@ transparentRP = cache.GetResource("XMLFile", "RenderPaths/BakeTransparent.xml");
     Material@ maskAddMaterial = cache.GetResource("Material", "Materials/Procedural/MaskAdd.xml");
-    Material@ superMaskMaterial = cache.GetResource("Material", "Materials/Procedural/SuperMask.xml");
+    Material@ superMaskRawMaterial = cache.GetResource("Material", "Materials/Procedural/SuperMaskRaw.xml");
     Material@ mixColorMaterial = cache.GetResource("Material", "Materials/Procedural/MixColor.xml");
+    Material@ paintMaskRawMaterial = cache.GetResource("Material", "Materials/Procedural/PaintMaskRaw.xml");
     Model@ quadModel = context.CreateQuadModel();
 
     Model@ leafMaskModel = MainLeafMask(context);
     Texture2D@ leafMask = context.RenderTexture(
         64, 64, BLACK, opaqueRP, leafMaskModel, maskAddMaterial, Vector3(0.5, 0, 0.5), Vector2(1, 1));
+        
+    QuadList@ foliageData = MainFoliageMask(scale, height);
 
-    Model@ foliageMaskModel = MainFoliageMask(context, scale, height);
     Texture2D@ foliageMask = context.RenderTexture(
-        512, 1024, BLACK, opaqueRP, foliageMaskModel, superMaskMaterial, Vector3(0.5, 0.5 - height/2, 0.5), Vector2(1, height), Array<Texture2D@> = {leafMask});
+        512, 1024, BLACK, opaqueRP,
+        CreateModel(context, FilterRandomFactor(foliageData, 0.0)),
+        superMaskRawMaterial,
+        Vector3(0.5, 0.5, 0.5), Vector2(1, height),
+        Array<Texture2D@> = {leafMask});
 
-    Texture2D@ foliageDiffuse = context.RenderTexture(
-        512, 1024, BLACK, transparentRP, quadModel, mixColorMaterial, Vector3(), Vector2(1, 1), Array<Texture2D@> =
+    Image@ foliageNormal = context.RenderTexture(
+        512, 1024, BLACK, opaqueRP,
+        CreateModel(context, FilterRandomNormal(foliageData, 0.0, Vector2(1, 1) * 0.5)),
+        paintMaskRawMaterial,
+        Vector3(0.5, 0.5, 0.5), Vector2(1, height),
+        Array<Texture2D@> = {leafMask}).GetImage();
+
+    Image@ foliageDiffuse = context.RenderTexture(
+        512, 1024, BLACK, transparentRP,
+        quadModel,
+        mixColorMaterial,
+        Vector3(), Vector2(1, 1),
+        Array<Texture2D@> =
         {
             foliageMask,
             context.RenderTexture(Color(color1.x, color1.y, color1.z, color1.w)),
             context.RenderTexture(Color(color2.x, color2.y, color2.z, color2.w)),
             context.RenderTexture(Color(0, 0, 0, 0))
-        });
+        }).GetImage();
 
-    Image@ foliageDiffuseImage = foliageDiffuse.GetImage();
-    foliageDiffuseImage.FillGaps(2);
-    foliageDiffuseImage.PrecalculateLevels();
-    foliageDiffuseImage.AdjustAlpha(1.12);
+    foliageDiffuse.FillGaps(2);
+    foliageDiffuse.PrecalculateLevels();
+    foliageDiffuse.AdjustAlpha(1.12);
+    
+    foliageNormal.BuildNormalMapAlpha();
+    foliageNormal.FillGaps(2);
+    foliageNormal.PrecalculateLevels();
 
-    context[3] = Variant(foliageDiffuseImage);
+    context[3] = Variant(foliageDiffuse);
+    context[4] = Variant(foliageNormal);
 }
 
 void MainLargeFoliage(ProceduralContext@ context)

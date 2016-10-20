@@ -75,18 +75,34 @@ void PS(
     #if defined(MASK)
         float mask = ComputeMask(iTexCoord, inputColor);
     #elif defined(SUPERMASK)
-        float mask = ComputeSuperMask(iTexCoord);
+        float4 baseMask = Sample2D(TextureUnit0, iTexCoord.xy);
+        float mask = baseMask.x * iTexCoord.w;
+    #elif defined(SUPERMASKRAW)
+        float4 baseMask = Sample2D(TextureUnit0, iTexCoord.xy);
+        float mask = baseMask.x > 0 ? iTexCoord.w : 0.0;
     #elif defined(PERLINNOISE)
-        float mask = ComputePerlinNoise(iTexCoord, inputColor);
+        float mask = PerlinNoise2D((iTexCoord.xy + inputColor.zw) * inputColor.xy, inputColor.xy);
+    #elif defined(PAINTMASK)
+        float4 baseMask = Sample2D(TextureUnit0, iTexCoord.xy);
+        diffColor = baseMask.x * inputColor;
+    #elif defined(PAINTMASKRAW)
+        float4 baseMask = Sample2D(TextureUnit0, iTexCoord.xy);
+        diffColor = baseMask.x > 0 ? inputColor : float4(0, 0, 0, 0);
     #elif defined(MIXCOLOR)
-        diffColor = ComputeMixedColor(iTexCoord, inputColor);
+        float4 mask = Sample2D(TextureUnit0, iTexCoord.xy);
+        float4 xtex = Sample2D(TextureUnit1, iTexCoord.xy);
+        float4 ytex = Sample2D(TextureUnit2, iTexCoord.xy);
+        float4 ztex = Sample2D(TextureUnit3, iTexCoord.xy);
+        diffColor = mask.x > 0 ? lerp(xtex, ytex, mask.x) : ztex;
     #elif defined(SUPERMIXCOLOR)
-        diffColor = ComputeSuperMixedColor(iTexCoord, inputColor);
-    #elif defined(FILLGAP)
-        diffColor = ComputeFillGap(iTexCoord, inputColor);
+        float4 mask = Sample2D(TextureUnit0, iTexCoord.xy);
+        float4 xtex = Sample2D(TextureUnit1, iTexCoord.xy);
+        float4 ytex = Sample2D(TextureUnit2, iTexCoord.xy);
+        float4 noise = Sample2D(TextureUnit3, iTexCoord.xy);
+        diffColor = NoiseLerp(xtex, ytex, mask.x, noise.x, 0.2);
     #endif
 
-    #if defined(MASK) || defined(SUPERMASK) || defined(PERLINNOISE)
+    #if defined(MASK) || defined(SUPERMASK) || defined(SUPERMASKRAW) || defined(PERLINNOISE)
         #ifndef ADDITIVE
             diffColor.rgb = mask;
             diffColor.a = 1.0;

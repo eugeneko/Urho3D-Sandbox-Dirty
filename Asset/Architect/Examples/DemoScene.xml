@@ -24,8 +24,10 @@
 	</component>
 	<component type="ProceduralSystem" id="162">
 		<attribute name="Resource List">
-			<variant type="ResourceRef" value="Image;Objects/WhiteTree/Foliage3x6g_Diff.dds" />
-			<variant type="ResourceRef" value="Image;Objects/WhiteTree/Foliage3x3g_Diff.dds" />
+			<variant type="ResourceRef" value="Image;Objects/WhiteTree/Foliage3x6_Diff.dds" />
+			<variant type="ResourceRef" value="Image;Objects/WhiteTree/Foliage3x6_Norm.dds" />
+			<variant type="ResourceRef" value="Image;Objects/WhiteTree/Foliage3x3_Diff.dds" />
+			<variant type="ResourceRef" value="Image;Objects/WhiteTree/Foliage3x3_Norm.dds" />
 			<variant type="ResourceRef" value="Image;Objects/WhiteTree/BlackBarkDiffuse.dds" />
 			<variant type="ResourceRef" value="Model;Objects/WhiteTree/Tree29A.mdl" />
 			<variant type="ResourceRef" value="Image;Objects/WhiteTree/Tree29ADiffuse.dds" />
@@ -87,12 +89,13 @@
 				<component type="ScriptedResource" id="163">
 					<attribute name="Resources Hashes">
 						<variant type="Int" value="-1478969812" />
+						<variant type="Int" value="-1478969812" />
 					</attribute>
-					<attribute name="Hash" value="1281201086" />
+					<attribute name="Hash" value="-1496735213" />
 					<attribute name="Type" value="-612052389" />
 					<attribute name="Script" value="ScriptFile;Objects/WhiteTree/Procedural.as" />
 					<attribute name="Entry Point" value="MainLargeFoliage" />
-					<attribute name="Resources" value="Texture2D;Objects/WhiteTree/Foliage3x6g_Diff.dds" />
+					<attribute name="Resources" value="Texture2D;Objects/WhiteTree/Foliage3x6_Diff.dds;Objects/WhiteTree/Foliage3x6_Norm.dds" />
 					<attribute name="Num Parameters" value="2" />
 					<attribute name="Parameters">
 						<variant hash="0" type="Vector4" value="0.4 0.6 0.1 1" />
@@ -115,12 +118,13 @@
 				<component type="ScriptedResource" id="5504">
 					<attribute name="Resources Hashes">
 						<variant type="Int" value="-1478969812" />
+						<variant type="Int" value="-1478969812" />
 					</attribute>
-					<attribute name="Hash" value="-185125232" />
+					<attribute name="Hash" value="2037664842" />
 					<attribute name="Type" value="-612052389" />
 					<attribute name="Script" value="ScriptFile;Objects/WhiteTree/Procedural.as" />
 					<attribute name="Entry Point" value="MainSmallFoliage" />
-					<attribute name="Resources" value="Texture2D;Objects/WhiteTree/Foliage3x3g_Diff.dds" />
+					<attribute name="Resources" value="Texture2D;Objects/WhiteTree/Foliage3x3_Diff.dds;Objects/WhiteTree/Foliage3x3_Norm.dds" />
 					<attribute name="Num Parameters" value="2" />
 					<attribute name="Parameters">
 						<variant hash="0" type="Vector4" value="0.4 0.6 0.1 1" />
