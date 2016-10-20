@@ -1,0 +1,6 @@
+<material>
+    <technique name="Techniques/StandardTree.xml" />
+    <shader vsdefines="DIFFMAP " psdefines="DIFFMAP ALPHAMASK " />
+    <texture unit="diffuse" name="Objects/WhiteTree/Foliage3x6b_Diff.dds" />
+    <cull value="none" />
+</material>
