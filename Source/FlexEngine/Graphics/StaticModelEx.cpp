@@ -100,8 +100,8 @@ bool StaticModelEx::SetMaterial(unsigned index, Material* material)
     if (index < GetNumGeometries())
     {
         StaticModel::SetMaterial(index, material);
-        UpdateReferencedMaterial(material);
         SetMaterialImpl(index, material);
+        UpdateReferencedMaterial(material);
         SetBatchMaterial(index);
         return true;
     }
