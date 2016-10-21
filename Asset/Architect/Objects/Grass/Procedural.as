@@ -69,6 +69,9 @@ Model@ MainGrassMask(ProceduralContext@ context)
 
 void MainGrass(ProceduralContext@ context)
 {
+    Vector4 color1 = context[0].GetVector4();
+    Vector4 color2 = context[1].GetVector4();
+    
     context[0] = Variant(1);
     context[1] = Variant(StringHash("Texture2D"));
     context[2] = Variant(StringHash("Image"));
@@ -88,8 +91,8 @@ void MainGrass(ProceduralContext@ context)
         256, 256, BLACK, transparentRP, quadModel, mixColorMaterial, Vector3(), Vector2(1, 1), Array<Texture2D@> =
         {
             grassMask,
-            context.RenderTexture(Color(0.2, 0.6, 0.1, 1)),
-            context.RenderTexture(Color(0.2, 0.6, 0.1, 1)),
+            context.RenderTexture(Color(color1.x, color1.y, color1.z, color1.w)),
+            context.RenderTexture(Color(color2.x, color2.y, color2.z, color2.w)),
             context.RenderTexture(Color(0, 0, 0, 0))
         });
 
