@@ -145,7 +145,7 @@ QuadList@ GenerateQuadStrips(Vector2 quadSize, Vector2 range, Vector2 stride, Ve
     return dest;
 }
 
-QuadList@ FilterRandomFactor(QuadList@ src, float seed)
+QuadList@ FillRandomFactor(QuadList@ src, float seed)
 {
     QuadList@ dest = QuadList();
     
@@ -160,7 +160,7 @@ QuadList@ FilterRandomFactor(QuadList@ src, float seed)
     return dest;
 }
 
-QuadList@ FilterRandomNormal(QuadList@ src, float seed, Vector2 deviation)
+QuadList@ FillRandomNormal(QuadList@ src, float seed, Vector2 deviation)
 {
     QuadList@ dest = QuadList();
     
@@ -180,7 +180,7 @@ QuadList@ FilterRandomNormal(QuadList@ src, float seed, Vector2 deviation)
 QuadList@ FilterRoundQuadArea(QuadList@ src, Vector2 range, float radius, Vector2 fade)
 {
     QuadList@ dest = QuadList();
-    
+
     dest.quads.Reserve(src.quads.length);
     for (uint i = 0; i < src.quads.length; ++i)
     {
@@ -189,6 +189,27 @@ QuadList@ FilterRoundQuadArea(QuadList@ src, Vector2 range, float radius, Vector
         float distance = relative.length;
         float fadeOut = Clamp(InverseLerp(fade.x, fade.y, distance), 0.0, 1.0);
         if (StableRandom(position) >= fadeOut)
+        {
+            dest.AddQuad(src.quads[i]);
+        }
+    }
+    
+    return dest;
+}
+
+QuadList@ FilterNoiseGrad(QuadList@ src, Image@ noiseImage, Vector2 grad0, Vector2 grad1)
+{
+    Vector2 dir = grad1 - grad0;
+    QuadList@ dest = QuadList();
+
+    dest.quads.Reserve(src.quads.length);
+    for (uint i = 0; i < src.quads.length; ++i)
+    {
+        Vector3 position = src.quads[i].position;
+        float grad = Clamp(Vector2(position.x - grad0.x, position.y - grad0.y).ProjectOntoAxis(dir) / dir.length, 0.0, 1.0);
+        float noise = noiseImage.GetPixelBilinear(position.x + 0.5, position.y + 1).r;
+        Print(position.x + "," + position.y + ":" + grad + ":" + noise);
+        if (StableRandom(position) < Lerp(1.0, noise, grad))
         {
             dest.AddQuad(src.quads[i]);
         }

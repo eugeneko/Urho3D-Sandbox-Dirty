@@ -1,15 +1,26 @@
 #include "Scripts/ModelFactoryWrapper.as"
 
-QuadList@ MainFoliageMask(float scale, float height)
+QuadList@ MainFoliageMask(ProceduralContext@ context, float scale, float height)
 {
-    Vector2 leafSize = Vector2(1, 1) * 0.025 / scale;
+    Vector2 leafSize = Vector2(1, 1) * 0.03 / scale;
     Vector2 stripRange(0.9, height);
-    Vector2 stripStride = Vector2(0.05, 0.015) / scale;
-    Vector2 leafNoise = Vector2(0.1, 0.05);
+    Vector2 stripStride = Vector2(0.02, 0.04) / scale;
+    Vector2 leafNoise = Vector2(0.05, 0.05);
     Vector2 filterRange(1, height);
     float filterRadius = 0.5;
     Vector2 filterFade(0.3, 0.5);
-    return FilterRoundQuadArea(GenerateQuadStrips(leafSize, stripRange, stripStride, leafNoise), filterRange, filterRadius, filterFade);
+    
+    XMLFile@ transparentRP = cache.GetResource("XMLFile", "RenderPaths/BakeTransparent.xml");
+    Material@ perlinNoiseMaterial = cache.GetResource("Material", "Materials/Procedural/PerlinNoise.xml");
+    Model@ quadModel = context.CreateQuadModel();
+    Image@ noise = context.GeneratePerlinNoise(64, 128, BLACK, WHITE, Vector2(8, 1),
+        Array<Vector4> = { Vector4(1, 1, 1, 0), Vector4(2, 2, 0.5, 0), Vector4(4, 4, 0.25, 0) }, 0, 0, Vector2(0, 1),
+        transparentRP, quadModel, perlinNoiseMaterial);
+
+    QuadList@ rawStrips = GenerateQuadStrips(leafSize, stripRange, stripStride, leafNoise);
+    QuadList@ roundStrips = FilterRoundQuadArea(rawStrips, filterRange, filterRadius, filterFade);
+    QuadList@ noiseStrips = FilterNoiseGrad(roundStrips, noise, Vector2(0, height/2), Vector2(0, -height/2));
+    return noiseStrips;
 }
 
 class LeafDesc
@@ -98,18 +109,18 @@ void MainFoliage(ProceduralContext@ context, float scale, float height)
     Texture2D@ leafMask = context.RenderTexture(
         64, 64, BLACK, opaqueRP, leafMaskModel, maskAddMaterial, Vector3(0.5, 0, 0.5), Vector2(1, 1));
         
-    QuadList@ foliageData = MainFoliageMask(scale, height);
+    QuadList@ foliageData = MainFoliageMask(context, scale, height);
 
     Texture2D@ foliageMask = context.RenderTexture(
         512, 1024, BLACK, opaqueRP,
-        CreateModel(context, FilterRandomFactor(foliageData, 0.0)),
+        CreateModel(context, FillRandomFactor(foliageData, 0.0)),
         superMaskRawMaterial,
         Vector3(0.5, 0.5, 0.5), Vector2(1, height),
         Array<Texture2D@> = {leafMask});
 
     Image@ foliageNormal = context.RenderTexture(
         512, 1024, BLACK, opaqueRP,
-        CreateModel(context, FilterRandomNormal(foliageData, 0.0, Vector2(1, 1) * 0.5)),
+        CreateModel(context, FillRandomNormal(foliageData, 0.0, Vector2(1, 1) * 0.5)),
         paintMaskRawMaterial,
         Vector3(0.5, 0.5, 0.5), Vector2(1, height),
         Array<Texture2D@> = {leafMask}).GetImage();
@@ -129,7 +140,7 @@ void MainFoliage(ProceduralContext@ context, float scale, float height)
 
     foliageDiffuse.FillGaps(2);
     foliageDiffuse.PrecalculateLevels();
-    foliageDiffuse.AdjustAlpha(1.12);
+    foliageDiffuse.AdjustAlpha(1.2);
     
     foliageNormal.BuildNormalMapAlpha();
     foliageNormal.FillGaps(2);
@@ -137,6 +148,12 @@ void MainFoliage(ProceduralContext@ context, float scale, float height)
 
     context[3] = Variant(foliageDiffuse);
     context[4] = Variant(foliageNormal);
+    
+    Material@ perlinNoiseMaterial = cache.GetResource("Material", "Materials/Procedural/PerlinNoise.xml");
+    Image@ noise = context.GeneratePerlinNoise(64, 128, BLACK, WHITE, Vector2(8, 2),
+        Array<Vector4> = { Vector4(1, 1, 1, 0), Vector4(2, 2, 0.5, 0) }, 0, 0, Vector2(0, 1),
+        transparentRP, quadModel, perlinNoiseMaterial);
+    //context[3] = Variant(noise);
 }
 
 void MainLargeFoliage(ProceduralContext@ context)

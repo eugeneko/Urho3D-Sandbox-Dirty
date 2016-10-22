@@ -5,10 +5,10 @@
 	<attribute name="Smoothing Constant" value="50" />
 	<attribute name="Snap Threshold" value="5" />
 	<attribute name="Elapsed Time" value="0" />
-	<attribute name="Next Replicated Node ID" value="5502" />
-	<attribute name="Next Replicated Component ID" value="5583" />
-	<attribute name="Next Local Node ID" value="16841152" />
-	<attribute name="Next Local Component ID" value="16843528" />
+	<attribute name="Next Replicated Node ID" value="5512" />
+	<attribute name="Next Replicated Component ID" value="5596" />
+	<attribute name="Next Local Node ID" value="16851525" />
+	<attribute name="Next Local Component ID" value="16853989" />
 	<attribute name="Variables" />
 	<attribute name="Variable Names" value="" />
 	<component type="Octree" id="1" />
@@ -24,6 +24,7 @@
 	</component>
 	<component type="ProceduralSystem" id="162">
 		<attribute name="Resource List">
+			<variant type="ResourceRef" value="Model;Objects/WhiteTree/FoliageSegment3x6.mdl" />
 			<variant type="ResourceRef" value="Image;Objects/WhiteTree/Foliage3x6_Diff.dds" />
 			<variant type="ResourceRef" value="Image;Objects/WhiteTree/Foliage3x6_Norm.dds" />
 			<variant type="ResourceRef" value="Image;Objects/WhiteTree/Foliage3x3_Diff.dds" />
@@ -49,23 +50,10 @@
 		<attribute name="Is Enabled" value="true" />
 		<attribute name="Name" value="Procedural" />
 		<attribute name="Tags" />
-		<attribute name="Position" value="0 -0.5 0" />
+		<attribute name="Position" value="0 10 0" />
 		<attribute name="Rotation" value="1 0 0 0" />
 		<attribute name="Scale" value="1 1 1" />
 		<attribute name="Variables" />
-		<node id="5442">
-			<attribute name="Is Enabled" value="true" />
-			<attribute name="Name" value="Ground" />
-			<attribute name="Tags" />
-			<attribute name="Position" value="0 0 0" />
-			<attribute name="Rotation" value="1 0 0 0" />
-			<attribute name="Scale" value="1000 1 1000" />
-			<attribute name="Variables" />
-			<component type="StaticModel" id="5499">
-				<attribute name="Model" value="Model;Models/Plane.mdl" />
-				<attribute name="Material" value="Material;" />
-			</component>
-		</node>
 		<node id="5496">
 			<attribute name="Is Enabled" value="true" />
 			<attribute name="Name" value="WhiteTree" />
@@ -74,6 +62,118 @@
 			<attribute name="Rotation" value="1 0 0 0" />
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
+			<node id="5502">
+				<attribute name="Is Enabled" value="false" />
+				<attribute name="Name" value="FoliageSegment" />
+				<attribute name="Tags" />
+				<attribute name="Position" value="-12 5.5 3.5" />
+				<attribute name="Rotation" value="1 0 0 0" />
+				<attribute name="Scale" value="1 1 1" />
+				<attribute name="Variables" />
+				<component type="StaticModel" id="5583">
+					<attribute name="Model" value="Model;Objects/WhiteTree/FoliageSegment3x6.mdl" />
+					<attribute name="Material" value="Material;" />
+				</component>
+				<component type="TreeHost" id="5584">
+					<attribute name="Resources Hashes">
+						<variant type="Int" value="-1323368352" />
+					</attribute>
+					<attribute name="Hash" value="-1425090283" />
+					<attribute name="Destination Model" value="Model;Objects/WhiteTree/FoliageSegment3x6.mdl" />
+				</component>
+				<component type="TreeLevelOfDetail" id="5585">
+					<attribute name="Hash" value="-725142978" />
+				</component>
+				<node id="5503">
+					<attribute name="Is Enabled" value="true" />
+					<attribute name="Name" value="Trunk" />
+					<attribute name="Tags" />
+					<attribute name="Position" value="0 0 0" />
+					<attribute name="Rotation" value="0.499999 0.500001 0.5 0.5" />
+					<attribute name="Scale" value="1 1 1" />
+					<attribute name="Variables" />
+					<component type="BranchGroup" id="5587">
+						<attribute name="Hash" value="508625890" />
+						<attribute name="Generate Branch" value="false" />
+						<attribute name="Length" value="2 2" />
+						<attribute name="Radius" value="0.02 0.02" />
+					</component>
+					<node id="5504">
+						<attribute name="Is Enabled" value="true" />
+						<attribute name="Name" value="Branches" />
+						<attribute name="Tags" />
+						<attribute name="Position" value="0 0 0" />
+						<attribute name="Rotation" value="1 0 0 0" />
+						<attribute name="Scale" value="1 1 1" />
+						<attribute name="Variables" />
+						<component type="BranchGroup" id="5588">
+							<attribute name="Hash" value="1034718428" />
+							<attribute name="Frequency" value="8" />
+							<attribute name="Twirl angle step" value="105" />
+							<attribute name="Growth Angle" value="30 30" />
+							<attribute name="Generate Branch" value="false" />
+							<attribute name="Length" value="1.3 1.3" />
+							<attribute name="Relative Length" value="false" />
+							<attribute name="Radius" value="0.5 0.5" />
+							<attribute name="Gravity Intensity" value="10" />
+						</component>
+						<node id="5509">
+							<attribute name="Is Enabled" value="true" />
+							<attribute name="Name" value="Branches" />
+							<attribute name="Tags" />
+							<attribute name="Position" value="0 0 0" />
+							<attribute name="Rotation" value="1 0 0 0" />
+							<attribute name="Scale" value="1 1 1" />
+							<attribute name="Variables" />
+							<component type="BranchGroup" id="5593">
+								<attribute name="Hash" value="-1462655217" />
+								<attribute name="Frequency" value="5" />
+								<attribute name="Twirl angle step" value="105" />
+								<attribute name="Generate Branch" value="false" />
+								<attribute name="Length" value="3 3" />
+								<attribute name="Relative Length" value="false" />
+								<attribute name="Radius" value="0.5 0.5" />
+								<attribute name="Gravity Intensity" value="200" />
+							</component>
+							<node id="5510">
+								<attribute name="Is Enabled" value="true" />
+								<attribute name="Name" value="Branches" />
+								<attribute name="Tags" />
+								<attribute name="Position" value="0 0 0" />
+								<attribute name="Rotation" value="1 0 0 0" />
+								<attribute name="Scale" value="1 1 1" />
+								<attribute name="Variables" />
+								<component type="BranchGroup" id="5594">
+									<attribute name="Hash" value="1450949644" />
+									<attribute name="Frequency" value="10" />
+									<attribute name="Twirl angle step" value="105" />
+									<attribute name="Growth Angle" value="50 70" />
+									<attribute name="Generate Branch" value="false" />
+									<attribute name="Length" value="0.5 0.5" />
+									<attribute name="Relative Length" value="false" />
+									<attribute name="Radius" value="0.5 0.5" />
+								</component>
+								<node id="5511">
+									<attribute name="Is Enabled" value="true" />
+									<attribute name="Name" value="Leaves" />
+									<attribute name="Tags" />
+									<attribute name="Position" value="0 0 0" />
+									<attribute name="Rotation" value="1 0 0 0" />
+									<attribute name="Scale" value="1 1 1" />
+									<attribute name="Variables" />
+									<component type="LeafGroup" id="5595">
+										<attribute name="Hash" value="947940304" />
+										<attribute name="Frequency" value="3" />
+										<attribute name="Size" value="0.1 0.1" />
+										<attribute name="Align Vertical" value="1 1" />
+										<attribute name="Rotate Z" value="0 90" />
+									</component>
+								</node>
+							</node>
+						</node>
+					</node>
+				</node>
+			</node>
 			<node id="15">
 				<attribute name="Is Enabled" value="true" />
 				<attribute name="Name" value="Foliage3x6" />
@@ -174,11 +274,11 @@
 			</component>
 			<component type="TreeHost" id="3">
 				<attribute name="Resources Hashes">
-					<variant type="Int" value="-1354498475" />
+					<variant type="Int" value="-970977907" />
 					<variant type="Int" value="-1211824956" />
 					<variant type="Int" value="-1211824956" />
 				</attribute>
-				<attribute name="Hash" value="-1388381283" />
+				<attribute name="Hash" value="-1715604448" />
 				<attribute name="Destination Model" value="Model;Objects/WhiteTree/Tree29A.mdl" />
 				<attribute name="Main Wind" value="0.2" />
 				<attribute name="Turbulence Magnitude" value="0.07" />
@@ -234,7 +334,7 @@
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<component type="BranchGroup" id="9">
-						<attribute name="Hash" value="-480878555" />
+						<attribute name="Hash" value="1963004018" />
 						<attribute name="Frequency" value="13" />
 						<attribute name="Growth Location" value="0.1 0.75" />
 						<attribute name="Twirl angle step" value="105" />
@@ -244,7 +344,7 @@
 						<attribute name="Branch Material" value="Material;Objects/WhiteTree/BlackBarkMaterial.xml" />
 						<attribute name="UV Scale" value="1 4" />
 						<attribute name="Radius" value="0.6 0.1" />
-						<attribute name="Gravity Intensity" value="10" />
+						<attribute name="Gravity Intensity" value="3" />
 						<attribute name="Wind Main" value="0.2" />
 						<attribute name="Wind Turbulence" value="1" />
 						<attribute name="Wind Phase" value="1" />
@@ -258,7 +358,7 @@
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<component type="BranchGroup" id="11">
-							<attribute name="Hash" value="-2092835765" />
+							<attribute name="Hash" value="1167245721" />
 							<attribute name="Frequency" value="2" />
 							<attribute name="Growth Location" value="0.1 0.6" />
 							<attribute name="Twirl angle random" value="30" />
@@ -268,7 +368,7 @@
 							<attribute name="UV Scale" value="1 4" />
 							<attribute name="Fake Ending" value="true" />
 							<attribute name="Radius" value="0.6 0.2" />
-							<attribute name="Gravity Intensity" value="6" />
+							<attribute name="Gravity Intensity" value="2" />
 							<attribute name="Wind Main" value="0.1" />
 							<attribute name="Wind Turbulence" value="1" />
 						</component>
@@ -281,11 +381,11 @@
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<component type="LeafGroup" id="5513">
-								<attribute name="Hash" value="1523112257" />
+								<attribute name="Hash" value="-660921917" />
 								<attribute name="Frequency" value="2" />
 								<attribute name="Growth Location" value="0.2 0.8" />
 								<attribute name="Material" value="Material;Objects/WhiteTree/Foliage3x6c1.xml" />
-								<attribute name="Size" value="3 3" />
+								<attribute name="Size" value="2.5 3.5" />
 								<attribute name="Scale" value="1 1 2" />
 								<attribute name="Adjust to Global" value="1 1" />
 								<attribute name="Align Vertical" value="0.9 1" />
@@ -305,11 +405,11 @@
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<component type="LeafGroup" id="5514">
-								<attribute name="Hash" value="589404604" />
+								<attribute name="Hash" value="-936555352" />
 								<attribute name="Frequency" value="2" />
 								<attribute name="Growth Location" value="0.4 1" />
 								<attribute name="Material" value="Material;Objects/WhiteTree/Foliage3x6c1.xml" />
-								<attribute name="Size" value="3 3" />
+								<attribute name="Size" value="2.5 3.5" />
 								<attribute name="Scale" value="1 1 2" />
 								<attribute name="Adjust to Global" value="1 1" />
 								<attribute name="Align Vertical" value="0.9 1" />
@@ -375,7 +475,7 @@
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<component type="LeafGroup" id="5526">
-							<attribute name="Hash" value="1523112257" />
+							<attribute name="Hash" value="139281038" />
 							<attribute name="Frequency" value="2" />
 							<attribute name="Growth Location" value="0.2 0.8" />
 							<attribute name="Material" value="Material;Objects/WhiteTree/Foliage3x6c1.xml" />
@@ -399,7 +499,7 @@
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<component type="LeafGroup" id="5527">
-							<attribute name="Hash" value="589404604" />
+							<attribute name="Hash" value="-1612994030" />
 							<attribute name="Frequency" value="2" />
 							<attribute name="Growth Location" value="0.4 1" />
 							<attribute name="Material" value="Material;Objects/WhiteTree/Foliage3x6c1.xml" />
@@ -459,7 +559,7 @@
 					<variant type="Int" value="-1211824956" />
 					<variant type="Int" value="-1211824956" />
 				</attribute>
-				<attribute name="Hash" value="166245666" />
+				<attribute name="Hash" value="-306457558" />
 				<attribute name="Destination Model" value="Model;Objects/WhiteTree/Tree19A.mdl" />
 				<attribute name="Main Wind" value="0.2" />
 				<attribute name="Turbulence Magnitude" value="0.07" />
@@ -562,7 +662,7 @@
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<component type="LeafGroup" id="5532">
-								<attribute name="Hash" value="957707142" />
+								<attribute name="Hash" value="1905578095" />
 								<attribute name="Frequency" value="2" />
 								<attribute name="Growth Location" value="0.2 0.8" />
 								<attribute name="Material" value="Material;Objects/WhiteTree/Foliage3x6c2.xml" />
@@ -571,7 +671,7 @@
 								<attribute name="Adjust to Global" value="1 1" />
 								<attribute name="Align Vertical" value="0.9 1" />
 								<attribute name="Rotate Z" value="-30 40" />
-								<attribute name="Junction Offset" value="0 0 -1.5" />
+								<attribute name="Junction Offset" value="0 0 -2" />
 								<attribute name="Bending" value="0.2" />
 								<attribute name="Bump Normals" value="0.9" />
 								<attribute name="Wind Oscillation" value="0.5 1" />
@@ -586,7 +686,7 @@
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<component type="LeafGroup" id="5533">
-								<attribute name="Hash" value="-1169046054" />
+								<attribute name="Hash" value="354745928" />
 								<attribute name="Frequency" value="2" />
 								<attribute name="Growth Location" value="0.4 1" />
 								<attribute name="Material" value="Material;Objects/WhiteTree/Foliage3x6c2.xml" />
@@ -595,7 +695,7 @@
 								<attribute name="Adjust to Global" value="1 1" />
 								<attribute name="Align Vertical" value="0.9 1" />
 								<attribute name="Rotate Z" value="60 120" />
-								<attribute name="Junction Offset" value="0 0 -1.5" />
+								<attribute name="Junction Offset" value="0 0 -2" />
 								<attribute name="Bending" value="0.2" />
 								<attribute name="Bump Normals" value="0.9" />
 								<attribute name="Wind Oscillation" value="0.5 1" />
@@ -656,7 +756,7 @@
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<component type="LeafGroup" id="5536">
-							<attribute name="Hash" value="957707142" />
+							<attribute name="Hash" value="1905578095" />
 							<attribute name="Frequency" value="2" />
 							<attribute name="Growth Location" value="0.2 0.8" />
 							<attribute name="Material" value="Material;Objects/WhiteTree/Foliage3x6c2.xml" />
@@ -665,7 +765,7 @@
 							<attribute name="Adjust to Global" value="1 1" />
 							<attribute name="Align Vertical" value="0.9 1" />
 							<attribute name="Rotate Z" value="-30 40" />
-							<attribute name="Junction Offset" value="0 0 -1.5" />
+							<attribute name="Junction Offset" value="0 0 -2" />
 							<attribute name="Bending" value="0.2" />
 							<attribute name="Bump Normals" value="0.9" />
 							<attribute name="Wind Oscillation" value="0.5 1" />
@@ -680,7 +780,7 @@
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<component type="LeafGroup" id="5537">
-							<attribute name="Hash" value="-1169046054" />
+							<attribute name="Hash" value="354745928" />
 							<attribute name="Frequency" value="2" />
 							<attribute name="Growth Location" value="0.4 1" />
 							<attribute name="Material" value="Material;Objects/WhiteTree/Foliage3x6c2.xml" />
@@ -689,7 +789,7 @@
 							<attribute name="Adjust to Global" value="1 1" />
 							<attribute name="Align Vertical" value="0.9 1" />
 							<attribute name="Rotate Z" value="60 120" />
-							<attribute name="Junction Offset" value="0 0 -1.5" />
+							<attribute name="Junction Offset" value="0 0 -2" />
 							<attribute name="Bending" value="0.2" />
 							<attribute name="Bump Normals" value="0.9" />
 							<attribute name="Wind Oscillation" value="0.5 1" />

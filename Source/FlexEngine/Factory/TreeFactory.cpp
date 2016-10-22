@@ -166,21 +166,26 @@ BranchDescription GenerateBranch(const Vector3& initialPosition, const Vector3& 
         result.adherences_.Push(initialAdherence);
         result.frondSizes_.Push(frondShape.size_.ComputeValue(t));
 
+        // Apply gravity
+        if (direction.AbsDotProduct(Vector3::DOWN) < 1.0f - M_LARGE_EPSILON)
+        {
+            const float maxAngle = direction.Angle(Vector3::DOWN);
+            const float angle = Min(maxAngle, step * branchShape.gravityIntensity_);
+            const Vector3 side = direction.CrossProduct(Vector3::DOWN);
+            direction = Quaternion(angle, side) * direction;
+        }
+
+        // Next position
         direction = direction.Normalized();
         position += direction * step;
     }
 
+    // Update adherence
     for (unsigned i = 0; i < numKnots; ++i)
     {
         const float factor = static_cast<float>(i) / (numKnots + 1);
         float degree = Pow(factor, 1.0f / (1.0f - branchShape.resistance_));
 
-        // Apply gravity and restore shape
-        const float len = (result.positions_[i] - initialPosition).Length();
-        result.positions_[i].y_ -= branchShape.gravityIntensity_ * degree;
-        result.positions_[i] = (result.positions_[i] - initialPosition).Normalized() * len + initialPosition;
-
-        // Update adherence
         result.adherences_[i].x_ += branchShape.windMainMagnitude_ * degree;
         result.adherences_[i].y_ += branchShape.windTurbulenceMagnitude_ * degree;
     }
