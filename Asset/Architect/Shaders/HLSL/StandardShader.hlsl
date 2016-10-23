@@ -4,6 +4,12 @@
 #include "Lighting.hlsl"
 #include "Fog.hlsl"
 
+#ifdef OBJECTPROXY
+    #ifndef NORMALMAP
+        #error OBJECTPROXY requires NORMALMAP
+    #endif
+#endif
+
 void VS(float4 iPos : POSITION,
     #if !defined(BILLBOARD) && !defined(TRAILFACECAM)
         float3 iNormal : NORMAL,

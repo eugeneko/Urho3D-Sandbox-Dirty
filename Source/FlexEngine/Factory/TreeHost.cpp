@@ -205,8 +205,8 @@ void TreeHost::DoGenerateResources(Vector<SharedPtr<Resource>>& resources)
     factory.ForEachVertex<DefaultVertex>(
         [&maxMainAdherence, &maxTurbulenceAdherence](unsigned, unsigned, unsigned, DefaultVertex& vertex)
     {
-        maxMainAdherence = Max(maxMainAdherence, vertex.colors_[0].r_);
-        maxTurbulenceAdherence = Max(maxTurbulenceAdherence, vertex.colors_[0].g_);
+        maxMainAdherence = Max(maxMainAdherence, vertex.colors_[1].r_);
+        maxTurbulenceAdherence = Max(maxTurbulenceAdherence, vertex.colors_[1].g_);
     });
     factory.ForEachVertex<DefaultVertex>(
         [&maxMainAdherence, &maxTurbulenceAdherence, this](unsigned, unsigned, unsigned, DefaultVertex& vertex)
@@ -678,6 +678,8 @@ void TreeProxy::RegisterObject(Context* context)
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("RP Normal", GetNormalRenderPathAttr, SetNormalRenderPathAttr, ResourceRef, ResourceRef(XMLFile::GetTypeStatic()), AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Fill Gap Precision", unsigned, fillGapPrecision_, 2, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Adjust Alpha", float, adjustAlpha_, 1.0f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Dithering Granularity", float, ditheringGranularity_, 100.0f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Flip Normals", bool, flipNormals_, false, AM_DEFAULT);
 }
 
 TreeProxy::GeneratedData TreeProxy::Generate(SharedPtr<Model> model, const Vector<SharedPtr<Material>>& materials) const
@@ -733,7 +735,7 @@ TreeProxy::GeneratedData TreeProxy::Generate(SharedPtr<Model> model, const Vecto
             vertex.uv_[2].x_ = Cos(180.0f / numPlanes_ + 1.0f);
             vertex.uv_[2].y_ = 0.05f;
             vertex.uv_[2].z_ = sign;
-            vertex.uv_[2].w_ = 50;
+            vertex.uv_[2].w_ = ditheringGranularity_;
             const float relativeHeight = Clamp((vertex.position_.y_+ vertex.uv_[1].y_) / maxHeight, 0.0f, 1.0f);
             vertex.colors_[1].r_ = windMagnitude_ * Pow(relativeHeight, 1.0f / (1.0f - resistance_));
         }
@@ -773,7 +775,8 @@ TreeProxy::GeneratedData TreeProxy::Generate(SharedPtr<Model> model, const Vecto
     SharedPtr<Texture2D> normalTexture = RenderTexture(context_, desc, TextureMap());
     normalTexture->SetName(destinationProxyNormalName_);
     SharedPtr<Image> normalImage = ConvertTextureToImage(normalTexture);
-    FlipNormalMapZ(*normalImage);
+    if (flipNormals_)
+        FlipNormalMapZ(*normalImage);
     BuildNormalMapAlpha(normalImage);
     FillImageGaps(normalImage, fillGapPrecision_);
     normalImage->PrecalculateLevels();
@@ -852,6 +855,7 @@ bool TreeProxy::ComputeHash(Hash& hash) const
     hash.HashUInt(proxyTextureHeight_);
     hash.HashUInt(fillGapPrecision_);
     hash.HashFloat(adjustAlpha_);
+    hash.HashUInt(flipNormals_);
     return true;
 }
 

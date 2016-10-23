@@ -121,7 +121,7 @@ void GenerateCylinderProxy(const BoundingBox& boundingBox, const CylinderProxyPa
             const Vector2 rectEnd = Vector2(boxHalfWidth, boxHalfHeight * (param.generateDiagonal_ ? 1 : 2));
 
             // Compute normal
-            const Vector3 normal = cameraDesc.rotation_.RotationMatrix() * Vector3::FORWARD;
+            const Vector3 normal = cameraDesc.rotation_.RotationMatrix() * Vector3::BACK;
             const Vector3 tangent = axisX;
             const Vector3 binormal = axisY;
 

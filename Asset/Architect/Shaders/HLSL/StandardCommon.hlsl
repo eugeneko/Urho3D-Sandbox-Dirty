@@ -4,12 +4,6 @@
 #include "Transform.hlsl"
 #include "Math.hlsl"
 
-#ifdef OBJECTPROXY
-    #ifndef NORMALMAP
-        #error OBJECTPROXY requires NORMALMAP
-    #endif
-#endif
-
 #ifdef NOFADE
     #ifdef TEXFADE
         #undef TEXFADE

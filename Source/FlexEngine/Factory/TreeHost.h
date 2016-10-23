@@ -356,6 +356,10 @@ private:
     unsigned fillGapPrecision_ = 2;
     /// Adjusts alpha channel of destination diffuse image.
     float adjustAlpha_ = 1.0f;
+    /// Size of dithering blocks when switch from one billboard slice to another.
+    float ditheringGranularity_ = 100.0f;
+    /// Whether to flip normals along Z axis.
+    bool flipNormals_ = false;
 };
 
 }

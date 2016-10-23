@@ -1,7 +1,0 @@
-<material>
-    <technique name="Techniques/Standard.xml" />
-    <shader vsdefines="NOFADE DIFFMAP NORMALMAP " psdefines="NOFADE DIFFMAP NORMALMAP ALPHAMASK " />
-    <texture unit="diffuse" name="Objects/WhiteTree/Branch3x6m_Diff.dds" />
-    <texture unit="normal" name="Objects/WhiteTree/Branch3x6m_Norm.dds" />
-    <parameter name="MatDiffColor" value="1 1 1 1" />
-</material>
