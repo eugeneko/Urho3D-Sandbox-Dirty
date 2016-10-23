@@ -81,12 +81,10 @@ PODVector<float> ComputeChildAngles(const TreeElementDistribution& distribution,
     case TreeElementDistributionType::Alternate:
     case TreeElementDistributionType::Opposite:
     {
-        // This hack is used to make alternate distribution symmetric
-        const float baseAngle = idx % 2 ? 180.0f : 0.0f;
         for (unsigned i = 0; i < count; ++i)
         {
             const float randomPad = random.FloatFrom11() * distribution.twirlNoise_;
-            const float angle = distribution.twirlStep_ * i + distribution.twirlBase_ + randomPad + baseAngle;
+            const float angle = distribution.twirlStep_ * i + distribution.twirlBase_ + randomPad;
             result.Push(angle);
         }
         break;

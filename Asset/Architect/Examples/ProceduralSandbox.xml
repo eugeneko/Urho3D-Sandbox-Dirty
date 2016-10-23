@@ -7,8 +7,8 @@
 	<attribute name="Elapsed Time" value="0" />
 	<attribute name="Next Replicated Node ID" value="58" />
 	<attribute name="Next Replicated Component ID" value="79" />
-	<attribute name="Next Local Node ID" value="16777261" />
-	<attribute name="Next Local Component ID" value="16777756" />
+	<attribute name="Next Local Node ID" value="16777267" />
+	<attribute name="Next Local Component ID" value="16777828" />
 	<attribute name="Variables" />
 	<attribute name="Variable Names" value="" />
 	<component type="Octree" id="1" />
@@ -59,7 +59,7 @@
 			<attribute name="Is Enabled" value="true" />
 			<attribute name="Name" value="Branch3m" />
 			<attribute name="Tags" />
-			<attribute name="Position" value="3.5 0 0" />
+			<attribute name="Position" value="3.5 0.5 0" />
 			<attribute name="Rotation" value="0.737278 0.67559 0 0" />
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
@@ -69,11 +69,11 @@
 			</component>
 			<component type="TreeHost" id="9">
 				<attribute name="Resources Hashes">
-					<variant type="Int" value="1751023827" />
+					<variant type="Int" value="936523888" />
 					<variant type="Int" value="-662911500" />
 					<variant type="Int" value="-662911500" />
 				</attribute>
-				<attribute name="Hash" value="647561227" />
+				<attribute name="Hash" value="1089049381" />
 				<attribute name="Destination Model" value="Model;Objects/WhiteTree/Branch3m.mdl" />
 			</component>
 			<component type="TreeLevelOfDetail" id="10">
@@ -87,7 +87,7 @@
 				<attribute name="Proxy Material" value="Material;Objects/WhiteTree/Branch3m_Preview.xml" />
 				<attribute name="RP Diffuse" value="XMLFile;RenderPaths/BakeDiffuse.xml" />
 				<attribute name="RP Normal" value="XMLFile;RenderPaths/BakeNormal.xml" />
-				<attribute name="Adjust Alpha" value="1.03" />
+				<attribute name="Adjust Alpha" value="1.04" />
 			</component>
 			<node id="7">
 				<attribute name="Is Enabled" value="true" />
@@ -98,10 +98,10 @@
 				<attribute name="Scale" value="1 1 1" />
 				<attribute name="Variables" />
 				<component type="BranchGroup" id="11">
-					<attribute name="Hash" value="-206852310" />
+					<attribute name="Hash" value="2074691011" />
 					<attribute name="Frequency" value="0" />
 					<attribute name="Relative Size" value="false" />
-					<attribute name="Growth Scale" value="2.5 2.5" />
+					<attribute name="Growth Scale" value="0.2 0.2" />
 					<attribute name="Branch Material" value="Material;Objects/WhiteTree/StickMaterial.xml" />
 					<attribute name="Radius" value="0.006 0.003" />
 				</component>
@@ -114,16 +114,15 @@
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<component type="BranchGroup" id="13">
-						<attribute name="Hash" value="1194284936" />
+						<attribute name="Hash" value="-1773917230" />
 						<attribute name="Spawn Mode" value="Absolute" />
-						<attribute name="Frequency" value="4" />
-						<attribute name="Growth Location" value="0 0.5" />
+						<attribute name="Frequency" value="2" />
+						<attribute name="Growth Location" value="1 1" />
 						<attribute name="Distribution" value="Opposite" />
 						<attribute name="Twirl angle random" value="10" />
-						<attribute name="Growth Scale" value="0.5 0.7" />
-						<attribute name="Growth Angle" value="30 30" />
+						<attribute name="Relative Size" value="false" />
+						<attribute name="Growth Angle" value="60 60" />
 						<attribute name="Branch Material" value="Material;Objects/WhiteTree/StickMaterial.xml" />
-						<attribute name="Fake Ending" value="true" />
 						<attribute name="Radius" value="1 0.5" />
 						<attribute name="Gravity Intensity" value="-10" />
 					</component>
@@ -136,16 +135,13 @@
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<component type="BranchGroup" id="17">
-							<attribute name="Hash" value="-2129506957" />
+							<attribute name="Hash" value="1629089796" />
 							<attribute name="Spawn Mode" value="Absolute" />
-							<attribute name="Frequency" value="4" />
-							<attribute name="Growth Location" value="0 0.5" />
-							<attribute name="Distribution" value="Opposite" />
+							<attribute name="Frequency" value="5" />
 							<attribute name="Twirl angle random" value="10" />
-							<attribute name="Growth Scale" value="0.7 0.7" />
-							<attribute name="Growth Angle" value="60 60" />
+							<attribute name="Relative Size" value="false" />
+							<attribute name="Growth Angle" value="50 80" />
 							<attribute name="Branch Material" value="Material;Objects/WhiteTree/StickMaterial.xml" />
-							<attribute name="Fake Ending" value="true" />
 							<attribute name="Radius" value="1 0.5" />
 							<attribute name="Gravity Intensity" value="-10" />
 						</component>
@@ -158,17 +154,15 @@
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<component type="BranchGroup" id="18">
-								<attribute name="Hash" value="1588850520" />
+								<attribute name="Hash" value="514117836" />
 								<attribute name="Spawn Mode" value="Absolute" />
 								<attribute name="Frequency" value="4" />
-								<attribute name="Distribution" value="Opposite" />
 								<attribute name="Twirl angle random" value="10" />
-								<attribute name="Growth Scale" value="0.5 0.5" />
-								<attribute name="Growth Angle" value="60 60" />
-								<attribute name="Generate Branch" value="false" />
+								<attribute name="Growth Scale" value="0.5 0.3" />
+								<attribute name="Growth Angle" value="60 80" />
 								<attribute name="Branch Material" value="Material;Objects/WhiteTree/StickMaterial.xml" />
 								<attribute name="Radius" value="1 0.5" />
-								<attribute name="Gravity Intensity" value="-10" />
+								<attribute name="Gravity Intensity" value="-50" />
 							</component>
 							<node id="17">
 								<attribute name="Is Enabled" value="true" />
@@ -179,15 +173,16 @@
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<component type="BranchGroup" id="24">
-									<attribute name="Hash" value="-271999083" />
+									<attribute name="Hash" value="471227345" />
 									<attribute name="Spawn Mode" value="Absolute" />
-									<attribute name="Frequency" value="2" />
-									<attribute name="Distribution" value="Opposite" />
+									<attribute name="Frequency" value="4" />
 									<attribute name="Twirl angle random" value="10" />
-									<attribute name="Growth Scale" value="0.6 0.8" />
-									<attribute name="Growth Angle" value="60 60" />
+									<attribute name="Relative Size" value="false" />
+									<attribute name="Growth Scale" value="0.5 0.5" />
+									<attribute name="Growth Angle" value="60 70" />
 									<attribute name="Generate Branch" value="false" />
 									<attribute name="Branch Material" value="Material;Objects/WhiteTree/StickMaterial.xml" />
+									<attribute name="Fake Ending" value="true" />
 									<attribute name="Radius" value="0.8 0.4" />
 									<attribute name="Gravity Intensity" value="-10" />
 								</component>
@@ -200,9 +195,9 @@
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
 									<component type="LeafGroup" id="21">
-										<attribute name="Hash" value="675247573" />
+										<attribute name="Hash" value="1352623091" />
 										<attribute name="Spawn Mode" value="Absolute" />
-										<attribute name="Frequency" value="5" />
+										<attribute name="Frequency" value="8" />
 										<attribute name="Twirl angle random" value="45" />
 										<attribute name="Relative Size" value="false" />
 										<attribute name="Growth Scale" value="0.06 0.06" />
@@ -213,115 +208,6 @@
 									</component>
 								</node>
 							</node>
-							<node id="15">
-								<attribute name="Is Enabled" value="true" />
-								<attribute name="Name" value="Leaves" />
-								<attribute name="Tags" />
-								<attribute name="Position" value="0 0 0" />
-								<attribute name="Rotation" value="1 0 0 0" />
-								<attribute name="Scale" value="1 1 1" />
-								<attribute name="Variables" />
-								<component type="LeafGroup" id="22">
-									<attribute name="Hash" value="675247573" />
-									<attribute name="Spawn Mode" value="Absolute" />
-									<attribute name="Frequency" value="5" />
-									<attribute name="Twirl angle random" value="45" />
-									<attribute name="Relative Size" value="false" />
-									<attribute name="Growth Scale" value="0.06 0.06" />
-									<attribute name="Growth Angle" value="30 30" />
-									<attribute name="Material" value="Material;Objects/WhiteTree/LeafMaterial.xml" />
-									<attribute name="Color 1" value="0.2 0.35 0.15 1" />
-									<attribute name="Color 2" value="0.3 0.55 0.15 1" />
-								</component>
-							</node>
-						</node>
-						<node id="18">
-							<attribute name="Is Enabled" value="true" />
-							<attribute name="Name" value="Leaves" />
-							<attribute name="Tags" />
-							<attribute name="Position" value="0 0 0" />
-							<attribute name="Rotation" value="1 0 0 0" />
-							<attribute name="Scale" value="1 1 1" />
-							<attribute name="Variables" />
-							<component type="LeafGroup" id="25">
-								<attribute name="Hash" value="916983670" />
-								<attribute name="Spawn Mode" value="Absolute" />
-								<attribute name="Frequency" value="15" />
-								<attribute name="Twirl angle random" value="45" />
-								<attribute name="Relative Size" value="false" />
-								<attribute name="Growth Scale" value="0.06 0.06" />
-								<attribute name="Growth Angle" value="30 30" />
-								<attribute name="Material" value="Material;Objects/WhiteTree/LeafMaterial.xml" />
-								<attribute name="Color 1" value="0.2 0.35 0.15 1" />
-								<attribute name="Color 2" value="0.3 0.55 0.15 1" />
-							</component>
-						</node>
-					</node>
-				</node>
-				<node id="28">
-					<attribute name="Is Enabled" value="true" />
-					<attribute name="Name" value="Branches" />
-					<attribute name="Tags" />
-					<attribute name="Position" value="0 0 0" />
-					<attribute name="Rotation" value="1 0 0 0" />
-					<attribute name="Scale" value="1 1 1" />
-					<attribute name="Variables" />
-					<component type="BranchGroup" id="42">
-						<attribute name="Hash" value="720157412" />
-						<attribute name="Spawn Mode" value="Absolute" />
-						<attribute name="Frequency" value="8" />
-						<attribute name="Growth Location" value="0.1 0.6" />
-						<attribute name="Distribution" value="Opposite" />
-						<attribute name="Twirl angle random" value="10" />
-						<attribute name="Growth Scale" value="0.5 0.3" />
-						<attribute name="Growth Angle" value="60 60" />
-						<attribute name="Generate Branch" value="false" />
-						<attribute name="Branch Material" value="Material;Objects/WhiteTree/StickMaterial.xml" />
-						<attribute name="Radius" value="0.8 0.4" />
-						<attribute name="Gravity Intensity" value="-10" />
-					</component>
-					<node id="30">
-						<attribute name="Is Enabled" value="true" />
-						<attribute name="Name" value="Branches" />
-						<attribute name="Tags" />
-						<attribute name="Position" value="0 0 0" />
-						<attribute name="Rotation" value="1 0 0 0" />
-						<attribute name="Scale" value="1 1 1" />
-						<attribute name="Variables" />
-						<component type="BranchGroup" id="44">
-							<attribute name="Hash" value="309275565" />
-							<attribute name="Spawn Mode" value="Absolute" />
-							<attribute name="Frequency" value="6" />
-							<attribute name="Growth Location" value="0 0.6" />
-							<attribute name="Distribution" value="Opposite" />
-							<attribute name="Twirl angle random" value="30" />
-							<attribute name="Growth Scale" value="0.3 0.2" />
-							<attribute name="Growth Angle" value="60 60" />
-							<attribute name="Generate Branch" value="false" />
-							<attribute name="Branch Material" value="Material;Objects/WhiteTree/StickMaterial.xml" />
-							<attribute name="Radius" value="0.8 0.4" />
-							<attribute name="Gravity Intensity" value="-10" />
-						</component>
-						<node id="31">
-							<attribute name="Is Enabled" value="true" />
-							<attribute name="Name" value="Leaves" />
-							<attribute name="Tags" />
-							<attribute name="Position" value="0 0 0" />
-							<attribute name="Rotation" value="1 0 0 0" />
-							<attribute name="Scale" value="1 1 1" />
-							<attribute name="Variables" />
-							<component type="LeafGroup" id="45">
-								<attribute name="Hash" value="675247573" />
-								<attribute name="Spawn Mode" value="Absolute" />
-								<attribute name="Frequency" value="5" />
-								<attribute name="Twirl angle random" value="45" />
-								<attribute name="Relative Size" value="false" />
-								<attribute name="Growth Scale" value="0.06 0.06" />
-								<attribute name="Growth Angle" value="30 30" />
-								<attribute name="Material" value="Material;Objects/WhiteTree/LeafMaterial.xml" />
-								<attribute name="Color 1" value="0.2 0.35 0.15 1" />
-								<attribute name="Color 2" value="0.3 0.55 0.15 1" />
-							</component>
 						</node>
 					</node>
 				</node>
@@ -357,7 +243,7 @@
 				<attribute name="Resources Hashes">
 					<variant type="Int" value="160505560" />
 				</attribute>
-				<attribute name="Hash" value="-1676932853" />
+				<attribute name="Hash" value="-1518506161" />
 				<attribute name="Destination Model" value="Model;Objects/WhiteTree/Tree29A.mdl" />
 			</component>
 			<component type="TreeLevelOfDetail" id="35">
