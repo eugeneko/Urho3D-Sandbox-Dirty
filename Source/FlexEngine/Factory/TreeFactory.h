@@ -54,6 +54,8 @@ enum class TreeElementDistributionType
     //Random,
     /// Child branch is rotated on specified angle relatively to previous child branch.
     Alternate,
+    /// Same as alternate, but each pair of branches grow from the same point.
+    Opposite,
 };
 
 /// Branch shape settings.
@@ -65,8 +67,6 @@ struct BranchShapeSettings
     float quality_ = 0.0f;
     /// The length of the branch is randomly taken from range [begin, end].
     FloatRange length_ = 1.0f;
-    /// Specifies whether the length of the branch depends on the length of the parent branch.
-    bool relativeLength_ = false;
     /// Specifies whether the end of parent branch is also interpreted as child branch.
     bool fakeEnding_ = false;
     /// Radius of the branch.
@@ -104,38 +104,23 @@ struct BranchDescription
     /// Index of this branch on parent.
     unsigned index_ = 0;
     /// Positions of branch knots.
-    PODVector<Vector3> positions_;
+    BezierCurve<Vector3> positions_;
+    /// Rotations of branch knots.
+    BezierCurve<Matrix3> rotations_;
     /// Radiuses of branch knots.
-    PODVector<float> radiuses_;
+    BezierCurve<float> radiuses_;
     /// Adherences of branch knots.
-    PODVector<Vector2> adherences_;
+    BezierCurve<Vector2> adherences_;
     /// Sizes of frond.
-    PODVector<float> frondSizes_;
+    BezierCurve<float> frondSizes_;
     /// Branch length.
-    float length_ = 0.0f;
+    float length_ = 1.0f;
     /// Branch oscillation phase.
     float phase_ = 0.0f;
-
-    /// Generate curves.
-    void GenerateCurves()
-    {
-        positionsCurve_ = CreateBezierCurve(positions_);
-        radiusesCurve_ = CreateBezierCurve(radiuses_);
-        adherencesCurve_ = CreateBezierCurve(adherences_);
-        frondSizesCurve_ = CreateBezierCurve(frondSizes_);
-    }
-    /// Bezier curve for positions.
-    BezierCurve3D positionsCurve_;
-    /// Bezier curve for radiuses.
-    BezierCurve1D radiusesCurve_;
-    /// Bezier curve for adherences.
-    BezierCurve2D adherencesCurve_;
-    /// Bezier curve for frond size.
-    BezierCurve1D frondSizesCurve_;
 };
 
 /// Generate branch using specified parameters. Return Bezier curve knots. Number of knots is computed automatically.
-BranchDescription GenerateBranch(const Vector3& initialPosition, const Vector3& initialDirection, const Vector2& initialAdherence,
+BranchDescription GenerateBranch(const Vector3& initialPosition, const Quaternion& initialRotation, const Vector2& initialAdherence,
     float length, float baseRadius, const BranchShapeSettings& branchShape, const FrondShapeSettings& frondShape, unsigned minNumKnots);
 
 /// Branch tessellation quality parameters.
@@ -163,14 +148,8 @@ struct TessellatedBranchPoint
     /// Frond size.
     float frondSize_;
 
-    /// Branch point distance.
-    Quaternion basis_;
-    /// X-axis of branch point basis.
-    Vector3 xAxis_;
-    /// Y-axis of branch point basis.
-    Vector3 yAxis_;
-    /// Z-axis of branch point basis.
-    Vector3 zAxis_;
+    /// Branch point rotation.
+    Quaternion rotation_;
     /// Relative uv distance from branch point.
     float relativeDistance_;
 
@@ -208,18 +187,31 @@ void GenerateBranchGeometry(ModelFactory& factory, const BranchDescription& bran
 void GenerateFrondGeometry(ModelFactory& factory, const BranchDescription& branch, const TessellatedBranchPoints& points,
     const FrondShapeSettings& shape);
 
+/// Tree element spawn mode.
+enum class TreeElementSpawnMode
+{
+    /// Single element with specified position and orientation is spawned.
+    Explicit,
+    /// Absolute number of elements is spawned. Frequency determines the total amount of elements.
+    Absolute,
+    /// Relative number of elements is spawned. Frequency determines number of elements per unit.
+    Relative
+};
+
 /// Tree element distribution settings.
 struct TreeElementDistribution
 {
-    /// Seed of random generator. Re-initializes main generator if non-zero.
+    /// Seed of random generator.
     unsigned seed_ = 0;
-    /// Number of branches. Set zero to use explicit position and direction.
-    unsigned frequency_ = 0;
+    /// Spawn mode.
+    TreeElementSpawnMode spawnMode_ = TreeElementSpawnMode::Explicit;
+    /// Number of branches.
+    float frequency_ = 0;
 
-    /// Branch position (if explicit).
+    /// Position (if explicit).
     Vector3 position_;
-    /// Branch direction (if explicit).
-    Vector3 direction_;
+    /// Rotation (if explicit).
+    Quaternion rotation_;
 
     /// Distribution type.
     TreeElementDistributionType distributionType_;
@@ -233,13 +225,15 @@ struct TreeElementDistribution
     float twirlNoise_ = 0.0f;
     /// Base rotation angle of all children branches.
     float twirlBase_ = 0.0f;
-    /// Vertical rotation of children branches.
-    float twirlSkew_ = 0.0f;
 
+    /// Size of element depends on parent size.
+    bool relativeSize_ = true;
     /// Scale of child elements size or length.
     CubicCurveWrapper growthScale_;
     /// Angle between children and parent branch.
     CubicCurveWrapper growthAngle_;
+    /// Rotation of children along Y axis.
+    CubicCurveWrapper growthTwirl_;
 };
 
 /// Location of tree element.
@@ -249,14 +243,18 @@ struct TreeElementLocation
     unsigned seed_;
     /// Location on parent branch.
     float location_;
+
     /// Position of element.
     Vector3 position_;
+    /// Rotation of element.
+    Quaternion rotation_;
+    /// Size of element.
+    float size_;
+
     /// Base adherence.
     Vector2 adherence_;
     /// Phase.
     float phase_;
-    /// Rotation of element.
-    Quaternion rotation_;
     /// Parent (base) radius.
     float baseRadius_;
     /// Just random noise in range [0, 1] that could be used for further generation.
@@ -274,11 +272,18 @@ Vector<BranchDescription> InstantiateBranchGroup(const BranchDescription& parent
     const TreeElementDistribution& distribution, const BranchShapeSettings& branchShape, const FrondShapeSettings& frondShape,
     unsigned minNumKnots);
 
+/// Type of leaf normal.
+enum class LeafNormalType
+{
+    /// Fair normal of leaf geometry.
+    Fair,
+    /// Fake normal.
+    Fake
+};
+
 /// Leaf shape settings.
 struct LeafShapeSettings
 {
-    /// Size of the leaf is randomly taken from the range.
-    FloatRange size_ = 1.0f;
     /// Scale of leaf geometry along dimensions.
     Vector3 scale_ = Vector3::ONE;
     /// Adjusts whether the leaves are orientated in the global world space instead of local space of parent branch. Should be in range [0, 1].
@@ -291,8 +296,14 @@ struct LeafShapeSettings
     FloatRange rotateZ_ = 1.0f;
     /// Degree of leaf geometry bending.
     float bending_ = 0.0f;
+    /// Normal type.
+    LeafNormalType normalType_ = LeafNormalType::Fair;
     /// Adjusts intensity of bumping fake leaf normals.
     float bumpNormals_ = 0.0f;
+    /// First color.
+    Color firstColor_ = Color::WHITE;
+    /// Second color.
+    Color secondColor_ = Color::WHITE;
     /// Value of deformations caused by main wind, minimum and maximum values.
     Vector2 windMainMagnitude_ = Vector2::ZERO;
     /// Value of deformations caused by turbulence, minimum and maximum values.

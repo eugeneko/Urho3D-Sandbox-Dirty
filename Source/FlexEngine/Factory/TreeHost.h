@@ -252,6 +252,15 @@ private:
 
 };
 
+/// Type of tree proxy.
+enum class TreeProxyType
+{
+    /// Single vertical slice in X0Y plane.
+    PlaneX0Y,
+    /// Cylinder with specified number of vertical slices.
+    Cylider
+};
+
 /// Tree proxy component. Proxy is the last level of detail. Each tree could have no more than one such component.
 class TreeProxy : public ProceduralComponentAgent
 {
@@ -308,20 +317,14 @@ public:
     void SetNormalRenderPathAttr(const ResourceRef& value);
     /// Get normal render path attribute.
     ResourceRef GetNormalRenderPathAttr() const;
-    /// Set fill gap path attribute.
-    void SetFillGapPathAttr(const ResourceRef& value);
-    /// Get fill gap path attribute.
-    ResourceRef GetFillGapPathAttr() const;
-    /// Set fill gap material attribute.
-    void SetFillGapMaterialAttr(const ResourceRef& value);
-    /// Get fill gap material attribute.
-    ResourceRef GetFillGapMaterialAttr() const;
 
 private:
     /// Compute hash.
     virtual bool ComputeHash(Hash& hash) const override;
 
 private:
+    /// Proxy type.
+    TreeProxyType type_ = TreeProxyType::PlaneX0Y;
     /// Proxy LOD distance.
     float distance_ = 0.0f;
     /// Number of slices.
@@ -349,12 +352,10 @@ private:
     /// Normal render path.
     SharedPtr<XMLFile> normalRenderPath_;
 
-    /// Fill gap render path.
-    SharedPtr<XMLFile> fillGapRenderPath_;
-    /// Fill gap material.
-    SharedPtr<Material> fillGapMaterial_;
-    /// Fill gap depth.
-    unsigned fillGapDepth_ = 0;
+    /// Fill gap precision. Max precision is 0.
+    unsigned fillGapPrecision_ = 2;
+    /// Adjusts alpha channel of destination diffuse image.
+    float adjustAlpha_ = 1.0f;
 };
 
 }

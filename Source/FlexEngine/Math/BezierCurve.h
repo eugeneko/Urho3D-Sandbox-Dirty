@@ -24,65 +24,151 @@ float SampleBezierCurve(const BezierCurve1D& curve, float location);
 /// Sample derivative of point on 1D Bezier curve and return value. Location must be in range [0, 1].
 float SampleBezierCurveDerivative(const BezierCurve1D& curve, float location);
 
-/// Splice vector array and return array of specified component.
+/// Bezier curve accessor template interface.
 template <class T>
-PODVector<float> SpliceVectorArray(const PODVector<T>& vectorArray, unsigned component)
+struct BezierCurveAccessor
 {
-    static const unsigned numComponents = sizeof(T) / sizeof(float);
-    assert(component < numComponents);
+    /// Number of interpolated components.
+    static const unsigned NumComponents = 0;
+    /// Copy all components to array.
+    void GetToArray(const T& /*object*/, float /*array*/[NumComponents]) {}
+    /// Copy all components from array to object.
+    void SetFromArray(T& /*object*/, const float /*array*/[NumComponents]) {}
+};
 
-    PODVector<float> result;
-    for (const T& elem : vectorArray)
+template <>
+struct BezierCurveAccessor<float>
+{
+    static const unsigned NumComponents = 1;
+    static void GetToArray(const float& object, float array[NumComponents]) { array[0] = object; }
+    static void SetFromArray(float& object, const float array[NumComponents]) { object = array[0]; }
+};
+
+template <>
+struct BezierCurveAccessor<Vector2>
+{
+    static const unsigned NumComponents = 2;
+    static void GetToArray(const Vector2& object, float array[NumComponents]) { array[0] = object.x_; array[1] = object.y_; }
+    static void SetFromArray(Vector2& object, const float array[NumComponents]) { object = Vector2(array); }
+};
+
+template <>
+struct BezierCurveAccessor<Vector3>
+{
+    static const unsigned NumComponents = 3;
+    static void GetToArray(const Vector3& object, float array[NumComponents]) { array[0] = object.x_; array[1] = object.y_; array[2] = object.z_; }
+    static void SetFromArray(Vector3& object, const float array[NumComponents]) { object = Vector3(array); }
+};
+
+template <>
+struct BezierCurveAccessor<Matrix3>
+{
+    static const unsigned NumComponents = 9;
+    static void GetToArray(const Matrix3& object, float array[NumComponents]) { memcpy(array, object.Data(), NumComponents * sizeof(float)); }
+    static void SetFromArray(Matrix3& object, const float array[NumComponents]) { object = Matrix3(array); }
+};
+
+/// Bezier curve.
+template <class T>
+class BezierCurve
+{
+public:
+    /// Number of components
+    static const unsigned NumComponents = BezierCurveAccessor<T>::NumComponents;
+    static_assert(NumComponents > 0, "Invalid Bezier curve element type");
+    /// Construct empty.
+    BezierCurve() {}
+    /// Add point.
+    void AddPoint(const T& point)
     {
-        result.Push(elem.Data()[component]);
+        dirty_ = true;
+        float array[NumComponents];
+        BezierCurveAccessor<T>::GetToArray(point, array);
+        for (unsigned i = 0; i < NumComponents; ++i)
+            points_[i].Push(array[i]);
     }
-    return result;
-}
+    /// Clear all points.
+    void Clear()
+    {
+        dirty_ = true;
+        points_.Clear();
+        for (unsigned i = 0; i < NumComponents; ++i)
+            curves_[i].Clear();
+    }
+    /// Get number of points.
+    unsigned GetNumPoints() const { return points_[0].Size(); }
+    /// Get point.
+    T GetPoint(unsigned index) const
+    {
+        float array[NumComponents];
+        for (unsigned i = 0; i < NumComponents; ++i)
+            array[i] = points_[i][index];
+        return CreatePoint(array);
+    }
+    /// Sample point on curve by location from [0, 1]
+    T SamplePoint(float t) const
+    {
+        Build();
+        float array[NumComponents];
+        for (unsigned i = 0; i < NumComponents; ++i)
+            array[i] = SampleBezierCurve(curves_[i], t);
+        return CreatePoint(array);
+    }
+    /// Sample point on curve by location from [0, N-1], where N is a number of points.
+    T SamplePointAbs(float t) const
+    {
+        Build();
+        float array[NumComponents];
+        for (unsigned i = 0; i < NumComponents; ++i)
+            array[i] = SampleBezierCurveAbs(curves_[i], t);
+        return CreatePoint(array);
+    }
+    /// Sample point derivative on curve by location from [0, 1]
+    T SampleDerivative(float t) const
+    {
+        Build();
+        float array[NumComponents];
+        for (unsigned i = 0; i < NumComponents; ++i)
+            array[i] = SampleBezierCurveDerivative(curves_[i], t);
+        return CreatePoint(array);
+    }
+    /// Sample point derivative on curve by location from [0, N-1], where N is a number of points.
+    T SampleDerivativeAbs(float t) const
+    {
+        Build();
+        float array[NumComponents];
+        for (unsigned i = 0; i < NumComponents; ++i)
+            array[i] = SampleBezierCurveDerivativeAbs(curves_[i], t);
+        return CreatePoint(array);
+    }
 
-/// 2D Bezier curve.
-struct BezierCurve2D
-{
-    BezierCurve1D xcoef_;
-    BezierCurve1D ycoef_;
+private:
+    /// Build curve if dirty.
+    void Build() const
+    {
+        if (dirty_)
+        {
+            dirty_ = false;
+            for (unsigned i = 0; i < NumComponents; ++i)
+                curves_[i] = CreateBezierCurve(points_[i]);
+        }
+    }
+    /// Create point from array.
+    static T CreatePoint(float array[NumComponents])
+    {
+        T point;
+        BezierCurveAccessor<T>::SetFromArray(point, array);
+        return point;
+    }
+
+private:
+    /// Array of curve points.
+    PODVector<float> points_[NumComponents];
+    /// Is curve dirty?
+    mutable bool dirty_ = false;
+    /// Curves for each component.
+    mutable BezierCurve1D curves_[NumComponents];
 };
-
-/// Compute coefficients of 2D Bezier curve by knots. At least two values are required.
-BezierCurve2D CreateBezierCurve(const PODVector<Vector2>& values);
-
-/// Sample point on 2D Bezier curve and return value. Location must be in range [0, number_of_segments].
-Vector2 SampleBezierCurveAbs(const BezierCurve2D& curve, float location);
-
-/// Sample derivative of point on 2D Bezier curve and return value. Location must be in range [0, number_of_segments].
-Vector2 SampleBezierCurveDerivativeAbs(const BezierCurve2D& curve, float location);
-
-/// Sample point on 2D Bezier curve and return value. Location must be in range [0, 1].
-Vector2 SampleBezierCurve(const BezierCurve2D& curve, float location);
-
-/// Sample derivative of point on 2D Bezier curve and return value. Location must be in range [0, 1].
-Vector2 SampleBezierCurveDerivative(const BezierCurve2D& curve, float location);
-
-/// 3D Bezier curve.
-struct BezierCurve3D
-{
-    BezierCurve1D xcoef_;
-    BezierCurve1D ycoef_;
-    BezierCurve1D zcoef_;
-};
-
-/// Compute coefficients of 3D Bezier curve by knots. At least two values are required.
-BezierCurve3D CreateBezierCurve(const PODVector<Vector3>& values);
-
-/// Sample point on 3D Bezier curve and return value. Location must be in range [0, number_of_segments].
-Vector3 SampleBezierCurveAbs(const BezierCurve3D& curve, float location);
-
-/// Sample derivative of point on 3D Bezier curve and return value. Location must be in range [0, number_of_segments].
-Vector3 SampleBezierCurveDerivativeAbs(const BezierCurve3D& curve, float location);
-
-/// Sample point on 3D Bezier curve and return value. Location must be in range [0, 1].
-Vector3 SampleBezierCurve(const BezierCurve3D& curve, float location);
-
-/// Sample derivative of point on Bezier 3D curve and return value. Location must be in range [0, 1].
-Vector3 SampleBezierCurveDerivative(const BezierCurve3D& curve, float location);
 
 /// Cubic curve represents 1D function.
 struct CubicCurve

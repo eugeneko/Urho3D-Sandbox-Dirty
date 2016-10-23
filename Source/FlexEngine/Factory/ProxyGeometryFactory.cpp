@@ -34,6 +34,17 @@ Vector2 ExpandRegionToMeetRatio(const Vector2& region, float ratio)
     return ret;
 }
 
+/// Expand bounding box along X0Y plane to meet the ratio. Anchor is a center of bottom side of the bounding box.
+BoundingBox ExpandBoundingBoxToMeetRatio(BoundingBox boundingBox, float ratio)
+{
+    const Vector3 size = boundingBox.Size();
+    const Vector2 delta = ExpandRegionToMeetRatio(Vector2(size.x_, size.y_), ratio) - Vector2(size.x_, size.y_);
+    boundingBox.max_.y_ += delta.y_;
+    boundingBox.min_.x_ -= delta.x_ / 2;
+    boundingBox.max_.x_ += delta.x_ / 2;
+    return boundingBox;
+}
+
 /// Convert float to integer texture coordinates (1D).
 int ConvertTexCoordToViewport(float uv, int size)
 {
@@ -110,7 +121,7 @@ void GenerateCylinderProxy(const BoundingBox& boundingBox, const CylinderProxyPa
             const Vector2 rectEnd = Vector2(boxHalfWidth, boxHalfHeight * (param.generateDiagonal_ ? 1 : 2));
 
             // Compute normal
-            const Vector3 normal = cameraDesc.rotation_.RotationMatrix() * Vector3::BACK;
+            const Vector3 normal = cameraDesc.rotation_.RotationMatrix() * Vector3::FORWARD;
             const Vector3 tangent = axisX;
             const Vector3 binormal = axisY;
 
@@ -145,10 +156,6 @@ void GenerateCylinderProxy(const BoundingBox& boundingBox, const CylinderProxyPa
 
             for (DefaultVertex& v : verts)
             {
-//                 v.mainAdherence_ = UnLerpClamped(boundingBox.min_.y_, boundingBox.max_.y_, v.position_.y_);
-//                 v.branchAdherence_ = 0.0f;
-//                 v.phase_ = 0.0f;
-//                 v.edgeOscillation_ = 0.0f;
                 v.normal_ = normal;
                 v.tangent_ = tangent;
                 v.binormal_ = binormal;
@@ -163,17 +170,39 @@ void GenerateCylinderProxy(const BoundingBox& boundingBox, const CylinderProxyPa
 void GeneratePlainProxy(const BoundingBox& boundingBox, unsigned width, unsigned height,
     Vector<OrthoCameraDescription>& cameras, PODVector<DefaultVertex>& vertices, PODVector<unsigned>& indices)
 {
-    const Vector3 center = boundingBox.Center();
-    const Vector3 size = boundingBox.Size();
+    // Expand bounding box
+    const float textureScale = static_cast<float>(width) / height;
+    const BoundingBox box = ExpandBoundingBoxToMeetRatio(boundingBox, textureScale);
+    const Vector3 center = box.Center();
+    const Vector3 size = box.Size();
 
     OrthoCameraDescription cameraDesc;
-    cameraDesc.position_ = Vector3(center.x_, center.y_, boundingBox.min_.z_);
+    cameraDesc.rotation_ = Quaternion(180, Vector3::FORWARD);
+    cameraDesc.position_ = Vector3(center.x_, center.y_, box.min_.z_);
     cameraDesc.farClip_ = size.z_;
     cameraDesc.size_ = Vector2(size.x_, size.y_);
     cameraDesc.viewport_ = IntRect(0, 0, width, height);
     cameras.Push(cameraDesc);
 
-    // #TODO Add geometry generation
+    DefaultVertex verts[4];
+    verts[0].position_ = center - Vector3::RIGHT * size.x_ / 2 - Vector3::UP * size.y_ / 2;
+    verts[1].position_ = center + Vector3::RIGHT * size.x_ / 2 - Vector3::UP * size.y_ / 2;
+    verts[2].position_ = center - Vector3::RIGHT * size.x_ / 2 + Vector3::UP * size.y_ / 2;
+    verts[3].position_ = center + Vector3::RIGHT * size.x_ / 2 + Vector3::UP * size.y_ / 2;
+
+    verts[0].uv_[0] = Vector4(1, 0, 0, 0);
+    verts[1].uv_[0] = Vector4(0, 0, 0, 0);
+    verts[2].uv_[0] = Vector4(1, 1, 0, 0);
+    verts[3].uv_[0] = Vector4(0, 1, 0, 0);
+
+    for (DefaultVertex& v : verts)
+    {
+        v.normal_ = Vector3::BACK;
+        v.tangent_ = Vector3::LEFT;
+        v.binormal_ = Vector3::UP;
+    }
+
+    AppendQuadToVertices(vertices, indices, verts[0], verts[1], verts[2], verts[3]);
 }
 
 void GenerateProxyFromXML(const BoundingBox& boundingBox, unsigned width, unsigned height, const XMLElement& node,

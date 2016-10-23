@@ -25,16 +25,33 @@ namespace FlexEngine
 namespace
 {
 
-static const char* branchDistributionNames[] =
+static const char* spawnModeNames[] =
 {
-    "Alternate",
+    "Explicit",
+    "Absolute",
+    "Relative",
     0
 };
 
-static const char* treeLodTypeNames[] =
+static const char* branchDistributionNames[] =
 {
-    "Geometry",
-    "Billboard"
+    "Alternate",
+    "Opposite",
+    0
+};
+
+static const char* normalTypeNames[] =
+{
+    "Fair",
+    "Fake",
+    0
+};
+
+static const char* treeProxyTypeNames[] =
+{
+    "Plane X0Y",
+    "Cylinder",
+    0
 };
 
 void GenerateChildren(Node& node, TreeHost& host)
@@ -194,14 +211,14 @@ void TreeHost::DoGenerateResources(Vector<SharedPtr<Resource>>& resources)
     factory.ForEachVertex<DefaultVertex>(
         [&maxMainAdherence, &maxTurbulenceAdherence, this](unsigned, unsigned, unsigned, DefaultVertex& vertex)
     {
-        vertex.colors_[0].r_ *= windMainMagnitude_ / maxMainAdherence;
-        vertex.colors_[0].g_ *= windTurbulenceMagnitude_ / maxTurbulenceAdherence;
-        vertex.colors_[0].a_ *= windOscillationMagnitude_;
-        vertex.colors_[1].r_ = windTurbulenceFrequency_;
-        vertex.colors_[1].g_ = windOscillationFrequency_;
-        vertex.colors_[2].r_ = vertex.geometryNormal_.x_;
-        vertex.colors_[2].g_ = vertex.geometryNormal_.y_;
-        vertex.colors_[2].b_ = vertex.geometryNormal_.z_;
+        vertex.colors_[1].r_ *= windMainMagnitude_ / maxMainAdherence;
+        vertex.colors_[1].g_ *= windTurbulenceMagnitude_ / maxTurbulenceAdherence;
+        vertex.colors_[1].a_ *= windOscillationMagnitude_;
+        vertex.colors_[2].r_ = windTurbulenceFrequency_;
+        vertex.colors_[2].g_ = windOscillationFrequency_;
+        vertex.colors_[3].r_ = vertex.geometryNormal_.x_;
+        vertex.colors_[3].g_ = vertex.geometryNormal_.y_;
+        vertex.colors_[3].b_ = vertex.geometryNormal_.z_;
     });
 
     // Generate and setup
@@ -275,7 +292,8 @@ void TreeElement::RegisterObject(Context* context)
     URHO3D_COPY_BASE_ATTRIBUTES(ProceduralComponentAgent);
 
     URHO3D_MEMBER_ATTRIBUTE("Seed", unsigned, distribution_.seed_, 0, AM_DEFAULT);
-    URHO3D_MEMBER_ATTRIBUTE("Frequency", unsigned, distribution_.frequency_, 0, AM_DEFAULT);
+    URHO3D_MEMBER_ENUM_ATTRIBUTE("Spawn Mode", TreeElementSpawnMode, distribution_.spawnMode_, spawnModeNames, 0, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Frequency", float, distribution_.frequency_, 0, AM_DEFAULT);
 
     URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Growth Location", Vector2, distribution_.location_, GetVector, SetVector, Vector2(0.0f, 1.0f), AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Growth Density", String, distribution_.density_, GetCurveString, SetCurveString, "one", AM_DEFAULT);
@@ -283,11 +301,13 @@ void TreeElement::RegisterObject(Context* context)
     URHO3D_MEMBER_ATTRIBUTE("Twirl angle step", float, distribution_.twirlStep_, 180.0f, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Twirl angle random", float, distribution_.twirlNoise_, 0.0f, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Twirl angle base", float, distribution_.twirlBase_, 0.0f, AM_DEFAULT);
-    URHO3D_MEMBER_ATTRIBUTE("Twirl angle skew", float, distribution_.twirlSkew_, 0.0f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Relative Size", bool, distribution_.relativeSize_, true, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Growth Scale", Vector2, distribution_.growthScale_, GetResultRange, SetResultRange, Vector2::ONE, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Growth Scale Curve", String, distribution_.growthScale_, GetCurveString, SetCurveString, "linear", AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Growth Angle", Vector2, distribution_.growthAngle_, GetResultRange, SetResultRange, Vector2::ZERO, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Growth Angle Curve", String, distribution_.growthAngle_, GetCurveString, SetCurveString, "linear", AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Growth Twirl", Vector2, distribution_.growthTwirl_, GetResultRange, SetResultRange, Vector2::ZERO, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Growth Twirl Curve", String, distribution_.growthTwirl_, GetCurveString, SetCurveString, "linear", AM_DEFAULT);
 
 }
 
@@ -300,9 +320,9 @@ void TreeElement::Triangulate(ModelFactory& factory, TreeHost& host, TreeLevelOf
 bool TreeElement::ComputeHash(Hash& hash) const
 {
     hash.HashUInt(distribution_.seed_);
-    hash.HashUInt(distribution_.frequency_);
+    hash.HashFloat(distribution_.frequency_);
     hash.HashVector3(distribution_.position_);
-    hash.HashVector3(distribution_.direction_);
+    hash.HashQuaternion(distribution_.rotation_);
     hash.HashEnum(distribution_.distributionType_);
     hash.HashVector2(distribution_.location_);
     hash.HashString(distribution_.density_.GetCurveString());
@@ -310,11 +330,13 @@ bool TreeElement::ComputeHash(Hash& hash) const
     hash.HashFloat(distribution_.twirlStep_);
     hash.HashFloat(distribution_.twirlNoise_);
     hash.HashFloat(distribution_.twirlBase_);
-    hash.HashFloat(distribution_.twirlSkew_);
+    hash.HashUInt(distribution_.relativeSize_);
     hash.HashString(distribution_.growthScale_.GetCurveString());
     hash.HashVector2(distribution_.growthScale_.GetResultRange());
     hash.HashString(distribution_.growthAngle_.GetCurveString());
     hash.HashVector2(distribution_.growthAngle_.GetResultRange());
+    hash.HashString(distribution_.growthTwirl_.GetCurveString());
+    hash.HashVector2(distribution_.growthTwirl_.GetResultRange());
     return true;
 }
 
@@ -340,7 +362,6 @@ void BranchGroup::RegisterObject(Context* context)
     URHO3D_MEMBER_ATTRIBUTE("UV Scale", Vector2, branchShape_.textureScale_, Vector2::ONE, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Quality", float, branchShape_.quality_, 1.0f, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Length", Vector2, branchShape_.length_, GetVector, SetVector, Vector2::ONE, AM_DEFAULT);
-    URHO3D_MEMBER_ATTRIBUTE("Relative Length", bool, branchShape_.relativeLength_, true, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Fake Ending", bool, branchShape_.fakeEnding_, false, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Radius", Vector2, branchShape_.radius_, GetResultRange, SetResultRange, Vector2(0.5f, 0.1f), AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Radius Curve", String, branchShape_.radius_, GetCurveString, SetCurveString, "linear", AM_DEFAULT);
@@ -361,26 +382,31 @@ void BranchGroup::Generate(TreeHost& host)
 {
     // Initialize transform
     distribution_.position_ = node_->GetPosition();
-    distribution_.direction_ = node_->GetRotation() * Vector3::UP;
+    distribution_.rotation_ = node_->GetRotation();
 
     // Generate this level
     branches_.Clear();
-    if (distribution_.frequency_ == 0)
+    switch (distribution_.spawnMode_)
     {
+    case TreeElementSpawnMode::Explicit:
         branches_ = InstantiateBranchGroup(BranchDescription(), distribution_, branchShape_, frondShape_, minNumKnots_);
-    }
-    else
-    {
-        BranchGroup* parentGroup = node_->GetParentComponent<BranchGroup>();
-        if (!parentGroup)
+        break;
+    case TreeElementSpawnMode::Absolute:
+    case TreeElementSpawnMode::Relative:
         {
-            URHO3D_LOGERROR("BranchGroup with frequency > 0 must have parent BranchGroup");
-            return;
+            BranchGroup* parentGroup = node_->GetParentComponent<BranchGroup>();
+            if (!parentGroup)
+            {
+                URHO3D_LOGERROR("BranchGroup with frequency > 0 must have parent BranchGroup");
+                return;
+            }
+
+            for (const BranchDescription& parentBranch : parentGroup->GetBranches())
+                branches_ += InstantiateBranchGroup(parentBranch, distribution_, branchShape_, frondShape_, minNumKnots_);
         }
-        for (const BranchDescription& parentBranch : parentGroup->GetBranches())
-        {
-            branches_ += InstantiateBranchGroup(parentBranch, distribution_, branchShape_, frondShape_, minNumKnots_);
-        }
+
+    default:
+        break;
     }
 
     // Notify host
@@ -401,7 +427,6 @@ bool BranchGroup::ComputeHash(Hash& hash) const
     hash.HashVector2(branchShape_.textureScale_);
     hash.HashFloat(branchShape_.quality_);
     hash.HashVector2(branchShape_.length_);
-    hash.HashUInt(branchShape_.relativeLength_);
     hash.HashUInt(branchShape_.fakeEnding_);
     hash.HashString(branchShape_.radius_.GetCurveString());
     hash.HashVector2(branchShape_.radius_.GetResultRange());
@@ -496,14 +521,16 @@ void LeafGroup::RegisterObject(Context* context)
 
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Material", GetMaterialAttr, SetMaterialAttr, ResourceRef, ResourceRef(Material::GetTypeStatic()), AM_DEFAULT);
 
-    URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Size", Vector2, shape_.size_, GetVector, SetVector, Vector2::ONE, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Scale", Vector3, shape_.scale_, Vector3::ONE, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Adjust to Global", Vector2, shape_.adjustToGlobal_, GetVector, SetVector, Vector2::ZERO, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Align Vertical", Vector2, shape_.alignVertical_, GetVector, SetVector, Vector2::ZERO, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Rotate Z", Vector2, shape_.rotateZ_, GetVector, SetVector, Vector2::ZERO, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Junction Offset", Vector3, shape_.junctionOffset_, Vector3::ZERO, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Bending", float, shape_.bending_, 0.0f, AM_DEFAULT);
+    URHO3D_MEMBER_ENUM_ATTRIBUTE("Normal Type", LeafNormalType, shape_.normalType_, normalTypeNames, 0, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Bump Normals", float, shape_.bumpNormals_, 0.0f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Color 1", Color, shape_.firstColor_, Color::WHITE, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Color 2", Color, shape_.secondColor_, Color::WHITE, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Wind Main", Vector2, shape_.windMainMagnitude_, Vector2::ZERO, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Wind Turbulence", Vector2, shape_.windTurbulenceMagnitude_, Vector2::ZERO, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Wind Oscillation", Vector2, shape_.windOscillationMagnitude_, Vector2::ZERO, AM_DEFAULT);
@@ -513,26 +540,32 @@ void LeafGroup::Generate(TreeHost& host)
 {
     // Initialize transform
     distribution_.position_ = node_->GetWorldPosition();
-    distribution_.direction_ = node_->GetWorldRotation() * Vector3::UP;
+    distribution_.rotation_ = node_->GetWorldRotation();
 
     // Generate this level
     leaves_.Clear();
-    if (distribution_.frequency_ == 0)
+    switch (distribution_.spawnMode_)
     {
+    case TreeElementSpawnMode::Explicit:
         leaves_ = InstantiateLeafGroup(BranchDescription(), distribution_, shape_);
-    }
-    else
-    {
-        BranchGroup* parentGroup = node_->GetParentComponent<BranchGroup>();
-        if (!parentGroup)
+        break;
+    case TreeElementSpawnMode::Absolute:
+    case TreeElementSpawnMode::Relative:
         {
-            URHO3D_LOGERROR("LeafGroup with frequency > 0 must have parent BranchGroup");
-            return;
+            BranchGroup* parentGroup = node_->GetParentComponent<BranchGroup>();
+            if (!parentGroup)
+            {
+                URHO3D_LOGERROR("LeafGroup with frequency > 0 must have parent BranchGroup");
+                return;
+            }
+            for (const BranchDescription& parentBranch : parentGroup->GetBranches())
+            {
+                leaves_ += InstantiateLeafGroup(parentBranch, distribution_, shape_);
+            }
         }
-        for (const BranchDescription& parentBranch : parentGroup->GetBranches())
-        {
-            leaves_ += InstantiateLeafGroup(parentBranch, distribution_, shape_);
-        }
+        break;
+    default:
+        break;
     }
 
     // Notify host
@@ -546,13 +579,13 @@ bool LeafGroup::ComputeHash(Hash& hash) const
 {
     TreeElement::ComputeHash(hash);
     hash.HashString(material_ ? material_->GetName() : String::EMPTY);
-    hash.HashVector2(shape_.size_);
     hash.HashVector3(shape_.scale_);
     hash.HashVector2(shape_.adjustToGlobal_);
     hash.HashVector2(shape_.alignVertical_);
     hash.HashVector2(shape_.rotateZ_);
     hash.HashVector3(shape_.junctionOffset_);
     hash.HashFloat(shape_.bending_);
+    hash.HashEnum(shape_.normalType_);
     hash.HashFloat(shape_.bumpNormals_);
     hash.HashVector2(shape_.windMainMagnitude_);
     hash.HashVector2(shape_.windTurbulenceMagnitude_);
@@ -630,6 +663,7 @@ void TreeProxy::RegisterObject(Context* context)
 {
     context->RegisterFactory<TreeProxy>(FLEXENGINE_CATEGORY);
 
+    URHO3D_MEMBER_ENUM_ATTRIBUTE("Type", TreeProxyType, type_, treeProxyTypeNames, 0, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Distance", GetDistance, SetDistance, float, 0.0f, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Number of Planes", unsigned, numPlanes_, 8, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Number of Segments", unsigned, numVerticalSegments_, 3, AM_DEFAULT);
@@ -642,9 +676,8 @@ void TreeProxy::RegisterObject(Context* context)
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Proxy Material", GetProxyMaterialAttr, SetProxyMaterialAttr, ResourceRef, ResourceRef(Material::GetTypeStatic()), AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("RP Diffuse", GetDiffuseRenderPathAttr, SetDiffuseRenderPathAttr, ResourceRef, ResourceRef(XMLFile::GetTypeStatic()), AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("RP Normal", GetNormalRenderPathAttr, SetNormalRenderPathAttr, ResourceRef, ResourceRef(XMLFile::GetTypeStatic()), AM_DEFAULT);
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Fill Gap RP", GetFillGapPathAttr, SetFillGapPathAttr, ResourceRef, ResourceRef(XMLFile::GetTypeStatic()), AM_DEFAULT);
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Fill Gap Material", GetFillGapMaterialAttr, SetFillGapMaterialAttr, ResourceRef, ResourceRef(Material::GetTypeStatic()), AM_DEFAULT);
-    URHO3D_MEMBER_ATTRIBUTE("Fill Gap Depth", unsigned, fillGapDepth_, 0, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Fill Gap Precision", unsigned, fillGapPrecision_, 2, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Adjust Alpha", float, adjustAlpha_, 1.0f, AM_DEFAULT);
 }
 
 TreeProxy::GeneratedData TreeProxy::Generate(SharedPtr<Model> model, const Vector<SharedPtr<Material>>& materials) const
@@ -660,20 +693,31 @@ TreeProxy::GeneratedData TreeProxy::Generate(SharedPtr<Model> model, const Vecto
     // Add actual proxy geometry
     factory.SetLevel(1);
 
-    // Setup parameters
-    CylinderProxyParameters param;
-    param.centerPositions_ = true;
-    param.generateDiagonal_ = false;
-    param.diagonalAngle_ = 0;
-    param.numSurfaces_ = numPlanes_;
-    param.numVertSegments_ = numVerticalSegments_;
-
     // Generate proxy geometry
     Vector<OrthoCameraDescription> cameras;
     PODVector<DefaultVertex> vertices;
     PODVector<unsigned> indices;
     const BoundingBox boundingBox = model->GetBoundingBox();
-    GenerateCylinderProxy(boundingBox, param, Max(1u, proxyTextureWidth_), Max(1u, proxyTextureHeight_), cameras, vertices, indices);
+    switch (type_)
+    {
+    case TreeProxyType::PlaneX0Y:
+        GeneratePlainProxy(boundingBox, Max(1u, proxyTextureWidth_), Max(1u, proxyTextureHeight_), cameras, vertices, indices);
+        break;
+    case FlexEngine::TreeProxyType::Cylider:
+        {
+            CylinderProxyParameters param;
+            param.centerPositions_ = true;
+            param.generateDiagonal_ = false;
+            param.diagonalAngle_ = 0;
+            param.numSurfaces_ = numPlanes_;
+            param.numVertSegments_ = numVerticalSegments_;
+            GenerateCylinderProxy(boundingBox, param, Max(1u, proxyTextureWidth_), Max(1u, proxyTextureHeight_),
+                cameras, vertices, indices);
+        }
+        break;
+    default:
+        break;
+    }
 
     // Fill parameters
     float maxHeight = 0.0f;
@@ -691,7 +735,7 @@ TreeProxy::GeneratedData TreeProxy::Generate(SharedPtr<Model> model, const Vecto
             vertex.uv_[2].z_ = sign;
             vertex.uv_[2].w_ = 50;
             const float relativeHeight = Clamp((vertex.position_.y_+ vertex.uv_[1].y_) / maxHeight, 0.0f, 1.0f);
-            vertex.colors_[0].r_ = windMagnitude_ * Pow(relativeHeight, 1.0f / (1.0f - resistance_));
+            vertex.colors_[1].r_ = windMagnitude_ * Pow(relativeHeight, 1.0f / (1.0f - resistance_));
         }
     }
 
@@ -705,6 +749,7 @@ TreeProxy::GeneratedData TreeProxy::Generate(SharedPtr<Model> model, const Vecto
 
     // Render proxy textures
     TextureDescription desc;
+    desc.color_ = Color::TRANSPARENT;
     desc.width_ = Max(1u, proxyTextureWidth_);
     desc.height_ = Max(1u, proxyTextureHeight_);
     GeometryDescription geometryDesc;
@@ -720,21 +765,18 @@ TreeProxy::GeneratedData TreeProxy::Generate(SharedPtr<Model> model, const Vecto
     SharedPtr<Texture2D> diffuseTexture = RenderTexture(context_, desc, TextureMap());
     diffuseTexture->SetName(destinationProxyDiffuseName_);
     SharedPtr<Image> diffuseImage = ConvertTextureToImage(diffuseTexture);
-    // #TODO Use fill gap downsample from system
-    FillImageGaps(diffuseImage, 2);
-    //diffuseImage = FillTextureGaps(diffuseImage, fillGapDepth_, true, fillGapRenderPath_, GetOrCreateQuadModel(context_), fillGapMaterial_, inputParameterUniform[0]);
+    FillImageGaps(diffuseImage, fillGapPrecision_);
     diffuseImage->PrecalculateLevels();
-//     SaveImage(cache, *diffuseImage);
+    AdjustImageLevelsAlpha(*diffuseImage, adjustAlpha_);
 
     desc.renderPath_ = normalRenderPath_;
     SharedPtr<Texture2D> normalTexture = RenderTexture(context_, desc, TextureMap());
     normalTexture->SetName(destinationProxyNormalName_);
     SharedPtr<Image> normalImage = ConvertTextureToImage(normalTexture);
+    FlipNormalMapZ(*normalImage);
     BuildNormalMapAlpha(normalImage);
-    FillImageGaps(normalImage, 2);
-    //normalImage = FillTextureGaps(normalImage, fillGapDepth_, false, fillGapRenderPath_, GetOrCreateQuadModel(context_), fillGapMaterial_, inputParameterUniform[0]);
+    FillImageGaps(normalImage, fillGapPrecision_);
     normalImage->PrecalculateLevels();
-//     SaveImage(cache, *normalImage);
 
     GeneratedData result;
     result.model_ = proxyModel;
@@ -798,30 +840,9 @@ ResourceRef TreeProxy::GetNormalRenderPathAttr() const
     return GetResourceRef(normalRenderPath_, XMLFile::GetTypeStatic());
 }
 
-void TreeProxy::SetFillGapPathAttr(const ResourceRef& value)
-{
-    ResourceCache* cache = GetSubsystem<ResourceCache>();
-    fillGapRenderPath_ = cache->GetResource<XMLFile>(value.name_);
-}
-
-ResourceRef TreeProxy::GetFillGapPathAttr() const
-{
-    return GetResourceRef(fillGapRenderPath_, XMLFile::GetTypeStatic());
-}
-
-void TreeProxy::SetFillGapMaterialAttr(const ResourceRef& value)
-{
-    ResourceCache* cache = GetSubsystem<ResourceCache>();
-    fillGapMaterial_ = cache->GetResource<Material>(value.name_);
-}
-
-ResourceRef TreeProxy::GetFillGapMaterialAttr() const
-{
-    return GetResourceRef(fillGapMaterial_, Material::GetTypeStatic());
-}
-
 bool TreeProxy::ComputeHash(Hash& hash) const
 {
+    hash.HashEnum(type_);
     hash.HashFloat(distance_);
     hash.HashUInt(numPlanes_);
     hash.HashUInt(numVerticalSegments_);
@@ -829,6 +850,8 @@ bool TreeProxy::ComputeHash(Hash& hash) const
     hash.HashFloat(windMagnitude_);
     hash.HashUInt(proxyTextureWidth_);
     hash.HashUInt(proxyTextureHeight_);
+    hash.HashUInt(fillGapPrecision_);
+    hash.HashFloat(adjustAlpha_);
     return true;
 }
 
