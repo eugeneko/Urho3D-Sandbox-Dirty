@@ -1,0 +1,4 @@
+<material>
+    <technique name="Techniques/StandardTerrain.xml" />
+    <texture unit="emissive" name="Objects/Terrain/Noise.dds" />
+</material>
