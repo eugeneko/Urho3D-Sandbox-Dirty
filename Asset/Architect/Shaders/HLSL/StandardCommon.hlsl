@@ -127,7 +127,7 @@ float3 ComputeFoliageWind(
                 float2(iWindAtten, 0.0), // attenuation
                 float2(cWindParam.x, 0.0), // wind base
                 cWindParam.zy, // wind magnitude
-                cWindDirection);
+                cWindDirection.xyz);
         #else
             float3 worldPos = ComputeFoliageWind(
                 iPos, // position
@@ -145,7 +145,7 @@ float3 ComputeFoliageWind(
                 iWind1.xy, // attenuation
                 float2(cWindParam.x, 0.0), // wind base
                 cWindParam.zy, // wind magnitude
-                cWindDirection);
+                cWindDirection.xyz);
         #endif
         return worldPos;
     }

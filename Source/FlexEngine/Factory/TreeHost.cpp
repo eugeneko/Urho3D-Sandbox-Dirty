@@ -304,10 +304,13 @@ void TreeElement::RegisterObject(Context* context)
     URHO3D_MEMBER_ATTRIBUTE("Relative Size", bool, distribution_.relativeSize_, true, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Growth Scale", Vector2, distribution_.growthScale_, GetResultRange, SetResultRange, Vector2::ONE, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Growth Scale Curve", String, distribution_.growthScale_, GetCurveString, SetCurveString, "linear", AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Growth Scale Noise", float, distribution_.growthScaleNoise_, 0.0f, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Growth Angle", Vector2, distribution_.growthAngle_, GetResultRange, SetResultRange, Vector2::ZERO, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Growth Angle Curve", String, distribution_.growthAngle_, GetCurveString, SetCurveString, "linear", AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Growth Angle Noise", float, distribution_.growthAngleNoise_, 0.0f, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Growth Twirl", Vector2, distribution_.growthTwirl_, GetResultRange, SetResultRange, Vector2::ZERO, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Growth Twirl Curve", String, distribution_.growthTwirl_, GetCurveString, SetCurveString, "linear", AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Growth Twirl Noise", float, distribution_.growthTwirlNoise_, 0.0f, AM_DEFAULT);
 
 }
 
@@ -333,10 +336,13 @@ bool TreeElement::ComputeHash(Hash& hash) const
     hash.HashUInt(distribution_.relativeSize_);
     hash.HashString(distribution_.growthScale_.GetCurveString());
     hash.HashVector2(distribution_.growthScale_.GetResultRange());
+    hash.HashFloat(distribution_.growthScaleNoise_);
     hash.HashString(distribution_.growthAngle_.GetCurveString());
     hash.HashVector2(distribution_.growthAngle_.GetResultRange());
+    hash.HashFloat(distribution_.growthAngleNoise_);
     hash.HashString(distribution_.growthTwirl_.GetCurveString());
     hash.HashVector2(distribution_.growthTwirl_.GetResultRange());
+    hash.HashFloat(distribution_.growthTwirlNoise_);
     return true;
 }
 
@@ -587,6 +593,8 @@ bool LeafGroup::ComputeHash(Hash& hash) const
     hash.HashFloat(shape_.bending_);
     hash.HashEnum(shape_.normalType_);
     hash.HashFloat(shape_.bumpNormals_);
+    hash.HashColor(shape_.firstColor_);
+    hash.HashColor(shape_.secondColor_);
     hash.HashVector2(shape_.windMainMagnitude_);
     hash.HashVector2(shape_.windTurbulenceMagnitude_);
     hash.HashVector2(shape_.windOscillationMagnitude_);

@@ -54,7 +54,7 @@ PODVector<float> ComputeChildLocations(const TreeElementDistribution& distributi
         {
             const PODVector<float> locations = IntegrateDensityFunction(distribution.density_, count);
             for (unsigned i = 0; i < count; ++i)
-                result.Push(distribution.location_.Get(locations[i]));
+                result.Push(locations[i]);
             break;
         }
     case TreeElementDistributionType::Opposite:
@@ -62,7 +62,7 @@ PODVector<float> ComputeChildLocations(const TreeElementDistribution& distributi
             const PODVector<float> locations = IntegrateDensityFunction(distribution.density_, (count + 1) / 2);
             for (unsigned i = 0; i < count; ++i)
             {
-                result.Push(distribution.location_.Get(locations[i / 2]));
+                result.Push(locations[i / 2]);
             }
             break;
         }
@@ -474,6 +474,7 @@ PODVector<TreeElementLocation> DistributeElementsOverParent(const BranchDescript
             elem.baseRadius_ = 1.0f;
             elem.noise_ = random.Vector4From01();
             result.Push(elem);
+            break;
         }
     case TreeElementSpawnMode::Absolute:
     case TreeElementSpawnMode::Relative:
@@ -487,24 +488,35 @@ PODVector<TreeElementLocation> DistributeElementsOverParent(const BranchDescript
             for (unsigned i = 0; i < locations.Size(); ++i)
             {
                 // Find location
-                const float location = locations[i];
+                const float interpolation = locations[i];
+                const float location = distrib.location_.Get(interpolation);
                 const float twirlAngle = twirlAngles[i];
 
                 // Sample values
                 const Vector3 position = parent.positions_.SamplePoint(location);
                 const Matrix3 rotation = parent.rotations_.SamplePoint(location);
 
+                // Generate some random
+                const float growthScaleNoise = (StableRandom(position + Vector3::ONE * 1) * 2 - 1) * distrib.growthScaleNoise_ + 1;
+                const float growthAngleNoise = (StableRandom(position + Vector3::ONE * 2) * 2 - 1) * distrib.growthAngleNoise_;
+                const float growthTwirlNoise = (StableRandom(position + Vector3::ONE * 3) * 2 - 1) * distrib.growthTwirlNoise_;
+
+                const float growthScale = distrib.growthScale_.ComputeValue(interpolation) * growthScaleNoise;
+                const float growthAngle = 90 - (distrib.growthAngle_.ComputeValue(interpolation) + growthAngleNoise);
+                const float growthTwirl = distrib.growthTwirl_.ComputeValue(interpolation) + growthTwirlNoise;
+
                 // Generate branch
                 TreeElementLocation elem;
                 elem.seed_ = random.Random();
+                elem.interpolation_ = interpolation;
                 elem.location_ = location;
                 elem.position_ = position;
                 elem.rotation_ =
                     Quaternion(rotation)
                     * Quaternion(twirlAngles[i], Vector3::UP)
-                    * Quaternion(90 - distrib.growthAngle_.ComputeValue(location), Vector3::FORWARD)
-                    * Quaternion(distrib.growthTwirl_.ComputeValue(location), Vector3::UP);
-                elem.size_ = baseLength * distrib.growthScale_.ComputeValue(elem.location_);
+                    * Quaternion(growthAngle, Vector3::FORWARD)
+                    * Quaternion(growthTwirl, Vector3::UP);
+                elem.size_ = baseLength * growthScale;
                 elem.adherence_ = parent.adherences_.SamplePoint(location);
                 elem.phase_ = parent.phase_;
                 elem.baseRadius_ = parent.radiuses_.SamplePoint(location);
@@ -524,26 +536,35 @@ PODVector<float> IntegrateDensityFunction(const CubicCurveWrapper& density, unsi
 {
     PODVector<float> result;
 
-    // Integrate over density
-    float valueSum = 0.0f;
-    for (unsigned i = 0; i < count; ++i)
+    if (count == 1)
     {
-        const float value = density.ComputeValue((i + 0.5f) / count);
-        result.Push(valueSum + value / 2);
-        valueSum += value;
+        result.Push(0.0f);
+    }
+    else
+    {
+        // Integrate over density
+        float minValue = M_INFINITY;
+        float maxValue = 0.0f;
+        float valueSum = 0.0f;
+        for (unsigned i = 0; i < count; ++i)
+        {
+            const float densityValue = density.ComputeValue((i + 0.5f) / count);
+            const float value = valueSum + densityValue / 2;
+
+            result.Push(value);
+            minValue = Min(minValue, value);
+            maxValue = Max(maxValue, value);
+            valueSum += densityValue;
+        }
+
+        // Normalize values
+        if (maxValue - minValue > M_LARGE_EPSILON)
+        {
+            for (float& value : result)
+                value = InverseLerp(minValue, maxValue, value);
+        }
     }
 
-    if (valueSum < M_LARGE_EPSILON && !result.Empty())
-    {
-        URHO3D_LOGWARNING("Density function mustn't be zero");
-        return result;
-    }
-
-    // Normalize values
-    for (float& value : result)
-    {
-        value /= valueSum;
-    }
     return result;
 }
 

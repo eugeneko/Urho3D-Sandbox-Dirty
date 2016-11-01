@@ -228,12 +228,18 @@ struct TreeElementDistribution
 
     /// Size of element depends on parent size.
     bool relativeSize_ = true;
-    /// Scale of child elements size or length.
+    /// Size or length of child elements.
     CubicCurveWrapper growthScale_;
+    /// Size is multiplied by value from [1-noise, 1+noise].
+    float growthScaleNoise_ = 0.0f;
     /// Angle between children and parent branch.
     CubicCurveWrapper growthAngle_;
-    /// Rotation of children along Y axis.
+    /// Random value from [-noise, +noise] is added to angle between children and parent branch.
+    float growthAngleNoise_ = 0.0f;
+    /// Rotation of children around Y axis.
     CubicCurveWrapper growthTwirl_;
+    /// Random value from [-noise, +noise] is added to twirl.
+    float growthTwirlNoise_ = 0.0f;
 };
 
 /// Location of tree element.
@@ -241,6 +247,8 @@ struct TreeElementLocation
 {
     /// Seed of random parameters of element shape.
     unsigned seed_;
+    /// Interpolation factor from to [0, 1].
+    float interpolation_;
     /// Location on parent branch.
     float location_;
 
