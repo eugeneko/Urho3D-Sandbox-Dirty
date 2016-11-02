@@ -54,30 +54,12 @@ static const char* treeProxyTypeNames[] =
     0
 };
 
-void GenerateChildren(Node& node, TreeHost& host)
+PODVector<TreeElement*> GatherChildrenElements(Node& node)
 {
+    PODVector<TreeElement*> elements;
     for (SharedPtr<Node> child : node.GetChildren())
-    {
-        PODVector<TreeElement*> elements;
         child->GetDerivedComponents<TreeElement>(elements);
-        for (TreeElement* element : elements)
-        {
-            element->Generate(host);
-        }
-    }
-}
-
-void TriangulateChildren(Node& node, ModelFactory& factory, TreeHost& host, TreeLevelOfDetail& lod)
-{
-    for (SharedPtr<Node> child : node.GetChildren())
-    {
-        PODVector<TreeElement*> elements;
-        child->GetDerivedComponents<TreeElement>(elements);
-        for (TreeElement* element : elements)
-        {
-            element->Triangulate(factory, host, lod);
-        }
-    }
+    return elements;
 }
 
 }
@@ -163,27 +145,12 @@ bool TreeHost::ComputeHash(Hash& hash) const
     return true;
 }
 
-void TreeHost::GenerateTreeTopology()
-{
-    // Generate tree
-    leavesPositions_.Clear();
-    GenerateChildren(*node_, *this);
-
-    // Compute foliage center
-    foliageCenter_ = Vector3::ZERO;
-    for (const Vector3& position : leavesPositions_)
-    {
-        foliageCenter_ += position;
-    }
-    if (!leavesPositions_.Empty())
-    {
-        foliageCenter_ /= static_cast<float>(leavesPositions_.Size());
-    }
-}
-
 void TreeHost::DoGenerateResources(Vector<SharedPtr<Resource>>& resources)
 {
-    GenerateTreeTopology();
+    SharedPtr<TreeBranchInstance> root = MakeShared<TreeBranchInstance>(BranchDescription(), nullptr, nullptr);
+    for (const TreeElement* element : GatherChildrenElements(*node_))
+        element->Generate(*root);
+    root->PostGenerate();
 
     // Update list of LODs
     PODVector<TreeLevelOfDetail*> lods;
@@ -192,11 +159,10 @@ void TreeHost::DoGenerateResources(Vector<SharedPtr<Resource>>& resources)
     // Triangulate tree
     ModelFactory factory(context_);
     factory.Initialize(DefaultVertex::GetVertexElements(), true);
-
     for (unsigned i = 0; i < lods.Size(); ++i)
     {
         factory.SetLevel(i);
-        TriangulateChildren(*node_, factory, *this, *lods[i]);
+        root->Triangulate(factory, lods[i]->GetQualityParameters());
     }
 
     // Update ground adherence
@@ -314,12 +280,6 @@ void TreeElement::RegisterObject(Context* context)
 
 }
 
-void TreeElement::Triangulate(ModelFactory& factory, TreeHost& host, TreeLevelOfDetail& lod) const
-{
-    DoTriangulate(factory, host, lod);
-    TriangulateChildren(*node_, factory, host, lod);
-}
-
 bool TreeElement::ComputeHash(Hash& hash) const
 {
     hash.HashUInt(distribution_.seed_);
@@ -363,9 +323,8 @@ void BranchGroup::RegisterObject(Context* context)
 
     URHO3D_COPY_BASE_ATTRIBUTES(TreeElement);
 
-    URHO3D_MEMBER_ATTRIBUTE("Generate Branch", bool, generateBranch_, true, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Generate Branch", bool, branchShape_.generateBranch_, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Branch Material", GetBranchMaterialAttr, SetBranchMaterialAttr, ResourceRef, ResourceRef(Material::GetTypeStatic()), AM_DEFAULT);
-    URHO3D_MEMBER_ATTRIBUTE("UV Scale", Vector2, branchShape_.textureScale_, Vector2::ONE, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Quality", float, branchShape_.quality_, 1.0f, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Length", Vector2, branchShape_.length_, GetVector, SetVector, Vector2::ONE, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Fake Ending", bool, branchShape_.fakeEnding_, false, AM_DEFAULT);
@@ -376,7 +335,7 @@ void BranchGroup::RegisterObject(Context* context)
     URHO3D_MEMBER_ATTRIBUTE("Wind Main", float, branchShape_.windMainMagnitude_, 0.0f, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Wind Turbulence", float, branchShape_.windTurbulenceMagnitude_, 0.0f, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Wind Phase", float, branchShape_.windPhaseOffset_, 0.0f, AM_DEFAULT);
-    URHO3D_MEMBER_ATTRIBUTE("Generate Frond", bool, generateFrond_, false, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Generate Frond", bool, frondShape_.generateFrond_, false, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Frond Material", GetFrondMaterialAttr, SetFrondMaterialAttr, ResourceRef, ResourceRef(Material::GetTypeStatic()), AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Frond Size", Vector2, frondShape_.size_, GetResultRange, SetResultRange, Vector2(1.0f, 1.0f), AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Frond Size Curve", String, frondShape_.size_, GetCurveString, SetCurveString, "linear", AM_DEFAULT);
@@ -384,53 +343,29 @@ void BranchGroup::RegisterObject(Context* context)
     URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Frond Rotation", Vector2, frondShape_.rotationAngle_, GetVector, SetVector, Vector2::ZERO, AM_DEFAULT);
 }
 
-void BranchGroup::Generate(TreeHost& host)
+void BranchGroup::Generate(TreeBranchInstance& parent) const
 {
-    // Initialize transform
-    distribution_.position_ = node_->GetPosition();
-    distribution_.rotation_ = node_->GetRotation();
+    TreeElementDistribution distrib = distribution_;
+    distrib.position_ = node_->GetPosition();
+    distrib.rotation_ = node_->GetRotation();
 
-    // Generate this level
-    branches_.Clear();
-    switch (distribution_.spawnMode_)
+    const Vector<BranchDescription> branchDescs = InstantiateBranchGroup(parent.GetDescription(), distrib, branchShape_, frondShape_, minNumKnots_);;
+    PODVector<TreeElement*> children = GatherChildrenElements(*node_);
+
+    for (const BranchDescription& desc : branchDescs)
     {
-    case TreeElementSpawnMode::Explicit:
-        branches_ = InstantiateBranchGroup(BranchDescription(), distribution_, branchShape_, frondShape_, minNumKnots_);
-        break;
-    case TreeElementSpawnMode::Absolute:
-    case TreeElementSpawnMode::Relative:
-        {
-            BranchGroup* parentGroup = node_->GetParentComponent<BranchGroup>();
-            if (!parentGroup)
-            {
-                URHO3D_LOGERROR("BranchGroup with frequency > 0 must have parent BranchGroup");
-                return;
-            }
-
-            for (const BranchDescription& parentBranch : parentGroup->GetBranches())
-                branches_ += InstantiateBranchGroup(parentBranch, distribution_, branchShape_, frondShape_, minNumKnots_);
-        }
-
-    default:
-        break;
+        SharedPtr<TreeBranchInstance> branch = MakeShared<TreeBranchInstance>(desc, branchMaterial_, frondMaterial_);
+        for (const TreeElement* element : children)
+            element->Generate(*branch);
+        parent.AddChild(branch);
     }
-
-    // Notify host
-    for (const BranchDescription& branch : branches_)
-    {
-        host.OnBranchGenerated(branch, branchShape_);
-    }
-
-    // Generate children
-    GenerateChildren(*node_, host);
 }
 
 bool BranchGroup::ComputeHash(Hash& hash) const
 {
     TreeElement::ComputeHash(hash);
-    hash.HashUInt(generateBranch_);
+    hash.HashUInt(branchShape_.generateBranch_);
     hash.HashString(branchMaterial_ ? branchMaterial_->GetName() : String::EMPTY);
-    hash.HashVector2(branchShape_.textureScale_);
     hash.HashFloat(branchShape_.quality_);
     hash.HashVector2(branchShape_.length_);
     hash.HashUInt(branchShape_.fakeEnding_);
@@ -441,48 +376,13 @@ bool BranchGroup::ComputeHash(Hash& hash) const
     hash.HashFloat(branchShape_.windMainMagnitude_);
     hash.HashFloat(branchShape_.windTurbulenceMagnitude_);
     hash.HashFloat(branchShape_.windPhaseOffset_);
-    hash.HashUInt(generateFrond_);
+    hash.HashUInt(frondShape_.generateFrond_);
     hash.HashString(frondMaterial_ ? frondMaterial_->GetName() : String::EMPTY);
     hash.HashString(frondShape_.size_.GetCurveString());
     hash.HashVector2(frondShape_.size_.GetResultRange());
     hash.HashFloat(frondShape_.bendingAngle_);
     hash.HashVector2(frondShape_.rotationAngle_);
     return true;
-}
-
-void BranchGroup::DoTriangulate(ModelFactory& factory, TreeHost& host, TreeLevelOfDetail& lod) const
-{
-    BranchTessellationQualityParameters branchQuality;
-    branchQuality.maxNumSegments_ = lod.GetMaxBranchSegments();
-    branchQuality.minNumSegments_ = lod.GetMinBranchSegments();
-    branchQuality.minAngle_ = lod.GetMinAngle();
-
-    // Tessellate branches
-    Vector<TessellatedBranchPoints> tessellatedBranches(branches_.Size());
-    for (unsigned i = 0; i < branches_.Size(); ++i)
-        tessellatedBranches[i] = TessellateBranch(branches_[i], branchShape_.quality_, branchQuality);
-
-    // Generate branches
-    if (generateBranch_)
-    {
-        factory.AddGeometry(branchMaterial_);
-        for (unsigned i = 0; i < branches_.Size(); ++i)
-        {
-            if (!branches_[i].fake_)
-                GenerateBranchGeometry(factory, branches_[i], tessellatedBranches[i], branchShape_, lod.GetNumRadialSegments());
-        }
-    }
-
-    // Generate fronds
-    if (generateFrond_)
-    {
-        factory.AddGeometry(frondMaterial_);
-        for (unsigned i = 0; i < branches_.Size(); ++i)
-        {
-            if (!branches_[i].fake_)
-                GenerateFrondGeometry(factory, branches_[i], tessellatedBranches[i], frondShape_);
-        }
-    }
 }
 
 void BranchGroup::SetBranchMaterialAttr(const ResourceRef& value)
@@ -528,13 +428,9 @@ void LeafGroup::RegisterObject(Context* context)
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Material", GetMaterialAttr, SetMaterialAttr, ResourceRef, ResourceRef(Material::GetTypeStatic()), AM_DEFAULT);
 
     URHO3D_MEMBER_ATTRIBUTE("Scale", Vector3, shape_.scale_, Vector3::ONE, AM_DEFAULT);
-    URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Adjust to Global", Vector2, shape_.adjustToGlobal_, GetVector, SetVector, Vector2::ZERO, AM_DEFAULT);
-    URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Align Vertical", Vector2, shape_.alignVertical_, GetVector, SetVector, Vector2::ZERO, AM_DEFAULT);
-    URHO3D_MEMBER_ATTRIBUTE_ACCESSOR("Rotate Z", Vector2, shape_.rotateZ_, GetVector, SetVector, Vector2::ZERO, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Junction Offset", Vector3, shape_.junctionOffset_, Vector3::ZERO, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Bending", float, shape_.bending_, 0.0f, AM_DEFAULT);
-    URHO3D_MEMBER_ENUM_ATTRIBUTE("Normal Type", LeafNormalType, shape_.normalType_, normalTypeNames, 0, AM_DEFAULT);
-    URHO3D_MEMBER_ATTRIBUTE("Bump Normals", float, shape_.bumpNormals_, 0.0f, AM_DEFAULT);
+    URHO3D_MEMBER_ATTRIBUTE("Normal Smoothing", unsigned, shape_.normalSmoothing_, 0, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Color 1", Color, shape_.firstColor_, Color::WHITE, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Color 2", Color, shape_.secondColor_, Color::WHITE, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Wind Main", Vector2, shape_.windMainMagnitude_, Vector2::ZERO, AM_DEFAULT);
@@ -542,43 +438,15 @@ void LeafGroup::RegisterObject(Context* context)
     URHO3D_MEMBER_ATTRIBUTE("Wind Oscillation", Vector2, shape_.windOscillationMagnitude_, Vector2::ZERO, AM_DEFAULT);
 }
 
-void LeafGroup::Generate(TreeHost& host)
+void LeafGroup::Generate(TreeBranchInstance& parent) const
 {
-    // Initialize transform
-    distribution_.position_ = node_->GetWorldPosition();
-    distribution_.rotation_ = node_->GetWorldRotation();
+    TreeElementDistribution distrib = distribution_;
+    distrib.position_ = node_->GetPosition();
+    distrib.rotation_ = node_->GetRotation();
 
-    // Generate this level
-    leaves_.Clear();
-    switch (distribution_.spawnMode_)
-    {
-    case TreeElementSpawnMode::Explicit:
-        leaves_ = InstantiateLeafGroup(BranchDescription(), distribution_, shape_);
-        break;
-    case TreeElementSpawnMode::Absolute:
-    case TreeElementSpawnMode::Relative:
-        {
-            BranchGroup* parentGroup = node_->GetParentComponent<BranchGroup>();
-            if (!parentGroup)
-            {
-                URHO3D_LOGERROR("LeafGroup with frequency > 0 must have parent BranchGroup");
-                return;
-            }
-            for (const BranchDescription& parentBranch : parentGroup->GetBranches())
-            {
-                leaves_ += InstantiateLeafGroup(parentBranch, distribution_, shape_);
-            }
-        }
-        break;
-    default:
-        break;
-    }
-
-    // Notify host
-    for (const LeafDescription& leaf : leaves_)
-    {
-        host.OnLeafGenerated(leaf, shape_);
-    }
+    const Vector<LeafDescription> leavesDesc = InstantiateLeafGroup(parent.GetDescription(), distrib, shape_);;
+    for (const LeafDescription& desc : leavesDesc)
+        parent.AddChild(MakeShared<TreeLeafInstance>(desc, material_));
 }
 
 bool LeafGroup::ComputeHash(Hash& hash) const
@@ -586,28 +454,15 @@ bool LeafGroup::ComputeHash(Hash& hash) const
     TreeElement::ComputeHash(hash);
     hash.HashString(material_ ? material_->GetName() : String::EMPTY);
     hash.HashVector3(shape_.scale_);
-    hash.HashVector2(shape_.adjustToGlobal_);
-    hash.HashVector2(shape_.alignVertical_);
-    hash.HashVector2(shape_.rotateZ_);
     hash.HashVector3(shape_.junctionOffset_);
     hash.HashFloat(shape_.bending_);
-    hash.HashEnum(shape_.normalType_);
-    hash.HashFloat(shape_.bumpNormals_);
+    hash.HashUInt(shape_.normalSmoothing_);
     hash.HashColor(shape_.firstColor_);
     hash.HashColor(shape_.secondColor_);
     hash.HashVector2(shape_.windMainMagnitude_);
     hash.HashVector2(shape_.windTurbulenceMagnitude_);
     hash.HashVector2(shape_.windOscillationMagnitude_);
     return true;
-}
-
-void LeafGroup::DoTriangulate(ModelFactory& factory, TreeHost& host, TreeLevelOfDetail& lod) const
-{
-    factory.AddGeometry(material_);
-    for (const LeafDescription& leaf : leaves_)
-    {
-        GenerateLeafGeometry(factory, shape_, leaf.location_, host.GetFoliageCenter());
-    }
 }
 
 void LeafGroup::SetMaterialAttr(const ResourceRef& value)
@@ -643,6 +498,16 @@ void TreeLevelOfDetail::RegisterObject(Context* context)
     URHO3D_MEMBER_ATTRIBUTE("Min Branch Segments", unsigned, minBranchSegments_, 4, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Min Angle", float, minAngle_, 10.0f, AM_DEFAULT);
     URHO3D_MEMBER_ATTRIBUTE("Num Radial Segments", unsigned, numRadialSegments_, 5, AM_DEFAULT);
+}
+
+BranchQualityParameters TreeLevelOfDetail::GetQualityParameters() const
+{
+    BranchQualityParameters result;
+    result.maxNumSegments_ = maxBranchSegments_;
+    result.minNumSegments_ = minBranchSegments_;
+    result.minAngle_ = minAngle_;
+    result.numRadialSegments_ = numRadialSegments_;
+    return result;
 }
 
 bool TreeLevelOfDetail::ComputeHash(Hash& hash) const

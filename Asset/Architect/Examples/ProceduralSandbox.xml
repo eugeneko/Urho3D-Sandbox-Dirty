@@ -7,8 +7,8 @@
 	<attribute name="Elapsed Time" value="0" />
 	<attribute name="Next Replicated Node ID" value="145" />
 	<attribute name="Next Replicated Component ID" value="223" />
-	<attribute name="Next Local Node ID" value="16777306" />
-	<attribute name="Next Local Component ID" value="16778296" />
+	<attribute name="Next Local Node ID" value="16777309" />
+	<attribute name="Next Local Component ID" value="16778332" />
 	<attribute name="Variables" />
 	<attribute name="Variable Names" value="" />
 	<component type="Octree" id="1" />
@@ -121,7 +121,7 @@
 						<variant type="Int" value="-662911500" />
 						<variant type="Int" value="-662911500" />
 					</attribute>
-					<attribute name="Hash" value="716128102" />
+					<attribute name="Hash" value="-1398011693" />
 					<attribute name="Destination Model" value="Model;Objects/WhiteTree/Branch3m.mdl" />
 				</component>
 				<component type="TreeLevelOfDetail" id="174">
@@ -234,7 +234,7 @@
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
 									<component type="LeafGroup" id="181">
-										<attribute name="Hash" value="1816142974" />
+										<attribute name="Hash" value="-230622262" />
 										<attribute name="Spawn Mode" value="Absolute" />
 										<attribute name="Frequency" value="3" />
 										<attribute name="Growth Location" value="0 0.8" />
@@ -287,7 +287,7 @@
 						<variant type="Int" value="-662693532" />
 						<variant type="Int" value="-662693532" />
 					</attribute>
-					<attribute name="Hash" value="1979278754" />
+					<attribute name="Hash" value="862801754" />
 					<attribute name="Destination Model" value="Model;Objects/WhiteTree/Tree29A.mdl" />
 					<attribute name="Main Wind" value="0.2" />
 					<attribute name="Turbulence Magnitude" value="0.12" />
@@ -410,7 +410,7 @@
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
 									<component type="LeafGroup" id="192">
-										<attribute name="Hash" value="-1625340479" />
+										<attribute name="Hash" value="1639148537" />
 										<attribute name="Spawn Mode" value="Absolute" />
 										<attribute name="Frequency" value="3" />
 										<attribute name="Growth Location" value="0.3 0.7" />
@@ -421,8 +421,7 @@
 										<attribute name="Growth Twirl" value="-90 -90" />
 										<attribute name="Material" value="Material;Objects/WhiteTree/Branch3m.xml" />
 										<attribute name="Bending" value="0.1" />
-										<attribute name="Normal Type" value="Fake" />
-										<attribute name="Bump Normals" value="1" />
+										<attribute name="Normal Smoothing" value="2" />
 										<attribute name="Wind Main" value="0 0.2" />
 										<attribute name="Wind Oscillation" value="0.1 0.5" />
 									</component>
@@ -453,7 +452,7 @@
 						<variant type="Int" value="-662693532" />
 						<variant type="Int" value="-662693532" />
 					</attribute>
-					<attribute name="Hash" value="1849069897" />
+					<attribute name="Hash" value="1493472283" />
 					<attribute name="Destination Model" value="Model;Objects/WhiteTree/Tree19A.mdl" />
 					<attribute name="Main Wind" value="0.2" />
 					<attribute name="Turbulence Magnitude" value="0.12" />
@@ -576,7 +575,7 @@
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
 									<component type="LeafGroup" id="202">
-										<attribute name="Hash" value="-2059226443" />
+										<attribute name="Hash" value="1347464579" />
 										<attribute name="Spawn Mode" value="Absolute" />
 										<attribute name="Frequency" value="2" />
 										<attribute name="Growth Location" value="0.3 0.7" />
@@ -587,8 +586,7 @@
 										<attribute name="Growth Twirl" value="-90 -90" />
 										<attribute name="Material" value="Material;Objects/WhiteTree/Branch3m.xml" />
 										<attribute name="Bending" value="0.1" />
-										<attribute name="Normal Type" value="Fake" />
-										<attribute name="Bump Normals" value="1" />
+										<attribute name="Normal Smoothing" value="2" />
 										<attribute name="Wind Main" value="0 0.2" />
 										<attribute name="Wind Oscillation" value="0.1 0.5" />
 									</component>
@@ -619,7 +617,7 @@
 						<variant type="Int" value="-662693532" />
 						<variant type="Int" value="-662693532" />
 					</attribute>
-					<attribute name="Hash" value="-1668924231" />
+					<attribute name="Hash" value="2004600875" />
 					<attribute name="Destination Model" value="Model;Objects/WhiteTree/Tree11A.mdl" />
 					<attribute name="Main Wind" value="0.2" />
 					<attribute name="Turbulence Magnitude" value="0.12" />
@@ -697,7 +695,7 @@
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<component type="LeafGroup" id="210">
-								<attribute name="Hash" value="-1560599333" />
+								<attribute name="Hash" value="-66752439" />
 								<attribute name="Spawn Mode" value="Absolute" />
 								<attribute name="Frequency" value="4" />
 								<attribute name="Growth Location" value="0 0.6" />
@@ -708,8 +706,7 @@
 								<attribute name="Growth Twirl" value="-90 -90" />
 								<attribute name="Material" value="Material;Objects/WhiteTree/Branch3m.xml" />
 								<attribute name="Bending" value="0.1" />
-								<attribute name="Normal Type" value="Fake" />
-								<attribute name="Bump Normals" value="1" />
+								<attribute name="Normal Smoothing" value="1" />
 								<attribute name="Wind Main" value="0 0.2" />
 								<attribute name="Wind Oscillation" value="0.1 0.5" />
 							</component>
@@ -738,7 +735,7 @@
 						<variant type="Int" value="-662693532" />
 						<variant type="Int" value="-662693532" />
 					</attribute>
-					<attribute name="Hash" value="-1946736078" />
+					<attribute name="Hash" value="384810906" />
 					<attribute name="Destination Model" value="Model;Objects/WhiteTree/Tree5A.mdl" />
 					<attribute name="Main Wind" value="0.2" />
 					<attribute name="Turbulence Magnitude" value="0.12" />
@@ -815,7 +812,7 @@
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<component type="LeafGroup" id="218">
-								<attribute name="Hash" value="-553682852" />
+								<attribute name="Hash" value="1545069812" />
 								<attribute name="Spawn Mode" value="Absolute" />
 								<attribute name="Frequency" value="2" />
 								<attribute name="Growth Location" value="0 0.5" />
@@ -826,8 +823,7 @@
 								<attribute name="Growth Twirl" value="-90 -90" />
 								<attribute name="Material" value="Material;Objects/WhiteTree/Branch3m.xml" />
 								<attribute name="Bending" value="0.1" />
-								<attribute name="Normal Type" value="Fake" />
-								<attribute name="Bump Normals" value="1" />
+								<attribute name="Normal Smoothing" value="2" />
 								<attribute name="Wind Main" value="0 0.2" />
 								<attribute name="Wind Oscillation" value="0.1 0.5" />
 							</component>
@@ -898,7 +894,7 @@
 			<attribute name="Name" value="Light" />
 			<attribute name="Tags" />
 			<attribute name="Position" value="0 40 0" />
-			<attribute name="Rotation" value="0.906308 0.422618 0 0" />
+			<attribute name="Rotation" value="0.612382 0.353559 -0.353559 0.612382" />
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="Light" id="5">

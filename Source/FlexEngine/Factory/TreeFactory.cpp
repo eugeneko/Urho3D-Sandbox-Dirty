@@ -160,6 +160,12 @@ BranchDescription GenerateBranch(const Vector3& initialPosition, const Quaternio
 
     // Generate knots
     BranchDescription result;
+    result.generateBranch_ = branchShape.generateBranch_;
+    result.generateFrond_ = frondShape.generateFrond_;
+    result.length_ = length;
+    result.quality_ = branchShape.quality_;
+    result.frondBending_ = frondShape.bendingAngle_;
+    result.frondRotation_ = frondShape.rotationAngle_.Get(StableRandom(initialPosition));
 
     Vector3 position = initialPosition;
     Quaternion rotation = initialRotation;
@@ -190,12 +196,10 @@ BranchDescription GenerateBranch(const Vector3& initialPosition, const Quaternio
         position += (rotation * Vector3::UP) * step;
     }
 
-    result.length_ = length;
     return result;
 }
 
-TessellatedBranchPoints TessellateBranch(const BranchDescription& branch,
-    const float multiplier, const BranchTessellationQualityParameters& quality)
+TessellatedBranchPoints TessellateBranch(const BranchDescription& branch, const BranchQualityParameters& quality)
 {
     TessellatedBranchPoints result;
     if (quality.maxNumSegments_ < 5)
@@ -217,8 +221,8 @@ TessellatedBranchPoints TessellateBranch(const BranchDescription& branch,
     }
 
     const unsigned numSegments = branch.positions_.GetNumPoints() - 1;
-    const unsigned minNumSegments = Max(1u, static_cast<unsigned>(quality.minNumSegments_ * multiplier));
-    const float minAngle = Clamp(quality.minAngle_ / multiplier, 1.0f, 90.0f);
+    const unsigned minNumSegments = Max(1u, static_cast<unsigned>(quality.minNumSegments_ * branch.quality_));
+    const float minAngle = Clamp(quality.minAngle_ / branch.quality_, 1.0f, 90.0f);
     // Point is forcedly committed after specified number of skipped points
     const unsigned maxNumSkipped = (quality.maxNumSegments_ + minNumSegments - 1) / minNumSegments - 1;
 
@@ -279,7 +283,7 @@ TessellatedBranchPoints TessellateBranch(const BranchDescription& branch,
 }
 
 PODVector<DefaultVertex> GenerateBranchVertices(const BranchDescription& branch, const TessellatedBranchPoints& points,
-    const BranchShapeSettings& shape, unsigned numRadialSegments)
+    const Vector2& textureScale, unsigned numRadialSegments)
 {
     PODVector<DefaultVertex> result;
     if (points.Empty())
@@ -308,7 +312,7 @@ PODVector<DefaultVertex> GenerateBranchVertices(const BranchDescription& branch,
             vertex.normal_ = normal;
             vertex.tangent_ = points[i].rotation_ * Vector3::UP;
             vertex.binormal_ = CrossProduct(vertex.normal_, vertex.tangent_);
-            vertex.uv_[0] = Vector4(factor / shape.textureScale_.x_, points[i].relativeDistance_ / shape.textureScale_.y_, 0, 0);
+            vertex.uv_[0] = Vector4(factor / textureScale.x_, points[i].relativeDistance_ / textureScale.y_, 0, 0);
             vertex.colors_[1].r_ = points[i].adherence_.x_;
             vertex.colors_[1].g_ = points[i].adherence_.y_;
             vertex.colors_[1].b_ = branch.phase_;
@@ -370,8 +374,7 @@ PODVector<unsigned> GenerateBranchIndices(const PODVector<unsigned>& numRadialSe
     return result;
 }
 
-PODVector<DefaultVertex> GenerateFrondVertices(const BranchDescription& branch, const TessellatedBranchPoints& points,
-    const FrondShapeSettings& shape)
+PODVector<DefaultVertex> GenerateFrondVertices(const BranchDescription& branch, const TessellatedBranchPoints& points)
 {
     PODVector<DefaultVertex> result;
     if (points.Empty())
@@ -380,11 +383,11 @@ PODVector<DefaultVertex> GenerateFrondVertices(const BranchDescription& branch, 
         return result;
     }
 
-    const float rotationAngle = shape.rotationAngle_.Get(StableRandom(branch.positions_.GetPoint(0)));
+    const float rotationAngle = branch.frondRotation_;
     for (unsigned i = 0; i < points.Size(); ++i)
     {
         // Left vertex
-        const float leftAngle = 180.0f - shape.bendingAngle_ + rotationAngle;
+        const float leftAngle = 180.0f - branch.frondBending_ + rotationAngle;
         DefaultVertex vers[3];
         vers[0].position_ = points[i].position_ + points[i].GetPosition(leftAngle) * points[i].frondSize_;
         vers[0].uv_[0] = Vector4(0.0f, points[i].location_, 0, 0);
@@ -394,7 +397,7 @@ PODVector<DefaultVertex> GenerateFrondVertices(const BranchDescription& branch, 
         vers[0].colors_[1].a_ = 0.0f;
 
         // Right vertex
-        const float rightAngle = shape.bendingAngle_ + rotationAngle;
+        const float rightAngle = branch.frondBending_ + rotationAngle;
         vers[2].position_ = points[i].position_ + points[i].GetPosition(rightAngle) * points[i].frondSize_;
         vers[2].uv_[0] = Vector4(1.0f, points[i].location_, 0, 0);
         vers[2].colors_[1].r_ = points[i].adherence_.x_;
@@ -429,20 +432,19 @@ PODVector<unsigned> GenerateFrondIndices(unsigned numPoints)
 }
 
 void GenerateBranchGeometry(ModelFactory& factory, const BranchDescription& branch, const TessellatedBranchPoints& points,
-    const BranchShapeSettings& shape, unsigned numRadialSegments)
+    const Vector2& textureScale, unsigned numRadialSegments)
 {
-    numRadialSegments = Max(3u, static_cast<unsigned>(numRadialSegments * shape.quality_));
+    numRadialSegments = Max(3u, static_cast<unsigned>(numRadialSegments * branch.quality_));
     const PODVector<DefaultVertex> tempVertices =
-        GenerateBranchVertices(branch, points, shape, numRadialSegments);
+        GenerateBranchVertices(branch, points, textureScale, numRadialSegments);
     const PODVector<unsigned> tempIndices =
         GenerateBranchIndices(PODVector<unsigned>(points.Size(), numRadialSegments), tempVertices.Size());
     factory.AddPrimitives(tempVertices, tempIndices, true);
 }
 
-void GenerateFrondGeometry(ModelFactory& factory, const BranchDescription& branch, const TessellatedBranchPoints& points,
-    const FrondShapeSettings& shape)
+void GenerateFrondGeometry(ModelFactory& factory, const BranchDescription& branch, const TessellatedBranchPoints& points)
 {
-    PODVector<DefaultVertex> vertices = GenerateFrondVertices(branch, points, shape);
+    PODVector<DefaultVertex> vertices = GenerateFrondVertices(branch, points);
     PODVector<unsigned> indices = GenerateFrondIndices(points.Size());
     CalculateNormals(vertices, indices);
     CalculateTangents(vertices, indices);
@@ -451,14 +453,14 @@ void GenerateFrondGeometry(ModelFactory& factory, const BranchDescription& branc
     factory.AddPrimitives(vertices, indices, true);
 }
 
-PODVector<TreeElementLocation> DistributeElementsOverParent(const BranchDescription& parent, const TreeElementDistribution& distrib)
+Vector<TreeElementLocation> DistributeElementsOverParent(const BranchDescription& parent, const TreeElementDistribution& distrib)
 {
     const unsigned seed = distrib.seed_ != 0
         ? distrib.seed_
         : MakeHash(distrib.position_);
     StandardRandom random(seed);
 
-    PODVector<TreeElementLocation> result;
+    Vector<TreeElementLocation> result;
     switch (distrib.spawnMode_)
     {
     case TreeElementSpawnMode::Explicit:
@@ -572,7 +574,7 @@ Vector<BranchDescription> InstantiateBranchGroup(const BranchDescription& parent
     const TreeElementDistribution& distribution, const BranchShapeSettings& branchShape, const FrondShapeSettings& frondShape,
     unsigned minNumKnots)
 {
-    const PODVector<TreeElementLocation> elements = DistributeElementsOverParent(parent, distribution);
+    const Vector<TreeElementLocation> elements = DistributeElementsOverParent(parent, distribution);
     const FloatRange lengthRange(branchShape.length_.x_, branchShape.length_.y_);
 
     Vector<BranchDescription> result;
@@ -595,7 +597,10 @@ Vector<BranchDescription> InstantiateBranchGroup(const BranchDescription& parent
         const float location = elements.Empty() ? 0.0f : elements.Back().location_;
         branch.index_ = elements.Size();
         branch.length_ = parent.length_ * (1.0f - location);
+        branch.quality_ = parent.quality_;
         branch.phase_ = parent.phase_;
+        branch.generateBranch_ = false;
+        branch.generateFrond_ = false;
 
         // Compute number of knots
         const unsigned numKnots = Max(minNumKnots, static_cast<unsigned>((1.0f - location) * branch.positions_.GetNumPoints()));
@@ -611,7 +616,6 @@ Vector<BranchDescription> InstantiateBranchGroup(const BranchDescription& parent
             branch.frondSizes_.AddPoint(parent.frondSizes_.SamplePoint(t));
         }
 
-        branch.fake_ = true;
         result.Push(branch);
     }
 
@@ -619,16 +623,17 @@ Vector<BranchDescription> InstantiateBranchGroup(const BranchDescription& parent
 }
 
 //////////////////////////////////////////////////////////////////////////
-PODVector<LeafDescription> InstantiateLeafGroup(const BranchDescription& parent,
+Vector<LeafDescription> InstantiateLeafGroup(const BranchDescription& parent,
     const TreeElementDistribution& distribution, const LeafShapeSettings& shape)
 {
-    const PODVector<TreeElementLocation> elements = DistributeElementsOverParent(parent, distribution);
+    const Vector<TreeElementLocation> elements = DistributeElementsOverParent(parent, distribution);
 
-    PODVector<LeafDescription> result;
+    Vector<LeafDescription> result;
     for (const TreeElementLocation& element : elements)
     {
         LeafDescription leaf;
         leaf.location_ = element;
+        leaf.shape_ = shape;
         result.Push(leaf);
     }
     return result;
@@ -640,8 +645,6 @@ void GenerateLeafGeometry(ModelFactory& factory,
     const float noise1 = StableRandom(location.position_ + Vector3::ONE * 1);
 
     // Instantiate random values
-    const float adjustToGlobal = shape.adjustToGlobal_.Get(location.noise_.x_);
-    const float alignVerical = shape.alignVertical_.Get(location.noise_.y_);
     const Vector3 position = location.position_;
     const Quaternion localRotation = location.rotation_;
     const Color leafColor = Lerp(shape.firstColor_, shape.secondColor_, noise1);
@@ -659,16 +662,8 @@ void GenerateLeafGeometry(ModelFactory& factory,
         return;
     }
 
-    // Adjust to global space
-    const Quaternion globalRotation = Quaternion(xAxisGlobal, yAxisGlobal, zAxisGlobal).Normalized();
-    const Quaternion baseRotation = localRotation.Slerp(globalRotation, adjustToGlobal).Normalized();
-
-    const Quaternion verticalRotation = Quaternion(GetBasisZ(baseRotation.RotationMatrix()), Vector3::DOWN).Normalized();
-    const Quaternion alignVerticalRotation = Quaternion::IDENTITY.Slerp(verticalRotation, alignVerical).Normalized();
-
-    const Quaternion zRotation = Quaternion(shape.rotateZ_.Get(location.noise_.w_), Vector3::FORWARD);
-
-    const Matrix3 rotationMatrix = (alignVerticalRotation * baseRotation * zRotation).RotationMatrix();
+    // Get basis
+    const Matrix3 rotationMatrix = localRotation.RotationMatrix();
     const Vector3 xAxis = GetBasisX(rotationMatrix);
     const Vector3 yAxis = GetBasisY(rotationMatrix);
     const Vector3 zAxis = GetBasisZ(rotationMatrix);
@@ -725,23 +720,6 @@ void GenerateLeafGeometry(ModelFactory& factory,
     for (DefaultVertex& vertex : vers)
         vertex.position_ = basePosition + rotationMatrix * (vertex.position_ * geometryScale);
 
-    // Compute normals
-    const Vector3 flatNormal = ((vers[4].position_ - foliageCenter) * Vector3(1, 0, 1)).Normalized();
-    const Vector3 globalNormal = Lerp(flatNormal, Vector3::UP, 0.5f).Normalized();
-
-    vers[4].normal_ = globalNormal;
-    for (unsigned i = 0; i < 4; ++i)
-    {
-        const Vector3 bumpedNormal = ProjectVectorOnPlane(vers[i].position_ - vers[4].position_, globalNormal).Normalized();
-        vers[i].normal_ = Lerp(globalNormal, bumpedNormal, shape.bumpNormals_).Normalized();
-    }
-
-    for (unsigned i = 0; i < 5; ++i)
-    {
-        vers[i].tangent_ = ConstructOrthogonalVector(vers[i].normal_);
-        vers[i].binormal_ = vers[i].normal_.CrossProduct(vers[i].tangent_);
-    }
-
     const unsigned inds[4 * 3] =
     {
         0, 4, 1,
@@ -752,14 +730,93 @@ void GenerateLeafGeometry(ModelFactory& factory,
 
     // Compute real normals
     CalculateNormals(vers, 5, inds, 4);
-    if (shape.normalType_ == LeafNormalType::Fair)
+    if (shape.normalSmoothing_ == 0)
     {
         for (DefaultVertex& vertex : vers)
             vertex.normal_ = vertex.geometryNormal_;
         CalculateTangents(vers, 5, inds, 4);
     }
+    else
+    {
+        for (unsigned i = 0; i < 5; ++i)
+        {
+            vers[i].normal_ = (vers[i].position_ - foliageCenter).Normalized();
+            vers[i].tangent_ = ConstructOrthogonalVector(vers[i].normal_);
+            vers[i].binormal_ = vers[i].normal_.CrossProduct(vers[i].tangent_);
+        }
+    }
 
     factory.AddPrimitives(vers, inds, true);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void TreeElementInstance::PostGenerate(TreeElementInstance* parent /*= nullptr*/)
+{
+    // Update recursive
+    parent_ = parent;
+    for (TreeElementInstance* child : children_)
+        child->PostGenerate(this);
+
+    // Compute foliage center
+    foliageCenter_ = ComputeFoliageCenter();
+    for (const TreeElementInstance* child : children_)
+        foliageCenter_ += child->GetFoliageCenter();
+}
+
+void TreeElementInstance::Triangulate(ModelFactory& factory, BranchQualityParameters& quality, bool recursive /*= true*/)
+{
+    DoTriangulate(factory, quality);
+    if (recursive)
+    {
+        for (const SharedPtr<TreeElementInstance>& child : children_)
+            child->Triangulate(factory, quality, true);
+    }
+}
+
+Vector3 TreeElementInstance::GetFoliageCenter(unsigned depth) const
+{
+    return parent_ && depth > 0
+        ? parent_->GetFoliageCenter(depth - 1)
+        : Vector3(foliageCenter_.Data()) / foliageCenter_.w_;
+}
+
+void TreeElementInstance::DoTriangulate(ModelFactory& /*factory*/, BranchQualityParameters& /*quality*/)
+{
+}
+
+//////////////////////////////////////////////////////////////////////////
+void TreeBranchInstance::DoTriangulate(ModelFactory& factory, BranchQualityParameters& quality)
+{
+    if (!desc_.generateBranch_ && !desc_.generateFrond_)
+        return;
+
+    const TessellatedBranchPoints tessellatedBranch = TessellateBranch(desc_, quality);
+
+    if (desc_.generateBranch_)
+    {
+        factory.AddGeometry(branchMaterial_);
+        GenerateBranchGeometry(factory, desc_, tessellatedBranch, Vector2::ONE, quality.numRadialSegments_);
+    }
+
+    if (desc_.generateFrond_)
+    {
+        factory.AddGeometry(frondMaterial_);
+        GenerateFrondGeometry(factory, desc_, tessellatedBranch);
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
+Vector4 TreeLeafInstance::ComputeFoliageCenter() const
+{
+    //const Vector3 leafCenter = desc_.location_.position_
+    //    + desc_.location_.rotation_ * (Vector3(0.0f, 0.5f, 0.0f) * desc_.shape_.scale_ * desc_.location_.size_);
+    return Vector4(desc_.location_.position_, 1.0f);
+}
+
+void TreeLeafInstance::DoTriangulate(ModelFactory& factory, BranchQualityParameters& quality)
+{
+    factory.AddGeometry(leafMaterial_);
+    GenerateLeafGeometry(factory, desc_.shape_, desc_.location_, GetFoliageCenter(desc_.shape_.normalSmoothing_));
 }
 
 }
