@@ -7,8 +7,8 @@
 	<attribute name="Elapsed Time" value="0" />
 	<attribute name="Next Replicated Node ID" value="145" />
 	<attribute name="Next Replicated Component ID" value="223" />
-	<attribute name="Next Local Node ID" value="16777309" />
-	<attribute name="Next Local Component ID" value="16778332" />
+	<attribute name="Next Local Node ID" value="16777316" />
+	<attribute name="Next Local Component ID" value="16778416" />
 	<attribute name="Variables" />
 	<attribute name="Variable Names" value="" />
 	<component type="Octree" id="1" />
@@ -121,7 +121,7 @@
 						<variant type="Int" value="-662911500" />
 						<variant type="Int" value="-662911500" />
 					</attribute>
-					<attribute name="Hash" value="-1398011693" />
+					<attribute name="Hash" value="-2131052376" />
 					<attribute name="Destination Model" value="Model;Objects/WhiteTree/Branch3m.mdl" />
 				</component>
 				<component type="TreeLevelOfDetail" id="174">
@@ -234,7 +234,7 @@
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
 									<component type="LeafGroup" id="181">
-										<attribute name="Hash" value="-230622262" />
+										<attribute name="Hash" value="-971854797" />
 										<attribute name="Spawn Mode" value="Absolute" />
 										<attribute name="Frequency" value="3" />
 										<attribute name="Growth Location" value="0 0.8" />
@@ -244,8 +244,8 @@
 										<attribute name="Growth Angle" value="30 30" />
 										<attribute name="Growth Angle Noise" value="30" />
 										<attribute name="Material" value="Material;Objects/WhiteTree/LeafMaterial.xml" />
-										<attribute name="Color 1" value="0.2 0.35 0.15 1" />
-										<attribute name="Color 2" value="0.3 0.55 0.15 1" />
+										<attribute name="Color 1" value="0.2 0.3 0.15 1" />
+										<attribute name="Color 2" value="0.35 0.5 0.2 1" />
 									</component>
 								</node>
 							</node>
@@ -856,7 +856,7 @@
 			<attribute name="Is Enabled" value="true" />
 			<attribute name="Name" value="Grass" />
 			<attribute name="Tags" />
-			<attribute name="Position" value="-22.5 -1 -2.5" />
+			<attribute name="Position" value="-0.5 1 -1.5" />
 			<attribute name="Rotation" value="1 0 0 0" />
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
@@ -864,15 +864,15 @@
 				<attribute name="Resources Hashes">
 					<variant type="Int" value="-1400682712" />
 				</attribute>
-				<attribute name="Hash" value="-732293645" />
+				<attribute name="Hash" value="136108204" />
 				<attribute name="Type" value="-612052389" />
 				<attribute name="Script" value="ScriptFile;Objects/Grass/Procedural.as" />
 				<attribute name="Entry Point" value="MainGrass" />
 				<attribute name="Resources" value="Texture2D;Objects/Grass/GrassDiffuse.dds" />
 				<attribute name="Num Parameters" value="2" />
 				<attribute name="Parameters">
-					<variant hash="0" type="Vector4" value="0.3 0.6 0.1 1" />
-					<variant hash="1" type="Vector4" value="0.1 0.3 0.1 1" />
+					<variant hash="0" type="Vector4" value="0.1 0.2 0.05 1" />
+					<variant hash="1" type="Vector4" value="0.15 0.3 0.1 1" />
 				</attribute>
 			</component>
 			<component type="StaticModelEx" id="221">
