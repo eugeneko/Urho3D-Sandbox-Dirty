@@ -10,8 +10,6 @@ namespace Urho3D
 
 class Resource;
 
-}
-
 namespace FlexEngine
 {
 
@@ -198,5 +196,7 @@ private:
     bool resourceListDirty_ = false;
 
 };
+
+}
 
 }

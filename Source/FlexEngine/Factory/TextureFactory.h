@@ -19,8 +19,6 @@ class ResourceCache;
 class XMLElement;
 class XMLFile;
 
-}
-
 namespace FlexEngine
 {
 
@@ -243,5 +241,7 @@ private:
 
 /// Generate textures using XML description.
 void GenerateTexturesFromXML(XMLElement& node, ResourceCache& resourceCache, const FactoryContext& factoryContext);
+
+}
 
 }

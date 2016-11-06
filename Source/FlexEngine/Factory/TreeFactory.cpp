@@ -22,6 +22,9 @@
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/XMLElement.h>
 
+namespace Urho3D
+{
+
 namespace FlexEngine
 {
 
@@ -817,6 +820,8 @@ void TreeLeafInstance::DoTriangulate(ModelFactory& factory, BranchQualityParamet
 {
     factory.AddGeometry(leafMaterial_);
     GenerateLeafGeometry(factory, desc_.shape_, desc_.location_, GetFoliageCenter(desc_.shape_.normalSmoothing_));
+}
+
 }
 
 }

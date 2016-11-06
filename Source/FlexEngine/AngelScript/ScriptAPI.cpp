@@ -15,6 +15,9 @@
 #include <Urho3D/Scene/Node.h>
 #include <Urho3D/Scene/Scene.h>
 
+namespace Urho3D
+{
+
 namespace FlexEngine
 {
 
@@ -290,6 +293,8 @@ void RegisterAPI(asIScriptEngine* engine)
     engine->RegisterObjectMethod("Image", "Texture2D@+ GetTexture2D() const", asFUNCTION(Image_GetTexture2D), asCALL_CDECL_OBJLAST);
 
     engine->RegisterGlobalFunction("void TODO_CoverTerrainWithObjects(Node@+, Node@+, XMLFile@+, float, float, const Vector2&in, const Vector2&in)", asFUNCTION(TODO_CoverTerrainWithObjects), asCALL_CDECL);
+}
+
 }
 
 }

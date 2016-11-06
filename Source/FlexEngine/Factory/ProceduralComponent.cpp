@@ -12,6 +12,9 @@
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Scene/SceneEvents.h>
 
+namespace Urho3D
+{
+
 namespace FlexEngine
 {
 
@@ -402,6 +405,8 @@ Variant ProceduralComponentAgent::ToHash() const
 bool ProceduralComponentAgent::ComputeHash(Hash& /*hash*/) const
 {
     return false;
+}
+
 }
 
 }

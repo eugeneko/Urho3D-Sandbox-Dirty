@@ -20,6 +20,9 @@
 #include <Urho3D/Resource/XMLFile.h>
 #include <Urho3D/Scene/Scene.h>
 
+namespace Urho3D
+{
+
 namespace FlexEngine
 {
 
@@ -989,6 +992,8 @@ int TextureFactory::FindTexture(const String& name) const
         ++idx;
     }
     return -1;
+}
+
 }
 
 }

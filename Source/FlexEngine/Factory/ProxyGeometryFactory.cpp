@@ -11,6 +11,9 @@
 #include <Urho3D/Math/Matrix3.h>
 #include <Urho3D/Resource/XMLElement.h>
 
+namespace Urho3D
+{
+
 namespace FlexEngine
 {
 
@@ -244,6 +247,8 @@ Vector<OrthoCameraDescription> GenerateProxyCamerasFromXML(
     PODVector<unsigned> indices;
     GenerateProxyFromXML(boundingBox, width, height, node, cameras, vertices, indices);
     return cameras;
+}
+
 }
 
 }

@@ -4,6 +4,9 @@
 
 #include <Urho3D/Math/BoundingBox.h>
 
+namespace Urho3D
+{
+
 namespace FlexEngine
 {
 
@@ -38,12 +41,12 @@ inline void CalculateTangents(PODVector<DefaultVertex>& vertices, PODVector<unsi
 /// Orientation:
 /// @code
 ///     z
-/// y   /_____ 
+/// y   /_____
 /// |  /2   3/
 /// | /     /
 /// |/_____/__x
 ///  0   1
-///  
+///
 /// ^ is normal
 /// v is flipped
 /// @endcode
@@ -64,5 +67,7 @@ void AppendQuadGridToVertices(PODVector<DefaultVertex>& vertices, PODVector<unsi
 /// Append geometry to index and vertex data. Indexes are adjusted.
 void AppendGeometryToVertices(PODVector<DefaultVertex>& vertices, PODVector<unsigned>& indices,
     const PODVector<DefaultVertex>& newVertices, const PODVector<unsigned>& newIndices);
+
+}
 
 }

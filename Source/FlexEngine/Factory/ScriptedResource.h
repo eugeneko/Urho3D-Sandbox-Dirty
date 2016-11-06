@@ -9,8 +9,6 @@ namespace Urho3D
 class Resource;
 class ScriptFile;
 
-}
-
 namespace FlexEngine
 {
 
@@ -96,5 +94,7 @@ private:
     mutable VariantMap parametersAttr_;
 
 };
+
+}
 
 }

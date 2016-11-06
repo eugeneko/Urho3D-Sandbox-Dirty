@@ -4,6 +4,9 @@
 
 #include <Urho3D/Container/Vector.h>
 
+namespace Urho3D
+{
+
 namespace FlexEngine
 {
 
@@ -45,6 +48,8 @@ T PopElement(PODVector<T>& vec)
     const T element = vec.Back();
     vec.Pop();
     return element;
+}
+
 }
 
 }

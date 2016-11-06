@@ -9,8 +9,6 @@ namespace Urho3D
 
 class Material;
 
-}
-
 namespace FlexEngine
 {
 
@@ -25,5 +23,7 @@ protected:
 
 /// Define a trigger attribute that call function on each invocation.
 #define URHO3D_TRIGGER_ATTRIBUTE(name, callback) URHO3D_ACCESSOR_ATTRIBUTE(name, GetFalse, callback, bool, false, AM_EDIT)
+
+}
 
 }

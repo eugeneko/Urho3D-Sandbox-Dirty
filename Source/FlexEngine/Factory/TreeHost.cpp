@@ -19,6 +19,9 @@
 #include <Urho3D/Resource/XMLFile.h>
 #include <Urho3D/Scene/Node.h>
 
+namespace Urho3D
+{
+
 namespace FlexEngine
 {
 
@@ -730,6 +733,8 @@ bool TreeProxy::ComputeHash(Hash& hash) const
     hash.HashFloat(adjustAlpha_);
     hash.HashUInt(flipNormals_);
     return true;
+}
+
 }
 
 }

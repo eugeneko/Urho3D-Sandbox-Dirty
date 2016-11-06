@@ -3,21 +3,17 @@
 #include <FlexEngine/Factory/ModelFactory.h>
 
 #include <FlexEngine/Math/MathDefs.h>
-// #include <FlexEngine/Factory/FactoryContext.h>
-// #include <FlexEngine/Factory/FatVertex.h>
-// #include <FlexEngine/Factory/GeometryUtils.h>
-// #include <FlexEngine/Resource/ResourceCacheHelpers.h>
-//
-// #include <Urho3D/AngelScript/ScriptFile.h>
+
 #include <Urho3D/AngelScript/ScriptFile.h>
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/Graphics/Geometry.h>
 #include <Urho3D/Graphics/IndexBuffer.h>
 #include <Urho3D/Graphics/Model.h>
 #include <Urho3D/Graphics/VertexBuffer.h>
-// #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/XMLElement.h>
-// #include <Urho3D/Resource/XMLFile.h>
+
+namespace Urho3D
+{
 
 namespace FlexEngine
 {
@@ -451,6 +447,8 @@ void AppendEmptyLOD(Model& model, float distance)
         geometry->SetLodDistance(distance);
         model.SetGeometry(i, num, geometry);
     }
+}
+
 }
 
 }

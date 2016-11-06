@@ -7,10 +7,10 @@
 #include <Urho3D/Graphics/Geometry.h>
 #include <Urho3D/Graphics/Material.h>
 #include <Urho3D/Graphics/Model.h>
-// #include <Urho3D/Graphics/DebugRenderer.h>
-// #include <Urho3D/IO/Log.h>
-// #include <Urho3D/Scene/Node.h>
 #include <Urho3D/Scene/Scene.h>
+
+namespace Urho3D
+{
 
 namespace FlexEngine
 {
@@ -376,6 +376,8 @@ void StaticModelEx::UpdateWind()
             SetCloneRequest(CR_WIND, false);
         }
     }
+}
+
 }
 
 }

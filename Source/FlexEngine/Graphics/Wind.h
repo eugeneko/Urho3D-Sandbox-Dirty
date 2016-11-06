@@ -9,8 +9,6 @@ namespace Urho3D
 
 class Material;
 
-}
-
 namespace FlexEngine
 {
 
@@ -168,5 +166,7 @@ protected:
     Vector3 cachedDirection_;
 
 };
+
+}
 
 }

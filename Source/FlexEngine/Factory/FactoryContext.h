@@ -2,11 +2,14 @@
 
 #include <FlexEngine/Common.h>
 
+namespace Urho3D
+{
+
 namespace FlexEngine
 {
 
 /// Context of procedural factories.
-struct FactoryContext 
+struct FactoryContext
 {
     /// Output directory.
     String outputDirectory_;
@@ -23,5 +26,7 @@ struct FactoryContext
         return fileName.Replaced("@", currentDirectory_).Trimmed();
     }
 };
+
+}
 
 }

@@ -21,8 +21,6 @@ class Model;
 class ResourceCache;
 class XMLElement;
 
-}
-
 namespace FlexEngine
 {
 
@@ -411,5 +409,7 @@ private:
     /// Material of the leaf geometry.
     SharedPtr<Material> leafMaterial_;
 };
+
+}
 
 }

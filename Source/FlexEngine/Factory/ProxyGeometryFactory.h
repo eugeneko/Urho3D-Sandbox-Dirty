@@ -10,8 +10,6 @@ namespace Urho3D
 class BoundingBox;
 class XMLElement;
 
-}
-
 namespace FlexEngine
 {
 
@@ -48,5 +46,7 @@ void GenerateProxyFromXML(const BoundingBox& boundingBox, unsigned width, unsign
 /// Generate proxy cameras from XML.
 Vector<OrthoCameraDescription> GenerateProxyCamerasFromXML(
     const BoundingBox& boundingBox, unsigned width, unsigned height, const XMLElement& node);
+
+}
 
 }

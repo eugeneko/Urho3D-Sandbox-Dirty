@@ -13,8 +13,6 @@ class ScriptFile;
 class XMLElement;
 struct VertexElement;
 
-}
-
 namespace FlexEngine
 {
 
@@ -231,5 +229,7 @@ void AppendModelGeometries(Model& dest, const Model& source);
 
 /// Add empty LOD level for each model geometry.
 void AppendEmptyLOD(Model& model, float distance);
+
+}
 
 }

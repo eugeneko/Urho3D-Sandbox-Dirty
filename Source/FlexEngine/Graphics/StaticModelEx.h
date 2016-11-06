@@ -5,6 +5,9 @@
 
 #include <Urho3D/Graphics/StaticModel.h>
 
+namespace Urho3D
+{
+
 namespace FlexEngine
 {
 
@@ -138,5 +141,7 @@ private:
     /// Number of active LOD switching animations.
     int numLodSwitchAnimations_ = 0;
 };
+
+}
 
 }
