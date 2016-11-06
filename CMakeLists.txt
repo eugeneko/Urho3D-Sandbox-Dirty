@@ -29,8 +29,13 @@ include (Urho3D-CMake-common)
 
 # Define source files
 set (SOURCE_FOLDER ${CMAKE_SOURCE_DIR}/Source/)
+file (GLOB_RECURSE FLEX_SRC
+    ${CMAKE_SOURCE_DIR}/*.natvis
+    ${SOURCE_FOLDER}/*.h
+    ${SOURCE_FOLDER}/*.cpp
+)
 include_directories (${SOURCE_FOLDER})
-include (SourceLists.cmake)
+set (SOURCE_FILES ${FLEX_SRC})
 
 # Setup folders
 foreach (SOURCE_FILE ${SOURCE_FILES})
@@ -44,7 +49,7 @@ foreach (SOURCE_FILE ${SOURCE_FILES})
     endif ()
 endforeach ()
 
-source_group ("Natvis" FILES "${CMAKE_SOURCE_DIR}/Urho3D.natvis")
+source_group ("Natvis" FILES ${CMAKE_SOURCE_DIR}/Urho3D.natvis)
 
 # Setup target with resource copying
 setup_main_executable ()
