@@ -275,8 +275,6 @@ struct TreeElementLocation
     float phase_;
     /// Parent (base) radius.
     float baseRadius_;
-    /// Just random noise in range [0, 1] that could be used for further generation.
-    Vector4 noise_;
 };
 
 /// Distribute children over parent branch.

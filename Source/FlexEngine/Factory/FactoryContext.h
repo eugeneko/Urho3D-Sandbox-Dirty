@@ -6,7 +6,7 @@ namespace FlexEngine
 {
 
 /// Context of procedural factories.
-struct FactoryContext 
+struct FactoryContext
 {
     /// Output directory.
     String outputDirectory_;

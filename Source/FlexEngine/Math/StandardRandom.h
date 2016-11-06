@@ -28,10 +28,6 @@ public:
     float FloatFrom01();
     /// Get random float from range [-1, 1].
     float FloatFrom11();
-    /// Get random float vector from range [0, 1].
-    Vector4 Vector4From01();
-    /// Get random float matrix from range [0, 1].
-    Matrix4 Matrix4From01();
 
 private:
     struct Core;

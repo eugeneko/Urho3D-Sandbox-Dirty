@@ -2,6 +2,8 @@
 
 #include <FlexEngine/Common.h>
 
+#include <Urho3D/Container/Str.h>
+
 namespace Urho3D
 {
 

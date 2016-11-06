@@ -38,12 +38,12 @@ inline void CalculateTangents(PODVector<DefaultVertex>& vertices, PODVector<unsi
 /// Orientation:
 /// @code
 ///     z
-/// y   /_____ 
+/// y   /_____
 /// |  /2   3/
 /// | /     /
 /// |/_____/__x
 ///  0   1
-///  
+///
 /// ^ is normal
 /// v is flipped
 /// @endcode

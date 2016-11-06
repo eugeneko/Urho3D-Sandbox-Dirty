@@ -474,7 +474,6 @@ Vector<TreeElementLocation> DistributeElementsOverParent(const BranchDescription
             elem.adherence_ = Vector2(0.0, 0.0);
             elem.phase_ = 0.0f;
             elem.baseRadius_ = 1.0f;
-            elem.noise_ = random.Vector4From01();
             result.Push(elem);
             break;
         }
@@ -522,7 +521,6 @@ Vector<TreeElementLocation> DistributeElementsOverParent(const BranchDescription
                 elem.adherence_ = parent.adherences_.SamplePoint(location);
                 elem.phase_ = parent.phase_;
                 elem.baseRadius_ = parent.radiuses_.SamplePoint(location);
-                elem.noise_ = random.Vector4From01();
                 result.Push(elem);
             }
         }
@@ -583,7 +581,7 @@ Vector<BranchDescription> InstantiateBranchGroup(const BranchDescription& parent
         const TreeElementLocation& element = elements[i];
         BranchDescription branch = GenerateBranch(
             element.position_, element.rotation_, element.adherence_, element.size_, element.baseRadius_, branchShape, frondShape, minNumKnots);
-        branch.phase_ = element.phase_ + element.noise_.w_ * branchShape.windPhaseOffset_;
+        branch.phase_ = element.phase_ + StableRandom(element.position_ + Vector3::ONE * 5) * branchShape.windPhaseOffset_;
         branch.index_ = i;
         result.Push(branch);
     }

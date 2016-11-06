@@ -4,11 +4,8 @@
 #undef TRANSPARENT
 
 #include <FlexEngine/AngelScript/ScriptAPI.h>
-#include <FlexEngine/Component/Procedural.h>
 #include <FlexEngine/Factory/ProceduralComponent.h>
-#include <FlexEngine/Factory/ProceduralFactory.h>
 #include <FlexEngine/Factory/ScriptedResource.h>
-#include <FlexEngine/Factory/TextureHost.h>
 #include <FlexEngine/Factory/TreeHost.h>
 #include <FlexEngine/Graphics/Grass.h>
 #include <FlexEngine/Graphics/StaticModelEx.h>
@@ -35,8 +32,6 @@ void FlexEnginePlayer::Start()
     GetSubsystem<Renderer>()->SetMinInstances(1);
     GetSubsystem<Renderer>()->SetNumExtraInstancingBufferElements(1);
 
-    Procedural::RegisterObject(context_);
-
     DynamicComponent::RegisterObject(context_);
     ProceduralSystem::RegisterObject(context_);
     ProceduralComponent::RegisterObject(context_);
@@ -49,13 +44,6 @@ void FlexEnginePlayer::Start()
     LeafGroup::RegisterObject(context_);
     TreeLevelOfDetail::RegisterObject(context_);
     TreeProxy::RegisterObject(context_);
-
-    TextureHost::RegisterObject(context_);
-    TextureElement::RegisterObject(context_);
-    InputTexture::RegisterObject(context_);
-    RenderedModelTexture::RegisterObject(context_);
-    PerlinNoiseTexture::RegisterObject(context_);
-    FillGapFilter::RegisterObject(context_);
 
     StaticModelEx::RegisterObject(context_);
     Grass::RegisterObject(context_);

@@ -3,6 +3,8 @@
 #include <FlexEngine/Common.h>
 
 #include <Urho3D/Container/Ptr.h>
+#include <Urho3D/Container/Vector.h>
+#include <Urho3D/Math/Vector2.h>
 
 namespace FlexEngine
 {

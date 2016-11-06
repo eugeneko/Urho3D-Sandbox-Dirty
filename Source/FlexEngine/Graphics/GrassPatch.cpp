@@ -6,18 +6,12 @@
 
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/Core/WorkQueue.h>
-// #include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/Graphics/Geometry.h>
 #include <Urho3D/Graphics/IndexBuffer.h>
 #include <Urho3D/Graphics/Terrain.h>
 #include <Urho3D/Graphics/VertexBuffer.h>
 #include <Urho3D/Graphics/Material.h>
-// #include <Urho3D/Graphics/Model.h>
-// #include <Urho3D/Graphics/DebugRenderer.h>
-// #include <Urho3D/IO/Log.h>
 #include <Urho3D/Scene/Node.h>
-// #include <Urho3D/Resource/ResourceCache.h>
-// #include <Urho3D/Scene/Scene.h>
 
 namespace FlexEngine
 {

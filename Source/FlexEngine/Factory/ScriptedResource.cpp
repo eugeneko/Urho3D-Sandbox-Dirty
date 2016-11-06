@@ -1,20 +1,12 @@
 #include <FlexEngine/Factory/ScriptedResource.h>
 
-// #include <FlexEngine/Container/Ptr.h>
 #include <FlexEngine/Math/Hash.h>
-// #include <FlexEngine/Resource/ResourceCacheHelpers.h>
-// #include <FlexEngine/Resource/ResourceHash.h>
 #include <FlexEngine/Factory/TextureFactory.h> // #TODO Remove
 
 #include <Urho3D/Core/Context.h>
-// #include <Urho3D/Core/CoreEvents.h>
-// #include <Urho3D/IO/Log.h>
 #include <Urho3D/IO/MemoryBuffer.h>
 #include <Urho3D/Resource/Image.h> // #TODO Remove
 #include <Urho3D/Resource/ResourceCache.h>
-// #include <Urho3D/Scene/Node.h>
-// #include <Urho3D/Scene/Scene.h>
-// #include <Urho3D/Scene/SceneEvents.h>
 #include <Urho3D/AngelScript/ScriptFile.h>
 
 namespace FlexEngine
