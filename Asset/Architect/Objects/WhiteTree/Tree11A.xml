@@ -1,0 +1,6 @@
+<material>
+    <technique name="Techniques/StandardTreeProxy.xml" />
+    <shader vsdefines="DIFFMAP NORMALMAP" psdefines="DIFFMAP NORMALMAP ALPHAMASK" />
+    <texture unit="diffuse" name="Objects/WhiteTree/Tree11A_Diff.dds" />
+    <texture unit="normal" name="Objects/WhiteTree/Tree11A_Norm.dds" />
+</material>

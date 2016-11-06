@@ -22,11 +22,11 @@ void VS(float4 iPos : POSITION,
     #endif
     #ifdef WIND
         #ifdef OBJECTPROXY
-            float iWindAtten : COLOR0,
+            float iWindAtten : COLOR1,
         #else
-            float4 iWind1 : COLOR0,
-            float4 iWind2 : COLOR1,
-            float3 iWindNormal : COLOR2,
+            float4 iWind1 : COLOR1,
+            float4 iWind2 : COLOR2,
+            float3 iWindNormal : COLOR3,
         #endif
     #endif
     #if defined(LIGHTMAP) || defined(AO)
@@ -270,6 +270,9 @@ void PS(
     #else
         float4 iFragPos : SV_Position,
     #endif
+    #ifdef TWOSIDED
+        bool iIsFrontFace : SV_IsFrontFace,
+    #endif
     #ifdef PREPASS
         out float4 oDepth : OUTCOLOR1,
     #endif
@@ -317,12 +320,16 @@ void PS(
     #endif
 
     // Get normal
+    #ifdef TWOSIDED
+        iNormal *= iIsFrontFace ? 1 : -1;
+    #endif
     #ifdef NORMALMAP
         float3x3 tbn = float3x3(iTangent.xyz, float3(iTexCoord.zw, iTangent.w), iNormal);
         float3 normal = normalize(mul(DecodeNormal(Sample2D(NormalMap, iTexCoord.xy)), tbn));
     #else
         float3 normal = normalize(iNormal);
     #endif
+    //diffColor.rgb = normal.xyz;
 
     // Get fog factor
     #ifdef HEIGHTFOG

@@ -4,6 +4,18 @@
 #include "Transform.hlsl"
 #include "Math.hlsl"
 
+#ifdef NOFADE
+    #ifdef TEXFADE
+        #undef TEXFADE
+    #endif
+    #ifdef PROXYFADE
+        #undef PROXYFADE
+    #endif
+    #ifdef SCREENFADE
+        #undef SCREENFADE
+    #endif
+#endif
+
 /// Compute fade
 #ifdef OBJECTPROXY
     float ComputeProxyFade(float3 iNormal, float3 iEye, float3 iModelUp, float4 iProxyParam)
@@ -115,7 +127,7 @@ float3 ComputeFoliageWind(
                 float2(iWindAtten, 0.0), // attenuation
                 float2(cWindParam.x, 0.0), // wind base
                 cWindParam.zy, // wind magnitude
-                cWindDirection);
+                cWindDirection.xyz);
         #else
             float3 worldPos = ComputeFoliageWind(
                 iPos, // position
@@ -133,7 +145,7 @@ float3 ComputeFoliageWind(
                 iWind1.xy, // attenuation
                 float2(cWindParam.x, 0.0), // wind base
                 cWindParam.zy, // wind magnitude
-                cWindDirection);
+                cWindDirection.xyz);
         #endif
         return worldPos;
     }

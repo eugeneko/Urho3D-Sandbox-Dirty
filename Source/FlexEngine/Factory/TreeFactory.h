@@ -9,6 +9,7 @@
 #include <Urho3D/Container/Ptr.h>
 #include <Urho3D/Container/Vector.h>
 #include <Urho3D/Graphics/GraphicsDefs.h>
+#include <Urho3D/Graphics/Material.h>
 #include <Urho3D/Math/Vector2.h>
 #include <Urho3D/Math/Vector3.h>
 #include <Urho3D/Math/Vector4.h>
@@ -54,19 +55,19 @@ enum class TreeElementDistributionType
     //Random,
     /// Child branch is rotated on specified angle relatively to previous child branch.
     Alternate,
+    /// Same as alternate, but each pair of branches grow from the same point.
+    Opposite,
 };
 
 /// Branch shape settings.
 struct BranchShapeSettings
 {
-    /// Scale of texture.
-    Vector2 textureScale_;
+    /// Whether to generate branch geometry.
+    bool generateBranch_ = true;
     /// Multiplier for quality settings.
-    float quality_ = 0.0f;
+    float quality_ = 1.0f;
     /// The length of the branch is randomly taken from range [begin, end].
     FloatRange length_ = 1.0f;
-    /// Specifies whether the length of the branch depends on the length of the parent branch.
-    bool relativeLength_ = false;
     /// Specifies whether the end of parent branch is also interpreted as child branch.
     bool fakeEnding_ = false;
     /// Radius of the branch.
@@ -88,6 +89,8 @@ struct BranchShapeSettings
 /// Frond shape settings.
 struct FrondShapeSettings
 {
+    /// Whether to generate frond geometry.
+    bool generateFrond_ = false;
     /// Size of the frond.
     CubicCurveWrapper size_;
     /// Bending angle.
@@ -99,47 +102,40 @@ struct FrondShapeSettings
 /// Branch description.
 struct BranchDescription
 {
-    /// Fake branch provides no geometry but can be used for nesting.
-    bool fake_ = false;
+    /// Whether the branch has branch geometry.
+    bool generateBranch_ = false;
+    /// Whether the branch has frond geometry.
+    bool generateFrond_ = false;
     /// Index of this branch on parent.
     unsigned index_ = 0;
     /// Positions of branch knots.
-    PODVector<Vector3> positions_;
+    BezierCurve<Vector3> positions_;
+    /// Rotations of branch knots.
+    BezierCurve<Matrix3> rotations_;
     /// Radiuses of branch knots.
-    PODVector<float> radiuses_;
+    BezierCurve<float> radiuses_;
     /// Adherences of branch knots.
-    PODVector<Vector2> adherences_;
+    BezierCurve<Vector2> adherences_;
     /// Sizes of frond.
-    PODVector<float> frondSizes_;
+    BezierCurve<float> frondSizes_;
     /// Branch length.
-    float length_ = 0.0f;
+    float length_ = 1.0f;
     /// Branch oscillation phase.
     float phase_ = 0.0f;
-
-    /// Generate curves.
-    void GenerateCurves()
-    {
-        positionsCurve_ = CreateBezierCurve(positions_);
-        radiusesCurve_ = CreateBezierCurve(radiuses_);
-        adherencesCurve_ = CreateBezierCurve(adherences_);
-        frondSizesCurve_ = CreateBezierCurve(frondSizes_);
-    }
-    /// Bezier curve for positions.
-    BezierCurve3D positionsCurve_;
-    /// Bezier curve for radiuses.
-    BezierCurve1D radiusesCurve_;
-    /// Bezier curve for adherences.
-    BezierCurve2D adherencesCurve_;
-    /// Bezier curve for frond size.
-    BezierCurve1D frondSizesCurve_;
+    /// Quality modifier.
+    float quality_ = 1.0f;
+    /// Rotation of fronds.
+    float frondRotation_ = 0.0f;
+    /// Bending of fronds.
+    float frondBending_ = 0.0f;
 };
 
 /// Generate branch using specified parameters. Return Bezier curve knots. Number of knots is computed automatically.
-BranchDescription GenerateBranch(const Vector3& initialPosition, const Vector3& initialDirection, const Vector2& initialAdherence,
+BranchDescription GenerateBranch(const Vector3& initialPosition, const Quaternion& initialRotation, const Vector2& initialAdherence,
     float length, float baseRadius, const BranchShapeSettings& branchShape, const FrondShapeSettings& frondShape, unsigned minNumKnots);
 
-/// Branch tessellation quality parameters.
-struct BranchTessellationQualityParameters
+/// Branch quality parameters.
+struct BranchQualityParameters
 {
     /// New point is emitted if Bezier curve direction change is at least minAngle_.
     float minAngle_ = 0.0f;
@@ -147,6 +143,8 @@ struct BranchTessellationQualityParameters
     unsigned minNumSegments_ = 1;
     /// Maximal number of segments. Minimal value is 5.
     unsigned maxNumSegments_ = 5;
+    /// Number of radial segments.
+    unsigned numRadialSegments_ = 5;
 };
 
 /// Tessellated branch point.
@@ -163,14 +161,8 @@ struct TessellatedBranchPoint
     /// Frond size.
     float frondSize_;
 
-    /// Branch point distance.
-    Quaternion basis_;
-    /// X-axis of branch point basis.
-    Vector3 xAxis_;
-    /// Y-axis of branch point basis.
-    Vector3 yAxis_;
-    /// Z-axis of branch point basis.
-    Vector3 zAxis_;
+    /// Branch point rotation.
+    Quaternion rotation_;
     /// Relative uv distance from branch point.
     float relativeDistance_;
 
@@ -183,43 +175,53 @@ struct TessellatedBranchPoint
 using TessellatedBranchPoints = PODVector<TessellatedBranchPoint>;
 
 /// Tessellate branch with specified quality. Return array of points with position on curve in w component.
-TessellatedBranchPoints TessellateBranch(const BranchDescription& branch,
-    const float multiplier, const BranchTessellationQualityParameters& quality);
+TessellatedBranchPoints TessellateBranch(const BranchDescription& branch, const BranchQualityParameters& quality);
 
 /// Generate branch geometry vertices.
 PODVector<DefaultVertex> GenerateBranchVertices(const BranchDescription& branch, const TessellatedBranchPoints& points,
-    const BranchShapeSettings& shape, unsigned numRadialSegments);
+    const Vector2& textureScale, unsigned numRadialSegments);
 
 /// Generate branch geometry vertices.
 PODVector<unsigned> GenerateBranchIndices(const PODVector<unsigned>& numRadialSegments, unsigned maxVertices);
 
 /// Generate branch fronds vertices.
-PODVector<DefaultVertex> GenerateFrondVertices(const BranchDescription& branch, const TessellatedBranchPoints& points,
-    const FrondShapeSettings& shape);
+PODVector<DefaultVertex> GenerateFrondVertices(const BranchDescription& branch, const TessellatedBranchPoints& points);
 
 /// Generate branch fronds vertices.
 PODVector<unsigned> GenerateFrondIndices(unsigned numPoints);
 
 /// Generate branch geometry.
 void GenerateBranchGeometry(ModelFactory& factory, const BranchDescription& branch, const TessellatedBranchPoints& points,
-    const BranchShapeSettings& shape, unsigned numRadialSegments);
+    const Vector2& textureScale, unsigned numRadialSegments);
 
 /// Generate frond geometry.
-void GenerateFrondGeometry(ModelFactory& factory, const BranchDescription& branch, const TessellatedBranchPoints& points,
-    const FrondShapeSettings& shape);
+void GenerateFrondGeometry(ModelFactory& factory, const BranchDescription& branch, const TessellatedBranchPoints& points);
+
+/// Tree element spawn mode.
+enum class TreeElementSpawnMode
+{
+    /// Single element with specified position and orientation is spawned.
+    Explicit,
+    /// Absolute number of elements is spawned. Frequency determines the total amount of elements.
+    Absolute,
+    /// Experimental! Relative number of elements is spawned. Frequency determines number of elements per unit.
+    Relative
+};
 
 /// Tree element distribution settings.
 struct TreeElementDistribution
 {
-    /// Seed of random generator. Re-initializes main generator if non-zero.
+    /// Seed of random generator.
     unsigned seed_ = 0;
-    /// Number of branches. Set zero to use explicit position and direction.
-    unsigned frequency_ = 0;
+    /// Spawn mode.
+    TreeElementSpawnMode spawnMode_ = TreeElementSpawnMode::Explicit;
+    /// Number of branches.
+    float frequency_ = 0;
 
-    /// Branch position (if explicit).
+    /// Position (if explicit).
     Vector3 position_;
-    /// Branch direction (if explicit).
-    Vector3 direction_;
+    /// Rotation (if explicit).
+    Quaternion rotation_;
 
     /// Distribution type.
     TreeElementDistributionType distributionType_;
@@ -233,13 +235,21 @@ struct TreeElementDistribution
     float twirlNoise_ = 0.0f;
     /// Base rotation angle of all children branches.
     float twirlBase_ = 0.0f;
-    /// Vertical rotation of children branches.
-    float twirlSkew_ = 0.0f;
 
-    /// Scale of child elements size or length.
+    /// Size of element depends on parent size.
+    bool relativeSize_ = true;
+    /// Size or length of child elements.
     CubicCurveWrapper growthScale_;
+    /// Size is multiplied by value from [1-noise, 1+noise].
+    float growthScaleNoise_ = 0.0f;
     /// Angle between children and parent branch.
     CubicCurveWrapper growthAngle_;
+    /// Random value from [-noise, +noise] is added to angle between children and parent branch.
+    float growthAngleNoise_ = 0.0f;
+    /// Rotation of children around Y axis.
+    CubicCurveWrapper growthTwirl_;
+    /// Random value from [-noise, +noise] is added to twirl.
+    float growthTwirlNoise_ = 0.0f;
 };
 
 /// Location of tree element.
@@ -247,16 +257,22 @@ struct TreeElementLocation
 {
     /// Seed of random parameters of element shape.
     unsigned seed_;
+    /// Interpolation factor from to [0, 1].
+    float interpolation_;
     /// Location on parent branch.
     float location_;
+
     /// Position of element.
     Vector3 position_;
+    /// Rotation of element.
+    Quaternion rotation_;
+    /// Size of element.
+    float size_;
+
     /// Base adherence.
     Vector2 adherence_;
     /// Phase.
     float phase_;
-    /// Rotation of element.
-    Quaternion rotation_;
     /// Parent (base) radius.
     float baseRadius_;
     /// Just random noise in range [0, 1] that could be used for further generation.
@@ -264,7 +280,7 @@ struct TreeElementLocation
 };
 
 /// Distribute children over parent branch.
-PODVector<TreeElementLocation> DistributeElementsOverParent(const BranchDescription& parent, const TreeElementDistribution& distrib);
+Vector<TreeElementLocation> DistributeElementsOverParent(const BranchDescription& parent, const TreeElementDistribution& distrib);
 
 /// Integrate density function and generate points in range [0, 1] distributed with specified density.
 PODVector<float> IntegrateDensityFunction(const CubicCurveWrapper& density, unsigned count);
@@ -277,22 +293,18 @@ Vector<BranchDescription> InstantiateBranchGroup(const BranchDescription& parent
 /// Leaf shape settings.
 struct LeafShapeSettings
 {
-    /// Size of the leaf is randomly taken from the range.
-    FloatRange size_ = 1.0f;
     /// Scale of leaf geometry along dimensions.
     Vector3 scale_ = Vector3::ONE;
-    /// Adjusts whether the leaves are orientated in the global world space instead of local space of parent branch. Should be in range [0, 1].
-    FloatRange adjustToGlobal_ = 0.0f;
-    /// Adjusts whether the leaves are orientated vertically.
-    FloatRange alignVertical_ = 0.0f;
     /// Offset of the leaf junction point.
     Vector3 junctionOffset_ = Vector3::ZERO;
-    /// Rotation of the leaf along Z axis is randomly taken from the range.
-    FloatRange rotateZ_ = 1.0f;
     /// Degree of leaf geometry bending.
     float bending_ = 0.0f;
-    /// Adjusts intensity of bumping fake leaf normals.
-    float bumpNormals_ = 0.0f;
+    /// Normal smoothing level.
+    unsigned normalSmoothing_ = 0;
+    /// First color.
+    Color firstColor_ = Color::WHITE;
+    /// Second color.
+    Color secondColor_ = Color::WHITE;
     /// Value of deformations caused by main wind, minimum and maximum values.
     Vector2 windMainMagnitude_ = Vector2::ZERO;
     /// Value of deformations caused by turbulence, minimum and maximum values.
@@ -306,14 +318,98 @@ struct LeafDescription
 {
     /// Location of the leaf.
     TreeElementLocation location_;
+    /// Leaf shape settings.
+    LeafShapeSettings shape_;
 };
 
 /// Instantiate leafs.
-PODVector<LeafDescription> InstantiateLeafGroup(const BranchDescription& parent,
+Vector<LeafDescription> InstantiateLeafGroup(const BranchDescription& parent,
     const TreeElementDistribution& distribution, const LeafShapeSettings& shape);
 
 /// Generate leaf geometry vertices and indices.
 void GenerateLeafGeometry(ModelFactory& factory,
     const LeafShapeSettings& shape, const TreeElementLocation& location, const Vector3& foliageCenter);
+
+/// Instance of tree element.
+class TreeElementInstance
+    : public RefCounted
+{
+public:
+    /// Post-generation update.
+    void PostGenerate(TreeElementInstance* parent = nullptr);
+    /// Triangulate element.
+    void Triangulate(ModelFactory& factory, BranchQualityParameters& quality, bool recursive = true);
+
+    /// Add children.
+    void AddChild(SharedPtr<TreeElementInstance> child) { children_.Push(child); }
+    /// Get children.
+    const Vector<SharedPtr<TreeElementInstance>>& GetChildren() const { return children_; }
+    /// Get foliage center.
+    Vector4 GetFoliageCenter() const { return foliageCenter_; }
+    /// Get foliage center at specified depth.
+    Vector3 GetFoliageCenter(unsigned depth) const;
+
+private:
+    /// Compute center of the foliage.
+    virtual Vector4 ComputeFoliageCenter() const { return Vector4::ZERO; }
+    /// Triangulate element implementation.
+    virtual void DoTriangulate(ModelFactory& factory, BranchQualityParameters& quality);
+
+private:
+    /// Parent element.
+    TreeElementInstance* parent_ = nullptr;
+    /// Children.
+    Vector<SharedPtr<TreeElementInstance>> children_;
+    /// Center of the foliage.
+    Vector4 foliageCenter_ = Vector4::ZERO;
+};
+
+/// Instance of tree branch.
+class TreeBranchInstance
+    : public TreeElementInstance
+{
+public:
+    /// Construct.
+    TreeBranchInstance(const BranchDescription& desc,
+        SharedPtr<Material> branchMaterial, SharedPtr<Material> frondMaterial)
+        : desc_(desc), branchMaterial_(branchMaterial), frondMaterial_(frondMaterial) { }
+    /// Get description.
+    const BranchDescription& GetDescription() const { return desc_; }
+
+private:
+    /// Triangulate element implementation.
+    virtual void DoTriangulate(ModelFactory& factory, BranchQualityParameters& quality) override;
+
+private:
+    /// Description of the branch.
+    BranchDescription desc_;
+    /// Material of the branch geometry.
+    SharedPtr<Material> branchMaterial_;
+    /// Material of the frond geometry.
+    SharedPtr<Material> frondMaterial_;
+};
+
+/// Instance of tree leaf.
+class TreeLeafInstance
+    : public TreeElementInstance
+{
+public:
+    /// Construct.
+    TreeLeafInstance(const LeafDescription& desc, SharedPtr<Material> leafMaterial) : desc_(desc), leafMaterial_(leafMaterial) { }
+    /// Get description.
+    const LeafDescription& GetDescription() const { return desc_; }
+
+private:
+    /// Compute center of the foliage.
+    virtual Vector4 ComputeFoliageCenter() const override;
+    /// Triangulate element implementation.
+    virtual void DoTriangulate(ModelFactory& factory, BranchQualityParameters& quality) override;
+
+private:
+    /// Description of the leaf.
+    LeafDescription desc_;
+    /// Material of the leaf geometry.
+    SharedPtr<Material> leafMaterial_;
+};
 
 }

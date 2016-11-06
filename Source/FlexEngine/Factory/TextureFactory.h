@@ -67,6 +67,9 @@ unsigned GetNumImageLevels(const Image& image);
 /// a' = a * k^i, where i is a number of level.
 void AdjustImageLevelsAlpha(Image& image, float factor);
 
+/// Flip normal map Z.
+void FlipNormalMapZ(Image& image);
+
 /// Orthogonal camera description.
 struct OrthoCameraDescription
 {
@@ -145,7 +148,7 @@ public:
     IntVector2 GetNearestPixel(int x, int y) const;
 
 private:
-    /// Update min distance of signed distance field 
+    /// Update min distance of signed distance field
     void UpdateMinDistance(int x, int y, int offsetX, int offsetY, float& currentDist);
     /// Wrap coordinate to image.
     IntVector2 Wrap(IntVector2 xy) const;

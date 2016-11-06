@@ -217,6 +217,20 @@ void AdjustImageLevelsAlpha(Image& image, float factor)
     }
 }
 
+void FlipNormalMapZ(Image& image)
+{
+    for (int y = 0; y < image.GetHeight(); ++y)
+        for (int x = 0; x < image.GetWidth(); ++x)
+        {
+            Color color = image.GetPixel(x, y);
+            if (color.Luma() > M_LARGE_EPSILON)
+            {
+                color.b_ = 1.0f - color.b_;
+                image.SetPixel(x, y, color);
+            }
+        }
+}
+
 OrthoCameraDescription OrthoCameraDescription::Identity(unsigned width, unsigned height, const Vector3& offset /*= Vector3::ZERO*/)
 {
     OrthoCameraDescription result;
@@ -308,7 +322,7 @@ Vector<ViewDescription> ConstructViewsForTexture(Context* context, const Texture
 
         views.Push(viewDesc);
     }
-    
+
     return views;
 }
 

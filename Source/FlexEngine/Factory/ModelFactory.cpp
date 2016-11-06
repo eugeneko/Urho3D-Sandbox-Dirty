@@ -7,7 +7,7 @@
 // #include <FlexEngine/Factory/FatVertex.h>
 // #include <FlexEngine/Factory/GeometryUtils.h>
 // #include <FlexEngine/Resource/ResourceCacheHelpers.h>
-// 
+//
 // #include <Urho3D/AngelScript/ScriptFile.h>
 #include <Urho3D/AngelScript/ScriptFile.h>
 #include <Urho3D/Core/Context.h>
@@ -238,6 +238,12 @@ const Vector<SharedPtr<Material>>& ModelFactory::GetMaterials() const
 
 SharedPtr<Model> ModelFactory::BuildModel() const
 {
+    // Filter geometries without LODs
+    Vector<Vector<ModelGeometryBuffer>> geometry;
+    for (unsigned i = 0; i < geometry_.Size(); ++i)
+        if (geometry_[i].Size() > 0)
+            geometry.Push(geometry_[i]);
+
     // Prepare buffers for accumulated geometry data
     SharedPtr<VertexBuffer> vertexBuffer = MakeShared<VertexBuffer>(context_);
     vertexBuffer->SetShadowed(true);
@@ -250,10 +256,10 @@ SharedPtr<Model> ModelFactory::BuildModel() const
     model->SetIndexBuffers({ indexBuffer });
 
     // Number of geometries is equal to number of materials
-    model->SetNumGeometries(geometry_.Size());
-    for (unsigned i = 0; i < geometry_.Size(); ++i)
+    model->SetNumGeometries(geometry.Size());
+    for (unsigned i = 0; i < geometry.Size(); ++i)
     {
-        model->SetNumGeometryLodLevels(i, geometry_[i].Size());
+        model->SetNumGeometryLodLevels(i, geometry[i].Size());
     }
 
     // Merge all arrays into one
@@ -262,11 +268,11 @@ SharedPtr<Model> ModelFactory::BuildModel() const
     PODVector<unsigned> geometryIndexOffset;
     PODVector<unsigned> geometryIndexCount;
 
-    for (unsigned i = 0; i < geometry_.Size(); ++i)
+    for (unsigned i = 0; i < geometry.Size(); ++i)
     {
-        for (unsigned j = 0; j < geometry_[i].Size(); ++j)
+        for (unsigned j = 0; j < geometry[i].Size(); ++j)
         {
-            const ModelGeometryBuffer& geometryBuffer = geometry_[i][j];
+            const ModelGeometryBuffer& geometryBuffer = geometry[i][j];
 
             // Merge buffers
             geometryIndexOffset.Push(indexData.Size() / GetIndexSize());
@@ -295,9 +301,9 @@ SharedPtr<Model> ModelFactory::BuildModel() const
 
     // Setup ranges
     unsigned group = 0;
-    for (unsigned i = 0; i < geometry_.Size(); ++i)
+    for (unsigned i = 0; i < geometry.Size(); ++i)
     {
-        for (unsigned lod = 0; lod < geometry_[i].Size(); ++lod)
+        for (unsigned lod = 0; lod < geometry[i].Size(); ++lod)
         {
             model->GetGeometry(i, lod)->SetDrawRange(TRIANGLE_LIST, geometryIndexOffset[group], geometryIndexCount[group]);
             ++group;

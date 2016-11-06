@@ -44,6 +44,7 @@ public:
     /// Get model.
     SharedPtr<Model> GetModel() const { return model_; }
     /// Get foliage center.
+    // #TODO Remove
     const Vector3& GetFoliageCenter() const { return foliageCenter_; }
 
     /// Set destination model attribute.
@@ -54,8 +55,6 @@ public:
 private:
     /// Compute hash.
     virtual bool ComputeHash(Hash& hash) const override;
-    /// Generate tree topology and invariants.
-    void GenerateTreeTopology();
     /// Generate resources.
     virtual void DoGenerateResources(Vector<SharedPtr<Resource>>& resources) override;
 
@@ -101,14 +100,8 @@ public:
     /// Register object factory.
     static void RegisterObject(Context* context);
 
-    /// Generate.
-    virtual void Generate(TreeHost& host) = 0;
-    /// Triangulate tree element recursively.
-    void Triangulate(ModelFactory& factory, TreeHost& host, TreeLevelOfDetail& lod) const;
-
-private:
-    /// Triangulate this tree element.
-    virtual void DoTriangulate(ModelFactory& factory, TreeHost& host, TreeLevelOfDetail& lod) const = 0;
+    /// Generate tree element topology.
+    virtual void Generate(TreeBranchInstance& parent) const = 0;
 
 protected:
     /// Compute hash.
@@ -133,10 +126,8 @@ public:
     /// Register object factory.
     static void RegisterObject(Context* context);
 
-    /// Generate.
-    virtual void Generate(TreeHost& host) override;
-    /// Get branches.
-    const Vector<BranchDescription>& GetBranches() const { return branches_; }
+    /// Generate tree element topology.
+    virtual void Generate(TreeBranchInstance& parent) const override;
 
     /// Set branch material attribute.
     void SetBranchMaterialAttr(const ResourceRef& value);
@@ -147,30 +138,21 @@ public:
     /// Return frond material attribute.
     ResourceRef GetFrondMaterialAttr() const;
 
-private:
+protected:
     /// Compute hash.
     virtual bool ComputeHash(Hash& hash) const override;
 
-    /// Triangulate this tree element.
-    virtual void DoTriangulate(ModelFactory& factory, TreeHost& host, TreeLevelOfDetail& lod) const override;
-
 protected:
-    /// Whether to generate branch geometry.
-    bool generateBranch_ = true;
     /// Branch material.
     SharedPtr<Material> branchMaterial_;
     /// Branch shape settings.
     BranchShapeSettings branchShape_;
-    /// Whether to generate frond geometry.
-    bool generateFrond_ = false;
     /// Frond material.
     SharedPtr<Material> frondMaterial_;
     /// Frond shape settings.
     FrondShapeSettings frondShape_;
     /// Min number of knots for branch curves. Default value is 5.
     unsigned minNumKnots_ = 5;
-    /// Branches.
-    Vector<BranchDescription> branches_;
 };
 
 /// Leaf group component.
@@ -186,28 +168,23 @@ public:
     /// Register object factory.
     static void RegisterObject(Context* context);
 
-    /// Generate.
-    virtual void Generate(TreeHost& host) override;
+    /// Generate tree element topology.
+    virtual void Generate(TreeBranchInstance& parent) const override;
 
     /// Set material attribute.
     void SetMaterialAttr(const ResourceRef& value);
     /// Return material attribute.
     ResourceRef GetMaterialAttr() const;
 
-private:
+protected:
     /// Compute hash.
     virtual bool ComputeHash(Hash& hash) const override;
-
-    /// Triangulate this tree element.
-    virtual void DoTriangulate(ModelFactory& factory, TreeHost& host, TreeLevelOfDetail& lod) const override;
 
 protected:
     /// Leaf material.
     SharedPtr<Material> material_;
     /// Leaf shape settings.
     LeafShapeSettings shape_;
-    /// Leaves.
-    PODVector<LeafDescription> leaves_;
 };
 
 /// Level of detail component.
@@ -225,6 +202,8 @@ public:
 
     /// Get distance.
     float GetDistance() const { return distance_; }
+    /// Get branch quality parameters.
+    BranchQualityParameters GetQualityParameters() const;
     /// Get maximum number of branch segments.
     unsigned GetMaxBranchSegments() const { return maxBranchSegments_; }
     /// Get minimum number of branch segments.
@@ -250,6 +229,15 @@ private:
     /// Number of radial segments.
     unsigned numRadialSegments_ = 0;
 
+};
+
+/// Type of tree proxy.
+enum class TreeProxyType
+{
+    /// Single vertical slice in X0Y plane.
+    PlaneX0Y,
+    /// Cylinder with specified number of vertical slices.
+    Cylider
 };
 
 /// Tree proxy component. Proxy is the last level of detail. Each tree could have no more than one such component.
@@ -308,20 +296,14 @@ public:
     void SetNormalRenderPathAttr(const ResourceRef& value);
     /// Get normal render path attribute.
     ResourceRef GetNormalRenderPathAttr() const;
-    /// Set fill gap path attribute.
-    void SetFillGapPathAttr(const ResourceRef& value);
-    /// Get fill gap path attribute.
-    ResourceRef GetFillGapPathAttr() const;
-    /// Set fill gap material attribute.
-    void SetFillGapMaterialAttr(const ResourceRef& value);
-    /// Get fill gap material attribute.
-    ResourceRef GetFillGapMaterialAttr() const;
 
 private:
     /// Compute hash.
     virtual bool ComputeHash(Hash& hash) const override;
 
 private:
+    /// Proxy type.
+    TreeProxyType type_ = TreeProxyType::PlaneX0Y;
     /// Proxy LOD distance.
     float distance_ = 0.0f;
     /// Number of slices.
@@ -349,12 +331,14 @@ private:
     /// Normal render path.
     SharedPtr<XMLFile> normalRenderPath_;
 
-    /// Fill gap render path.
-    SharedPtr<XMLFile> fillGapRenderPath_;
-    /// Fill gap material.
-    SharedPtr<Material> fillGapMaterial_;
-    /// Fill gap depth.
-    unsigned fillGapDepth_ = 0;
+    /// Fill gap precision. Max precision is 0.
+    unsigned fillGapPrecision_ = 2;
+    /// Adjusts alpha channel of destination diffuse image.
+    float adjustAlpha_ = 1.0f;
+    /// Size of dithering blocks when switch from one billboard slice to another.
+    float ditheringGranularity_ = 100.0f;
+    /// Whether to flip normals along Z axis.
+    bool flipNormals_ = false;
 };
 
 }

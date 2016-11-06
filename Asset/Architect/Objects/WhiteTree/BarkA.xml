@@ -2,4 +2,5 @@
     <technique name="Techniques/StandardTree.xml" />
     <shader vsdefines="DIFFMAP " psdefines="DIFFMAP " />
     <texture unit="diffuse" name="Objects/WhiteTree/BlackBarkDiffuse.dds" />
+    <parameter name="VOffset" value="0 0.25 0 0"/>
 </material>

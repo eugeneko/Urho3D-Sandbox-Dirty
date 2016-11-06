@@ -1,0 +1,5 @@
+<material>
+    <technique name="Techniques/Standard.xml" />
+    <shader vsdefines="NOFADE " psdefines="NOFADE " />
+    <parameter name="MatDiffColor" value="0.1 0.1 0 1" />
+</material>

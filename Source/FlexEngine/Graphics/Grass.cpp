@@ -226,8 +226,7 @@ GrassPatch* Grass::AddPatch(const IntVector2& index)
     if (patchIter != patches_.End())
         return patchIter->second_;
 
-    Node* patchNode = node_->CreateChild(MakeChildName(index), LOCAL);
-    patchNode->SetTemporary(true);
+    Node* patchNode = node_->CreateTemporaryChild(MakeChildName(index), LOCAL);
     GrassPatch* patch = patchNode->CreateComponent<GrassPatch>();
 //     patch->SetPattern(patternScale_, pattern_);
 //     SchedulePatchUpdate(*patch);

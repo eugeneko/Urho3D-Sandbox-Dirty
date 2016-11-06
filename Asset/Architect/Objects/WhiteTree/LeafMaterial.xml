@@ -1,0 +1,7 @@
+<material>
+    <technique name="Techniques/Standard.xml" />
+    <shader vsdefines="NOFADE VERTEXCOLOR DIFFMAP " psdefines="NOFADE VERTEXCOLOR TWOSIDED DIFFMAP ALPHAMASK " />
+    <texture unit="diffuse" name="Objects/WhiteTree/Leaf_Diff.dds" />
+    <parameter name="MatDiffColor" value="1 1 1 1" />
+    <cull value="none" />
+</material>

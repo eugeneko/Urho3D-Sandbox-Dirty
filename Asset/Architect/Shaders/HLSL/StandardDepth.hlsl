@@ -23,11 +23,11 @@ void VS(float4 iPos : POSITION,
     #endif
     #ifdef WIND
         #ifdef OBJECTPROXY
-            float iWindAtten : COLOR0,
+            float iWindAtten : COLOR1,
         #else
-            float4 iWind1 : COLOR0,
-            float4 iWind2 : COLOR1,
-            float3 iWindNormal : COLOR2,
+            float4 iWind1 : COLOR1,
+            float4 iWind2 : COLOR2,
+            float3 iWindNormal : COLOR3,
         #endif
     #endif
     #ifdef VSM_SHADOW
