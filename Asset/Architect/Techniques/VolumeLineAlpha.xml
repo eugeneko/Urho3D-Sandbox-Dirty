@@ -1,0 +1,3 @@
+<technique vs="Line" ps="Line" >
+    <pass name="alpha" vsdefines="VERTEXCOLOR DIFFMAP " psdefines="VERTEXCOLOR DIFFMAP " depthwrite="false" blend="alpha" />
+</technique>

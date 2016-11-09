@@ -5,10 +5,10 @@
 	<attribute name="Smoothing Constant" value="50" />
 	<attribute name="Snap Threshold" value="5" />
 	<attribute name="Elapsed Time" value="0" />
-	<attribute name="Next Replicated Node ID" value="5502" />
-	<attribute name="Next Replicated Component ID" value="5583" />
-	<attribute name="Next Local Node ID" value="16841152" />
-	<attribute name="Next Local Component ID" value="16843528" />
+	<attribute name="Next Replicated Node ID" value="5504" />
+	<attribute name="Next Replicated Component ID" value="5592" />
+	<attribute name="Next Local Node ID" value="16851118" />
+	<attribute name="Next Local Component ID" value="16853593" />
 	<attribute name="Variables" />
 	<attribute name="Variable Names" value="" />
 	<component type="Octree" id="1" />
@@ -21,6 +21,11 @@
 	</component>
 	<component type="WindSystem" id="62">
 		<attribute name="Pulse Frequency" value="0.25" />
+	</component>
+	<component type="PhysicsWorld" id="5584" />
+	<component type="BulletSystem" id="5587" />
+	<component type="LineRenderer" id="5588">
+		<attribute name="Material" value="Material;Materials/VolumeLineAlpha.xml" />
 	</component>
 	<node id="8">
 		<attribute name="Is Enabled" value="true" />
@@ -46,7 +51,7 @@
 		<attribute name="Variables" />
 		<component type="Skybox" id="15">
 			<attribute name="Model" value="Model;Models/Box.mdl" />
-			<attribute name="Material" value="Material;Materials/Skybox.xml" />
+			<attribute name="Material" value="Material;Textures/ThickCloudsWater/Material.xml" />
 		</component>
 	</node>
 	<node id="11">
@@ -65,6 +70,12 @@
 		</component>
 		<component type="Grass" id="5571">
 			<attribute name="Material" value="Material;Objects/Grass/GrassMaterial.xml" />
+		</component>
+		<component type="RigidBody" id="5583">
+			<attribute name="Physics Position" value="0 -0.1 0" />
+		</component>
+		<component type="CollisionShape" id="5585">
+			<attribute name="Shape Type" value="Terrain" />
 		</component>
 	</node>
 	<node id="38">
@@ -176,13 +187,50 @@
 		<attribute name="Is Enabled" value="true" />
 		<attribute name="Name" value="Cube" />
 		<attribute name="Tags" />
-		<attribute name="Position" value="0 0 0" />
+		<attribute name="Position" value="0 2 0" />
 		<attribute name="Rotation" value="1 0 0 0" />
 		<attribute name="Scale" value="1 1 1" />
 		<attribute name="Variables" />
 		<component type="StaticModel" id="5582">
 			<attribute name="Model" value="Model;Models/Box.mdl" />
 			<attribute name="Material" value="Material;Examples/DemoScene/TerrainReferenceColor.xml" />
+		</component>
+	</node>
+	<node id="5502">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Main" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="0 0 0" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="ScriptInstance" id="5586">
+			<attribute name="Delayed Method Calls" value="0" />
+			<attribute name="Script File" value="ScriptFile;Main.as" />
+			<attribute name="Class Name" value="Main" />
+			<attribute name="numShots" value="6" />
+			<attribute name="firePeriod" value="0.1" />
+			<attribute name="firePosition" value="0 2 0" />
+			<attribute name="fireDirection" value="0 0 1" />
+			<attribute name="fireVelocity" value="715" />
+			<attribute name="dispersion" value="0.01" />
+		</component>
+	</node>
+	<node id="5503">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Target" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="0 2 66" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="5589">
+			<attribute name="Model" value="Model;Models/Box.mdl" />
+			<attribute name="Material" value="Material;" />
+		</component>
+		<component type="CollisionShape" id="5590" />
+		<component type="RigidBody" id="5591">
+			<attribute name="Physics Position" value="0 2 66" />
 		</component>
 	</node>
 </scene>

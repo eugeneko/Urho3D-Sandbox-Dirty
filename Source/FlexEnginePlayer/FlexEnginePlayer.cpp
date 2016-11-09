@@ -8,8 +8,10 @@
 #include <FlexEngine/Factory/ScriptedResource.h>
 #include <FlexEngine/Factory/TreeHost.h>
 #include <FlexEngine/Graphics/Grass.h>
+#include <FlexEngine/Graphics/LineRenderer.h>
 #include <FlexEngine/Graphics/StaticModelEx.h>
 #include <FlexEngine/Graphics/Wind.h>
+#include <FlexEngine/Physics/BulletSystem.h>
 #include <FlexEngine/Scene/DynamicComponent.h>
 
 #include <Urho3D/AngelScript/Script.h>
@@ -45,11 +47,14 @@ void FlexEnginePlayer::Start()
     TreeLevelOfDetail::RegisterObject(context_);
     TreeProxy::RegisterObject(context_);
 
+    LineRenderer::RegisterObject(context_);
     StaticModelEx::RegisterObject(context_);
     Grass::RegisterObject(context_);
     GrassPatch::RegisterObject(context_);
     WindSystem::RegisterObject(context_);
     WindZone::RegisterObject(context_);
+
+    BulletSystem::RegisterObject(context_);
 
     Urho3DPlayer::Start();
 

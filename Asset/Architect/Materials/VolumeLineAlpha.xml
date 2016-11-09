@@ -1,0 +1,5 @@
+<material>
+    <technique name="Techniques/VolumeLineAlpha.xml" />
+    <texture unit="diffuse" name="Textures/Line.dds" />
+    <cull value="none" />
+</material>

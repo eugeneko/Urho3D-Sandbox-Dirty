@@ -4,6 +4,7 @@
 #include <FlexEngine/Factory/ScriptedResource.h>
 #include <FlexEngine/Factory/TextureFactory.h>
 #include <FlexEngine/Math/PoissonRandom.h>
+#include <FlexEngine/Physics/BulletSystem.h>
 
 #include <Urho3D/AngelScript/APITemplates.h>
 #include <Urho3D/AngelScript/Script.h>
@@ -246,14 +247,20 @@ void TODO_CoverTerrainWithObjects(Node* terrainNode, Node* destNode, XMLFile* pr
     scene->RemoveChild(prefabNode);
 }
 
+template <class T>
 void RegisterScriptContext(asIScriptEngine* engine, const char* name)
 {
-    engine->RegisterObjectType(name, sizeof(ScriptContext), asOBJ_REF);
+    engine->RegisterObjectType(name, sizeof(T), asOBJ_REF);
     engine->RegisterObjectBehaviour(name, asBEHAVE_ADDREF, "void f()", asFUNCTION(FakeAddRef), asCALL_CDECL_OBJLAST);
     engine->RegisterObjectBehaviour(name, asBEHAVE_RELEASE, "void f()", asFUNCTION(FakeReleaseRef), asCALL_CDECL_OBJLAST);
     engine->RegisterObjectMethod(name, "void set_opIndex(uint, const Variant&in)", asFUNCTION(ScriptContext_SetItem), asCALL_CDECL_OBJLAST);
     engine->RegisterObjectMethod(name, "const Variant& get_opIndex(uint)", asFUNCTION(ScriptContext_GetItem), asCALL_CDECL_OBJLAST);
     engine->RegisterObjectMethod(name, "void Clear()", asFUNCTION(ScriptContext_ClearItems), asCALL_CDECL_OBJLAST);
+}
+
+void BulletDesc_Contruct(BulletDesc* ptr)
+{
+    new(ptr) BulletDesc();
 }
 
 }
@@ -271,8 +278,8 @@ void RegisterAPI(asIScriptEngine* engine)
     engine->RegisterObjectMethod("ModelFactory", "void PushIndex(uint)", asMETHOD(ModelFactory, AddIndex), asCALL_THISCALL);
     engine->RegisterObjectMethod("ModelFactory", "uint GetNumVerticesInBucket() const", asMETHOD(ModelFactory, GetCurrentNumVertices), asCALL_THISCALL);
 
-    RegisterScriptContext(engine, "ScriptContext");
-    RegisterScriptContext(engine, "ProceduralContext");
+    RegisterScriptContext<ScriptContext>(engine, "ScriptContext");
+    RegisterScriptContext<ScriptContext>(engine, "ProceduralContext");
 
     engine->RegisterObjectMethod("ProceduralContext", "ModelFactory@ CreateModelFactory()", asFUNCTION(ProceduralContext_CreateModelFactory), asCALL_CDECL_OBJLAST);
     engine->RegisterObjectMethod("ProceduralContext", "Model@+ CreateModel(ModelFactory@)", asFUNCTION(ProceduralContext_CreateModel), asCALL_CDECL_OBJLAST);
@@ -290,6 +297,21 @@ void RegisterAPI(asIScriptEngine* engine)
     engine->RegisterObjectMethod("Image", "Texture2D@+ GetTexture2D() const", asFUNCTION(Image_GetTexture2D), asCALL_CDECL_OBJLAST);
 
     engine->RegisterGlobalFunction("void TODO_CoverTerrainWithObjects(Node@+, Node@+, XMLFile@+, float, float, const Vector2&in, const Vector2&in)", asFUNCTION(TODO_CoverTerrainWithObjects), asCALL_CDECL);
+
+    engine->RegisterObjectType("BulletDesc", sizeof(BulletDesc), asOBJ_VALUE | asOBJ_POD);
+    engine->RegisterObjectBehaviour("BulletDesc", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(BulletDesc_Contruct), asCALL_CDECL_OBJLAST);
+    engine->RegisterObjectProperty("BulletDesc", "Vector3 position", offsetof(BulletDesc, position_));
+    engine->RegisterObjectProperty("BulletDesc", "Vector3 velocity", offsetof(BulletDesc, velocity_));
+    engine->RegisterObjectProperty("BulletDesc", "Color initialColor", offsetof(BulletDesc, initialColor_));
+    engine->RegisterObjectProperty("BulletDesc", "Color finalColor", offsetof(BulletDesc, finalColor_));
+    engine->RegisterObjectProperty("BulletDesc", "float gravityFactor", offsetof(BulletDesc, gravityFactor_));
+    engine->RegisterObjectProperty("BulletDesc", "float airResistance", offsetof(BulletDesc, airResistance_));
+    engine->RegisterObjectProperty("BulletDesc", "float maxDistance", offsetof(BulletDesc, maxDistance_));
+    engine->RegisterObjectProperty("BulletDesc", "float traceThickness", offsetof(BulletDesc, traceThickness_));
+    engine->RegisterObjectProperty("BulletDesc", "float traceLength", offsetof(BulletDesc, traceLength_));
+
+    RegisterComponent<BulletSystem>(engine, "BulletSystem");
+    engine->RegisterObjectMethod("BulletSystem", "void FireBullet(const BulletDesc&in)", asMETHOD(BulletSystem, FireBullet), asCALL_THISCALL);
 }
 
 }
