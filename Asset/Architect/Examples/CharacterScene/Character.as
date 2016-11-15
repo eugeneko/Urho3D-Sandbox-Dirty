@@ -134,8 +134,11 @@ class Character : ScriptObject
             controls.Set(CTRL_JUMP, input.keyDown[KEY_SPACE]);
 
             // Add character yaw & pitch from the mouse motion or touch input
-            controls.yaw += input.mouseMoveX * YAW_SENSITIVITY;
-            controls.pitch += input.mouseMoveY * YAW_SENSITIVITY;
+            if (input.mouseLocked)
+            {
+                controls.yaw += input.mouseMoveX * YAW_SENSITIVITY;
+                controls.pitch += input.mouseMoveY * YAW_SENSITIVITY;
+            }
 
             // Limit pitch
             controls.pitch = Clamp(controls.pitch, -80.0f, 80.0f);

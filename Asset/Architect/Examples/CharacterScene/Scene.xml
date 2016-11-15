@@ -6,9 +6,9 @@
 	<attribute name="Snap Threshold" value="5" />
 	<attribute name="Elapsed Time" value="0" />
 	<attribute name="Next Replicated Node ID" value="5" />
-	<attribute name="Next Replicated Component ID" value="5" />
-	<attribute name="Next Local Node ID" value="16777244" />
-	<attribute name="Next Local Component ID" value="16777439" />
+	<attribute name="Next Replicated Component ID" value="6" />
+	<attribute name="Next Local Node ID" value="16777247" />
+	<attribute name="Next Local Component ID" value="16777475" />
 	<attribute name="Variables" />
 	<attribute name="Variable Names" value="" />
 	<component type="Octree" id="1" />
@@ -17,6 +17,11 @@
 	<component type="Zone" id="4">
 		<attribute name="Bounding Box Min" value="-1000 -1000 -1000" />
 		<attribute name="Bounding Box Max" value="1000 1000 1000" />
+	</component>
+	<component type="ScriptInstance" id="5">
+		<attribute name="Delayed Method Calls" value="0" />
+		<attribute name="Script File" value="ScriptFile;Examples/CharacterScene/Main.as" />
+		<attribute name="Class Name" value="Main" />
 	</component>
 	<node id="16777218">
 		<attribute name="Is Enabled" value="true" />
@@ -47,7 +52,7 @@
 			<attribute name="Is Enabled" value="true" />
 			<attribute name="Name" value="" />
 			<attribute name="Tags" />
-			<attribute name="Position" value="3.5 2.5 9.5" />
+			<attribute name="Position" value="3.5 2.5 10" />
 			<attribute name="Rotation" value="1 0 0 0" />
 			<attribute name="Scale" value="5 5 1" />
 			<attribute name="Variables" />
@@ -57,7 +62,7 @@
 			</component>
 			<component type="CollisionShape" id="16777261" />
 			<component type="RigidBody" id="16777262">
-				<attribute name="Physics Position" value="3.5 2.5 9.5" />
+				<attribute name="Physics Position" value="3.5 2.5 10" />
 			</component>
 		</node>
 		<node id="16777221">
