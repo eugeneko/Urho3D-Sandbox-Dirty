@@ -4,6 +4,7 @@
 #undef TRANSPARENT
 
 #include <FlexEngine/AngelScript/ScriptAPI.h>
+#include <FlexEngine/Animation/FootAnimation.h>
 #include <FlexEngine/Factory/ProceduralComponent.h>
 #include <FlexEngine/Factory/ScriptedResource.h>
 #include <FlexEngine/Factory/TreeHost.h>
@@ -44,6 +45,8 @@ void FlexEnginePlayer::Start()
     LeafGroup::RegisterObject(context_);
     TreeLevelOfDetail::RegisterObject(context_);
     TreeProxy::RegisterObject(context_);
+
+    FootAnimation::RegisterObject(context_);
 
     StaticModelEx::RegisterObject(context_);
     Grass::RegisterObject(context_);
