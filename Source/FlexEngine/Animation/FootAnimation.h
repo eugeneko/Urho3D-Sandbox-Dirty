@@ -34,6 +34,8 @@ public:
     /// Apply attribute changes that can not be applied immediately. Called after scene load or a network update.
     virtual void ApplyAttributes() override;
 
+    /// Called before the first update. At this point all other components of the node should exist. Will also be called if update events are not wanted; in that case the event is immediately unsubscribed afterward.
+    virtual void DelayedStart() override;
     /// Called on scene update, variable timestep.
     virtual void PostUpdate(float timeStep) override;
 
@@ -58,6 +60,9 @@ private:
 
     /// Animation time.
     float time_ = 0.0f;
+
+    Vector3 prevPosition_;
+    int state_ = 0;
 };
 
 }

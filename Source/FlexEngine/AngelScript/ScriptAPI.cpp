@@ -4,6 +4,7 @@
 #include <FlexEngine/Factory/ScriptedResource.h>
 #include <FlexEngine/Factory/TextureFactory.h>
 #include <FlexEngine/Math/PoissonRandom.h>
+#include <FlexEngine/Math/WeightBlender.h>
 
 #include <Urho3D/AngelScript/APITemplates.h>
 #include <Urho3D/AngelScript/Script.h>
@@ -256,6 +257,42 @@ void RegisterScriptContext(asIScriptEngine* engine, const char* name)
     engine->RegisterObjectMethod(name, "void Clear()", asFUNCTION(ScriptContext_ClearItems), asCALL_CDECL_OBJLAST);
 }
 
+void WeightBlender_Contruct(WeightBlender* ptr)
+{
+    new(ptr) WeightBlender();
+}
+
+void WeightBlender_Desturct(WeightBlender* ptr)
+{
+    ptr->~WeightBlender();
+}
+
+void WeightBlender_SetWeight(const String& key, float weight, float fadeTime, WeightBlender* ptr)
+{
+    ptr->SetWeight(key, weight, fadeTime);
+}
+
+float WeightBlender_GetWeight(const String& key, const WeightBlender* ptr)
+{
+    return ptr->GetWeight(key);
+}
+
+float WeightBlender_GetNormalizedWeight(const String& key, const WeightBlender* ptr)
+{
+    return ptr->GetNormalizedWeight(key);
+}
+
+void RegisterWeightBlender(asIScriptEngine* engine)
+{
+    engine->RegisterObjectType("WeightBlender", sizeof(WeightBlender), asOBJ_VALUE);
+    engine->RegisterObjectBehaviour("WeightBlender", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(WeightBlender_Contruct), asCALL_CDECL_OBJLAST);
+    engine->RegisterObjectBehaviour("WeightBlender", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(WeightBlender_Desturct), asCALL_CDECL_OBJLAST);
+    engine->RegisterObjectMethod("WeightBlender", "void SetWeight(const String&in, float, float=0)", asFUNCTION(WeightBlender_SetWeight), asCALL_CDECL_OBJLAST);
+    engine->RegisterObjectMethod("WeightBlender", "float GetWeight(const String&in) const", asFUNCTION(WeightBlender_GetWeight), asCALL_CDECL_OBJLAST);
+    engine->RegisterObjectMethod("WeightBlender", "float GetNormalizedWeight(const String&in) const", asFUNCTION(WeightBlender_GetNormalizedWeight), asCALL_CDECL_OBJLAST);
+    engine->RegisterObjectMethod("WeightBlender", "void Update(float, bool=false)", asMETHOD(WeightBlender, Update), asCALL_THISCALL);
+}
+
 }
 
 void RegisterAPI(asIScriptEngine* engine)
@@ -288,6 +325,8 @@ void RegisterAPI(asIScriptEngine* engine)
     engine->RegisterObjectMethod("Image", "void BuildNormalMapAlpha()", asFUNCTION(Image_BuildNormalMapAlpha), asCALL_CDECL_OBJLAST);
     engine->RegisterObjectMethod("Image", "void FillGaps(uint=0)", asFUNCTION(Image_FillGaps), asCALL_CDECL_OBJLAST);
     engine->RegisterObjectMethod("Image", "Texture2D@+ GetTexture2D() const", asFUNCTION(Image_GetTexture2D), asCALL_CDECL_OBJLAST);
+
+    RegisterWeightBlender(engine);
 
     engine->RegisterGlobalFunction("void TODO_CoverTerrainWithObjects(Node@+, Node@+, XMLFile@+, float, float, const Vector2&in, const Vector2&in)", asFUNCTION(TODO_CoverTerrainWithObjects), asCALL_CDECL);
 }

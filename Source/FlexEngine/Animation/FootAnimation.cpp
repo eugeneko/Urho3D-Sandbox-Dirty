@@ -355,6 +355,12 @@ void FootAnimation::ApplyAttributes()
     }
 }
 
+void FootAnimation::DelayedStart()
+{
+    prevPosition_ = node_->GetPosition();
+    state_ = 0;
+}
+
 void FootAnimation::PostUpdate(float timeStep)
 {
     if (!animation_ || !node_)
@@ -367,6 +373,9 @@ void FootAnimation::PostUpdate(float timeStep)
         groundNormal_ = plane->GetRotation() * Vector3::UP;
     }
 
+    const Vector3 velocity = (node_->GetPosition() - prevPosition_) / timeStep;
+    prevPosition_ = node_->GetPosition();
+
     AnimatedModel* model = node_->GetComponent<AnimatedModel>();
 
     ResourceCache* cache = GetSubsystem<ResourceCache>();
@@ -374,11 +383,13 @@ void FootAnimation::PostUpdate(float timeStep)
     SharedPtr<Animation> animBackward(cache->GetResource<Animation>("Swat_WalkBwd.ani"));
     SharedPtr<Animation> animLeft(cache->GetResource<Animation>("Swat_WalkLeft.ani"));
     SharedPtr<Animation> animRight(cache->GetResource<Animation>("Swat_WalkRight.ani"));
-    FootAnimationTrack trackForward, trackBackward, trackLeft, trackRight;
+    SharedPtr<Animation> animIdle(cache->GetResource<Animation>("Swat_WalkRight.ani"));
+    FootAnimationTrack trackForward, trackBackward, trackLeft, trackRight, trackIdle;
     CreateFootAnimationTrack(trackForward, model->GetModel(), animForward, footBoneName_);
     CreateFootAnimationTrack(trackBackward, model->GetModel(), animBackward, footBoneName_);
     CreateFootAnimationTrack(trackLeft, model->GetModel(), animLeft, footBoneName_);
     CreateFootAnimationTrack(trackRight, model->GetModel(), animRight, footBoneName_);
+    CreateFootAnimationTrack(trackIdle, model->GetModel(), animIdle, footBoneName_);
 
     Skeleton& skeleton = model->GetSkeleton();
     Node* thighNode = node_->GetChild(footBoneName_, true);
@@ -396,12 +407,21 @@ void FootAnimation::PostUpdate(float timeStep)
     const FootAnimationKeyFrame frameBackward = trackBackward.SampleFrame(time_, frameIndex);
     const FootAnimationKeyFrame frameLeft = trackLeft.SampleFrame(time_, frameIndex);
     const FootAnimationKeyFrame frameRight = trackRight.SampleFrame(time_, frameIndex);
-    const Vector3 lookDirection = node_->GetRotation() * Vector3::BACK;
+    const FootAnimationKeyFrame frameIdle = trackIdle.SampleFrame(time_, frameIndex);
+//     const Vector3 lookDirection = node_->GetRotation() * Vector3::BACK;
+//     Vector4 interpolateFactors;
+//     interpolateFactors.x_ = Max(0.0f, -lookDirection.z_);
+//     interpolateFactors.y_ = Max(0.0f, lookDirection.z_);
+//     interpolateFactors.z_ = Max(0.0f, -lookDirection.x_);
+//     interpolateFactors.w_ = Max(0.0f, lookDirection.x_);
+    const Vector3 fixedVelocity = velocity / 1.7f;
+//     float nonIdleFactor = fixedVelocity.Length();
+    const Vector3 moveDirection = velocity.LengthSquared() > M_EPSILON ? velocity.Normalized() : Vector3::BACK;
     Vector4 interpolateFactors;
-    interpolateFactors.x_ = Max(0.0f, -lookDirection.z_);
-    interpolateFactors.y_ = Max(0.0f, lookDirection.z_);
-    interpolateFactors.z_ = Max(0.0f, -lookDirection.x_);
-    interpolateFactors.w_ = Max(0.0f, lookDirection.x_);
+    interpolateFactors.x_ = Max(0.0f, -moveDirection.z_);
+    interpolateFactors.y_ = Max(0.0f, moveDirection.z_);
+    interpolateFactors.z_ = Max(0.0f, moveDirection.x_);
+    interpolateFactors.w_ = Max(0.0f, -moveDirection.x_);
     interpolateFactors /= interpolateFactors.x_ + interpolateFactors.y_ + interpolateFactors.z_ + interpolateFactors.w_;
     FootAnimationKeyFrame frame;
     frame.time_ = frameForward.time_;
@@ -426,6 +446,10 @@ void FootAnimation::PostUpdate(float timeStep)
     controller->SetWeight(animBackward->GetName(), Max(0.00001f, interpolateFactors.y_));
     controller->SetWeight(animLeft->GetName(), Max(0.00001f, interpolateFactors.z_));
     controller->SetWeight(animRight->GetName(), Max(0.00001f, interpolateFactors.w_));
+    controller->SetTime(animForward->GetName(), time_);
+    controller->SetTime(animBackward->GetName(), time_);
+    controller->SetTime(animLeft->GetName(), time_);
+    controller->SetTime(animRight->GetName(), time_);
 
     const Vector3 forwardDirection = node_->GetRotation() * Vector3::FORWARD;
 
