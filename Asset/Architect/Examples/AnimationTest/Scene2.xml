@@ -7,8 +7,8 @@
 	<attribute name="Elapsed Time" value="0" />
 	<attribute name="Next Replicated Node ID" value="63" />
 	<attribute name="Next Replicated Component ID" value="21" />
-	<attribute name="Next Local Node ID" value="16777465" />
-	<attribute name="Next Local Component ID" value="16777804" />
+	<attribute name="Next Local Node ID" value="16777482" />
+	<attribute name="Next Local Component ID" value="16778008" />
 	<attribute name="Variables" />
 	<attribute name="Variable Names" value="" />
 	<component type="Octree" id="1" />
@@ -97,6 +97,9 @@
 			<attribute name="Script File" value="ScriptFile;Animation.as" />
 			<attribute name="Class Name" value="Animator" />
 			<attribute name="disableFoot" value="false" />
+			<attribute name="movementType" value="5" />
+			<attribute name="movementScale" value="3" />
+			<attribute name="movementVelocity" value="1.5" />
 		</component>
 		<node id="6">
 			<attribute name="Is Enabled" value="true" />
@@ -620,7 +623,7 @@
 		<attribute name="Is Enabled" value="true" />
 		<attribute name="Name" value="" />
 		<attribute name="Tags" />
-		<attribute name="Position" value="0 -0.125 0" />
+		<attribute name="Position" value="0 0 0" />
 		<attribute name="Rotation" value="1 0 0 0" />
 		<attribute name="Scale" value="30 1 50" />
 		<attribute name="Variables" />
