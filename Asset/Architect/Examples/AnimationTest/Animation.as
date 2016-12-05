@@ -151,9 +151,9 @@ class Animator : ScriptObject
         animController.SetWeight(animLeft, _weightBlender.GetNormalizedWeight(animLeft));
             
         animController.SetTime(animFwd, Fract(_time));
-        animController.SetTime(animBwd, Fract(_time));
-        animController.SetTime(animRight, Fract(_time));
-        animController.SetTime(animLeft, Fract(_time));
+        animController.SetTime(animBwd, Fract(_time + 0.066666));
+        animController.SetTime(animRight, Fract(_time - 0.066666));
+        animController.SetTime(animLeft, Fract(_time + 0.1));
         
         _time += timeStep * velocityScale;
         if (_idleTimer > 0) _idleTimer -= timeStep;

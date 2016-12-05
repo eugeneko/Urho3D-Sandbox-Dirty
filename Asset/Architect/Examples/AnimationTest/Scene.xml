@@ -7,8 +7,8 @@
 	<attribute name="Elapsed Time" value="0" />
 	<attribute name="Next Replicated Node ID" value="63" />
 	<attribute name="Next Replicated Component ID" value="21" />
-	<attribute name="Next Local Node ID" value="16777463" />
-	<attribute name="Next Local Component ID" value="16777780" />
+	<attribute name="Next Local Node ID" value="16777466" />
+	<attribute name="Next Local Component ID" value="16777816" />
 	<attribute name="Variables" />
 	<attribute name="Variable Names" value="" />
 	<component type="Octree" id="1" />
@@ -96,8 +96,10 @@
 			<attribute name="Delayed Method Calls" value="0" />
 			<attribute name="Script File" value="ScriptFile;Animation.as" />
 			<attribute name="Class Name" value="Animator" />
-			<attribute name="disableFoot" value="false" />
-			<attribute name="time_" value="0" />
+			<attribute name="disableFoot" value="true" />
+			<attribute name="movementType" value="2" />
+			<attribute name="movementScale" value="5" />
+			<attribute name="movementVelocity" value="1" />
 		</component>
 		<component type="FootAnimation" id="10">
 			<attribute name="Animation" value="Animation;Swat_WalkFwd.ani" />
@@ -709,7 +711,9 @@
 			<attribute name="Script File" value="ScriptFile;Animation.as" />
 			<attribute name="Class Name" value="Animator" />
 			<attribute name="disableFoot" value="false" />
-			<attribute name="time_" value="0" />
+			<attribute name="movementType" value="0" />
+			<attribute name="movementScale" value="5" />
+			<attribute name="movementVelocity" value="1" />
 		</component>
 		<node id="6">
 			<attribute name="Is Enabled" value="true" />

@@ -38,6 +38,8 @@ public:
     virtual void DelayedStart() override;
     /// Called on scene update, variable timestep.
     virtual void PostUpdate(float timeStep) override;
+    /// Visualize the component as debug geometry.
+    virtual void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
 
     /// Set animation attribute.
     void SetAnimationAttr(const ResourceRef& value);
@@ -58,11 +60,15 @@ private:
     /// Whether to adjust foot rotation to ground orientation. Set 0 to ignore ground normal.
     float adjustToGround_ = 0.0f;
 
-    /// Animation time.
-    float time_ = 0.0f;
-
     Vector3 prevPosition_;
-    int state_ = 0;
+
+    bool wasFootstep_ = false;
+    Vector3 footstepPosition_;
+    Vector3 expectedPosition_;
+
+    float fadeRemaining_ = 0;
+    float movementRange_ = 0;
+    Vector3 fadeDelta_ = Vector3::ZERO;
 };
 
 }

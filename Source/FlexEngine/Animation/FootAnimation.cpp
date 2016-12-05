@@ -10,6 +10,7 @@
 #include <Urho3D/Graphics/Animation.h>
 #include <Urho3D/Graphics/AnimationState.h>
 #include <Urho3D/Graphics/AnimationController.h>
+#include <Urho3D/Graphics/DebugRenderer.h>
 #include <Urho3D/IO/Log.h>
 // #include <Urho3D/Graphics/Geometry.h>
 // #include <Urho3D/Graphics/IndexBuffer.h>
@@ -118,7 +119,24 @@ struct FootAnimationTrack
 {
     /// Key frames.
     Vector<FootAnimationKeyFrame> keyFrames_;
+    /// Static ranges.
+    Vector<Pair<float, float>> staticRanges_;
 
+    bool IsStatic(float time) const
+    {
+        for (const Pair<float, float>& range : staticRanges_)
+            if (range.first_ <= time && time <= range.second_)
+                return true;
+        return false;
+    }
+    float GetMomementRange(float time) const
+    {
+        float result = 0.0f;
+        for (const Pair<float, float>& range : staticRanges_)
+            if (time < range.first_)
+                return range.first_ - time;
+        return staticRanges_.Empty() ? 1.0f : staticRanges_.Front().first_ - time + GetLength();
+    }
     /// Get length.
     float GetLength() const
     {
@@ -222,7 +240,8 @@ float GetKneeRotationAngle(const Vector3& thighPosition, const Vector3& calfPosi
     return AngleSigned(kneeDirection, baseKneeDirection, footDirection);
 }
 
-void CreateFootAnimationTrack(FootAnimationTrack& track, Model* model, Animation* animation, const String& thighName)
+void CreateFootAnimationTrack(FootAnimationTrack& track, Model* model, Animation* animation, const String& thighName,
+    const Vector3& velocity, float threshold)
 {
     if (!model)
         return;
@@ -263,6 +282,8 @@ void CreateFootAnimationTrack(FootAnimationTrack& track, Model* model, Animation
     // Play animation and convert pose
     const unsigned numKeyFrames = times.Size();
     track.keyFrames_.Resize(numKeyFrames);
+    Vector<Vector3> globalPositions;
+    float minHeight = M_INFINITY;
     for (unsigned i = 0; i < numKeyFrames; ++i)
     {
         // Play animation
@@ -298,7 +319,23 @@ void CreateFootAnimationTrack(FootAnimationTrack& track, Model* model, Animation
         track.keyFrames_[i].calfRotationFix_ = calfRotationFix;
         track.keyFrames_[i].heelRotationLocal_ = heelNode->GetRotation();
         track.keyFrames_[i].heelRotationWorld_ = heelNode->GetWorldRotation();
+        globalPositions.Push(heelPosition + velocity * times[i]);
+        minHeight = Min(minHeight, globalPositions.Back().y_);
     }
+
+    float rangeBegin = -1;
+    bool wasStatic = false;
+    for (unsigned i = 0; i < numKeyFrames; ++i)
+    {
+        const bool isStatic = globalPositions[i].y_ < minHeight + threshold;
+        if (isStatic && !wasStatic)
+            rangeBegin = times[i];
+        else if (wasStatic && !isStatic)
+            track.staticRanges_.Push(MakePair(rangeBegin, times[i]));
+        wasStatic = isStatic;
+    }
+    if (wasStatic)
+        track.staticRanges_.Push(MakePair(rangeBegin, times.Back()));
 }
 
 /// Intersect sphere and sphere. If there is no intersection point, second sphere is moved toward first one.
@@ -358,7 +395,6 @@ void FootAnimation::ApplyAttributes()
 void FootAnimation::DelayedStart()
 {
     prevPosition_ = node_->GetPosition();
-    state_ = 0;
 }
 
 void FootAnimation::PostUpdate(float timeStep)
@@ -376,20 +412,25 @@ void FootAnimation::PostUpdate(float timeStep)
     const Vector3 velocity = (node_->GetPosition() - prevPosition_) / timeStep;
     prevPosition_ = node_->GetPosition();
 
+    const float referenceVelocity = 1.8f;
+
     AnimatedModel* model = node_->GetComponent<AnimatedModel>();
+    AnimationController* controller = node_->GetComponent<AnimationController>();
 
     ResourceCache* cache = GetSubsystem<ResourceCache>();
     SharedPtr<Animation> animForward(cache->GetResource<Animation>("Swat_WalkFwd.ani"));
     SharedPtr<Animation> animBackward(cache->GetResource<Animation>("Swat_WalkBwd.ani"));
     SharedPtr<Animation> animLeft(cache->GetResource<Animation>("Swat_WalkLeft.ani"));
     SharedPtr<Animation> animRight(cache->GetResource<Animation>("Swat_WalkRight.ani"));
-    SharedPtr<Animation> animIdle(cache->GetResource<Animation>("Swat_WalkRight.ani"));
+    SharedPtr<Animation> animIdle(cache->GetResource<Animation>("Swat_Idle.ani"));
     FootAnimationTrack trackForward, trackBackward, trackLeft, trackRight, trackIdle;
-    CreateFootAnimationTrack(trackForward, model->GetModel(), animForward, footBoneName_);
-    CreateFootAnimationTrack(trackBackward, model->GetModel(), animBackward, footBoneName_);
-    CreateFootAnimationTrack(trackLeft, model->GetModel(), animLeft, footBoneName_);
-    CreateFootAnimationTrack(trackRight, model->GetModel(), animRight, footBoneName_);
-    CreateFootAnimationTrack(trackIdle, model->GetModel(), animIdle, footBoneName_);
+    const float threshold = 0.01f;
+    CreateFootAnimationTrack(trackForward, model->GetModel(), animForward, footBoneName_, Vector3::BACK * referenceVelocity, threshold);
+    CreateFootAnimationTrack(trackBackward, model->GetModel(), animBackward, footBoneName_, Vector3::FORWARD * referenceVelocity, threshold);
+    CreateFootAnimationTrack(trackLeft, model->GetModel(), animLeft, footBoneName_, Vector3::RIGHT * referenceVelocity, threshold);
+    CreateFootAnimationTrack(trackRight, model->GetModel(), animRight, footBoneName_, Vector3::LEFT * referenceVelocity, threshold);
+    CreateFootAnimationTrack(trackIdle, model->GetModel(), animIdle, footBoneName_, Vector3::ZERO, threshold);
+    trackIdle.staticRanges_.Clear();
 
     Skeleton& skeleton = model->GetSkeleton();
     Node* thighNode = node_->GetChild(footBoneName_, true);
@@ -403,31 +444,21 @@ void FootAnimation::PostUpdate(float timeStep)
     const float calfLength = (calfNode->GetWorldPosition() - heelNode->GetWorldPosition()).Length();
 
     unsigned frameIndex = 0;
-    const FootAnimationKeyFrame frameForward = trackForward.SampleFrame(time_, frameIndex);
-    const FootAnimationKeyFrame frameBackward = trackBackward.SampleFrame(time_, frameIndex);
-    const FootAnimationKeyFrame frameLeft = trackLeft.SampleFrame(time_, frameIndex);
-    const FootAnimationKeyFrame frameRight = trackRight.SampleFrame(time_, frameIndex);
-    const FootAnimationKeyFrame frameIdle = trackIdle.SampleFrame(time_, frameIndex);
-//     const Vector3 lookDirection = node_->GetRotation() * Vector3::BACK;
-//     Vector4 interpolateFactors;
-//     interpolateFactors.x_ = Max(0.0f, -lookDirection.z_);
-//     interpolateFactors.y_ = Max(0.0f, lookDirection.z_);
-//     interpolateFactors.z_ = Max(0.0f, -lookDirection.x_);
-//     interpolateFactors.w_ = Max(0.0f, lookDirection.x_);
-    const Vector3 fixedVelocity = velocity / 1.7f;
-//     float nonIdleFactor = fixedVelocity.Length();
-    const Vector3 moveDirection = velocity.LengthSquared() > M_EPSILON ? velocity.Normalized() : Vector3::BACK;
-    Vector4 interpolateFactors;
-    interpolateFactors.x_ = Max(0.0f, -moveDirection.z_);
-    interpolateFactors.y_ = Max(0.0f, moveDirection.z_);
-    interpolateFactors.z_ = Max(0.0f, moveDirection.x_);
-    interpolateFactors.w_ = Max(0.0f, -moveDirection.x_);
-    interpolateFactors /= interpolateFactors.x_ + interpolateFactors.y_ + interpolateFactors.z_ + interpolateFactors.w_;
+    const FootAnimationKeyFrame frameForward = trackForward.SampleFrame(controller->GetTime(animForward->GetName()), frameIndex);
+    const FootAnimationKeyFrame frameBackward = trackBackward.SampleFrame(controller->GetTime(animBackward->GetName()), frameIndex);
+    const FootAnimationKeyFrame frameLeft = trackLeft.SampleFrame(controller->GetTime(animLeft->GetName()), frameIndex);
+    const FootAnimationKeyFrame frameRight = trackRight.SampleFrame(controller->GetTime(animRight->GetName()), frameIndex);
+    const FootAnimationKeyFrame frameIdle = trackIdle.SampleFrame(controller->GetTime(animIdle->GetName()), frameIndex);
     FootAnimationKeyFrame frame;
     frame.time_ = frameForward.time_;
     float weight = 0.0f;
-    auto makeMeHappy = [&frame, &weight](const FootAnimationKeyFrame& rhs, float factor)
+    float maxWeight = 0.0f;
+    bool isFootstep = false;
+    float movementRange = 0;
+    auto makeMeHappy = [&](const FootAnimationTrack& track, const FootAnimationKeyFrame& rhs, const String& anim)
     {
+        float factor = controller->GetWeight(anim);
+        float time = controller->GetTime(anim);
         frame.heelPosition_ += rhs.heelPosition_ * factor;
         frame.kneeRotation_ = MixQuaternion(frame.kneeRotation_, rhs.kneeRotation_, factor, weight);
         frame.thighRotationFix_ = MixQuaternion(frame.thighRotationFix_, rhs.thighRotationFix_, factor, weight);
@@ -435,28 +466,48 @@ void FootAnimation::PostUpdate(float timeStep)
         frame.heelRotationLocal_ = MixQuaternion(frame.heelRotationLocal_, rhs.heelRotationLocal_, factor, weight);
         frame.heelRotationWorld_ = MixQuaternion(frame.heelRotationWorld_, rhs.heelRotationWorld_, factor, weight);
         weight += factor;
+        maxWeight = Max(maxWeight, factor);
+        if (maxWeight == factor && maxWeight > 0)
+        {
+            isFootstep = track.IsStatic(time);
+            movementRange = track.GetMomementRange(time);
+        }
     };
-    makeMeHappy(frameForward, interpolateFactors.x_);
-    makeMeHappy(frameBackward, interpolateFactors.y_);
-    makeMeHappy(frameLeft, interpolateFactors.z_);
-    makeMeHappy(frameRight, interpolateFactors.w_);
-
-    AnimationController* controller = node_->GetComponent<AnimationController>();
-    controller->SetWeight(animForward->GetName(), Max(0.00001f, interpolateFactors.x_));
-    controller->SetWeight(animBackward->GetName(), Max(0.00001f, interpolateFactors.y_));
-    controller->SetWeight(animLeft->GetName(), Max(0.00001f, interpolateFactors.z_));
-    controller->SetWeight(animRight->GetName(), Max(0.00001f, interpolateFactors.w_));
-    controller->SetTime(animForward->GetName(), time_);
-    controller->SetTime(animBackward->GetName(), time_);
-    controller->SetTime(animLeft->GetName(), time_);
-    controller->SetTime(animRight->GetName(), time_);
+    makeMeHappy(trackForward, frameForward, animForward->GetName());
+    makeMeHappy(trackBackward, frameBackward, animBackward->GetName());
+    makeMeHappy(trackLeft, frameLeft, animLeft->GetName());
+    makeMeHappy(trackRight, frameRight, animRight->GetName());
+    makeMeHappy(trackIdle, frameIdle, animIdle->GetName());
 
     const Vector3 forwardDirection = node_->GetRotation() * Vector3::FORWARD;
 
     // Resolve foot shape
-    const Vector3 newHeelPosition = node_->GetWorldTransform() * (Quaternion(Vector3::UP, groundNormal_) * frame.heelPosition_ + groundOffset_);
+    Vector3 newHeelPosition = node_->GetWorldTransform() * (Quaternion(Vector3::UP, groundNormal_) * frame.heelPosition_ + groundOffset_);
     const Vector3 newCalfPosition = ResolveKneePosition(thighNode->GetWorldPosition(), newHeelPosition, forwardDirection,
         thighLength, calfLength, frame.kneeRotation_.RollAngle());
+
+    // Resolve footsteps
+    if (isFootstep)
+    {
+        expectedPosition_ = newHeelPosition;
+        if (!wasFootstep_)
+            footstepPosition_ = newHeelPosition;
+        else
+            newHeelPosition = footstepPosition_;
+        fadeRemaining_ = 0;
+        movementRange_ = 0;
+        fadeDelta_ = Vector3::ZERO;
+    }
+    else if (wasFootstep_)
+    {
+        movementRange_ = movementRange;
+        fadeRemaining_ = movementRange;
+        fadeDelta_ = expectedPosition_ - footstepPosition_;
+    }
+
+    if (movementRange_ > 0)
+        newHeelPosition -= fadeDelta_ * (fadeRemaining_ / movementRange_);
+    wasFootstep_ = isFootstep;
 
     // Apply foot shape
     if (!MatchChildPosition(*thighNode, *calfNode, newCalfPosition))
@@ -474,7 +525,18 @@ void FootAnimation::PostUpdate(float timeStep)
     heelNode->SetWorldRotation(adjustToGoundRotation * origHeelRotation.Slerp(fixedHeelRotation, adjustFoot_));
 
     thighNode->MarkDirty();
-    time_ = Mod(time_ + timeStep, trackForward.GetLength());
+    fadeRemaining_ = Max(0.0f, fadeRemaining_ - timeStep);
+}
+
+void FootAnimation::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
+{
+    if (debug && IsEnabledEffective())
+    {
+        if (wasFootstep_)
+        {
+            debug->AddSphere(Sphere(footstepPosition_, 0.2f), Color::RED, depthTest);
+        }
+    }
 }
 
 void FootAnimation::SetAnimationAttr(const ResourceRef& value)
