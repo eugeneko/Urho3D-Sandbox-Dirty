@@ -467,7 +467,7 @@ void FootAnimation::PostUpdate(float timeStep)
         frame.heelRotationWorld_ = MixQuaternion(frame.heelRotationWorld_, rhs.heelRotationWorld_, factor, weight);
         weight += factor;
         maxWeight = Max(maxWeight, factor);
-        if (maxWeight == factor && maxWeight > 0)
+        if (maxWeight == factor && factor >= 0.5)
         {
             isFootstep = track.IsStatic(time);
             movementRange = track.GetMomementRange(time);
@@ -489,6 +489,8 @@ void FootAnimation::PostUpdate(float timeStep)
     // Resolve footsteps
     if (isFootstep)
     {
+        if (movementRange_ > 0)
+            newHeelPosition -= fadeDelta_ * (fadeRemaining_ / movementRange_);
         expectedPosition_ = newHeelPosition;
         if (!wasFootstep_)
             footstepPosition_ = newHeelPosition;
@@ -505,7 +507,7 @@ void FootAnimation::PostUpdate(float timeStep)
         fadeDelta_ = expectedPosition_ - footstepPosition_;
     }
 
-    if (movementRange_ > 0)
+    if (movementRange_ > 0 && !isFootstep)
         newHeelPosition -= fadeDelta_ * (fadeRemaining_ / movementRange_);
     wasFootstep_ = isFootstep;
 

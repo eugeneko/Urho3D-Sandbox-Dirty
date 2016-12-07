@@ -1,3 +1,40 @@
+class DirectionBlender
+{
+    void set_threshold(float threshold) { threshold_ = threshold; }
+    void set_speed(float speed) { speed_ = speed; }
+    void set_targetDirection(Vector2 targetDirection) { targetDirection_ = targetDirection; }
+    Vector2 get_direction() { return direction_; }
+
+    void Update(float timeStep)
+    {
+        bool forceFast = direction_.length < epsilon_ || targetDirection_.length < epsilon_;
+        bool fastSwitch = forceFast || direction_.Angle(targetDirection_) <= threshold_;
+        if (fastSwitch)
+            move(targetDirection_, timeStep);
+        else
+        {
+            float remaining = move(Vector2(0, 0), timeStep);
+            if (remaining > 0)
+                move(targetDirection_, remaining);
+        }
+    }
+    
+    private float move(Vector2 target, float timeStep)
+    {
+        Vector2 delta = target - direction_;
+        if (delta.length < epsilon_)
+            return timeStep;
+        direction_ += delta.Normalized() * Min(speed_ * timeStep, delta.length);
+        return Max(0.0, timeStep - delta.length / speed_);
+    }
+
+    float epsilon_ = 0.0001;
+    float threshold_ = 1;
+    float speed_ = 1;
+    Vector2 direction_ = Vector2(0, 0);
+    Vector2 targetDirection_ = Vector2(0, 0);
+};
+
 
 class Animator : ScriptObject
 {
@@ -8,14 +45,15 @@ class Animator : ScriptObject
     float _idleTimer;
     bool _idleCasted;
     WeightBlender _weightBlender;
+    DirectionBlender _directionBlender;
     
     void DelayedStart()
     {
         AnimationController@ animController = node.GetComponent("AnimationController");
+        AnimatedModel@ animModel = node.GetComponent("AnimatedModel");
         
         if (disableFoot)
         {
-            AnimatedModel@ animModel = node.GetComponent("AnimatedModel");
             animModel.skeleton.GetBone("swat:LeftUpLeg").animated = false;
             animModel.skeleton.GetBone("swat:LeftLeg").animated = false;
             animModel.skeleton.GetBone("swat:LeftFoot").animated = false;
@@ -24,28 +62,33 @@ class Animator : ScriptObject
             animModel.skeleton.GetBone("swat:RightFoot").animated = false;
         }
         
+        animModel.skeleton.GetBone("swat:LeftShoulder").animated = false;
+        animModel.skeleton.GetBone("swat:LeftArm").animated = false;
+        animModel.skeleton.GetBone("swat:LeftForeArm").animated = false;
+        animModel.skeleton.GetBone("swat:RightShoulder").animated = false;
+        animModel.skeleton.GetBone("swat:RightArm").animated = false;
+        animModel.skeleton.GetBone("swat:RightForeArm").animated = false;
+        
         _time = 0.0f;
         _prevPosition = node.position;
         _idleTimer = 0;
         _idleCasted = false;
+        
+        _directionBlender.threshold = 120;
+        _directionBlender.speed = 2;
+        _directionBlender.targetDirection = Vector2(0, 0);
     }
 
-    WeightBlender _directionBlender;
-    float _timeY = 0;
-    float _timeX = 0;
     void Update(float timeStep)
     {
-        //Update2(timeStep);
-        Update1(timeStep);
-
+        UpdateController(timeStep);
         ApplyMovement(timeStep);
     }
-    
-    void Update2(float timeStep)
+
+    void UpdateController(float timeStep)
     {
-        float rotationTime = 0.5;
         float fadeTime = 0.5;
-        float idleTimeout = 1;
+        float idleTimeout = 0.5;
         String animIdle = "Swat_Idle.ani";
         String animFwd = "Swat_WalkFwd.ani";
         String animBwd = "Swat_WalkBwd.ani";
@@ -55,118 +98,46 @@ class Animator : ScriptObject
         AnimationController@ animController = node.GetComponent("AnimationController");
         Vector3 velocity = (node.position - _prevPosition) / timeStep;
         _prevPosition = node.position;
-        
-        Vector3 velocityScaled = velocity / 1.7;
-        
-        if (velocity.length > 0.01)
-        {
-            float sideness = Abs(velocity.x) / (Abs(velocity.x) + Abs(velocity.z));
-            _directionBlender.SetWeight("Direct", 1 - sideness, rotationTime);
-            _directionBlender.SetWeight("Side", sideness, rotationTime);
-        }
-
-        float scalarVelocity = velocityScaled.length;
-        
-        float minSync = 0.1;
-        float syncX = velocityScaled.x > 0 ? 1.0 - Fract(_timeX) : Fract(_timeX);
-        if (syncX < minSync) syncX += 1;
-        float syncY = velocityScaled.z > 0 ? 1.0 - Fract(_timeY) : Fract(_timeY);
-        if (syncY < minSync) syncY += 1;
-        
-        Print(_timeX + "/" + _timeY + "/" + syncX + "/" + syncY);
-        _timeX += timeStep * (velocityScaled.x > 0 ? 1.0 : -1.0) * scalarVelocity * syncX / syncY;
-        _timeY += timeStep * (velocityScaled.z < 0 ? 1.0 : -1.0) * scalarVelocity;
-        if (_idleTimer > 0) _idleTimer -= timeStep;
-        _weightBlender.Update(timeStep);
-        
-        animController.Play(animFwd, 0, true);
-        animController.SetTime(animFwd, Fract(_timeY));
-        animController.SetWeight(animFwd, _directionBlender.GetNormalizedWeight("Direct"));
-
-        animController.Play(animLeft, 0, true);
-        animController.SetTime(animLeft, Fract(_timeX));
-        animController.SetWeight(animLeft, _directionBlender.GetNormalizedWeight("Side"));
-
-        _directionBlender.Update(timeStep);
-    }
-
-    void Update1(float timeStep)
-    {
-        float fadeTime = 0.5;
-        float idleTimeout = 1;
-        String animIdle = "Swat_Idle.ani";
-        String animFwd = "Swat_WalkFwd.ani";
-        String animBwd = "Swat_WalkBwd.ani";
-        String animLeft = "Swat_WalkLeft.ani";
-        String animRight = "Swat_WalkRight.ani";
-        
-        AnimationController@ animController = node.GetComponent("AnimationController");
-        Vector3 velocity = (node.position - _prevPosition) / timeStep;
-        _prevPosition = node.position;
-        
-        float velocityScale = velocity.length / 1.7;
-        //if (_weightBlender.GetNormalizedWeight(animIdle) == 1.0)
-        //{
-        //    _time = 0;
-        //}
-        if (velocity.length < 0.01)
-        {
-            if (!_idleCasted && _idleTimer <= 0)
-            {
-                _idleCasted = true;
-                _weightBlender.SetWeight(animIdle, 1, fadeTime);
-                _weightBlender.SetWeight(animFwd, 0, fadeTime);
-                _weightBlender.SetWeight(animBwd, 0, fadeTime);
-                _weightBlender.SetWeight(animLeft, 0, fadeTime);
-                _weightBlender.SetWeight(animRight, 0, fadeTime);
-            }
-        }
-        else
-        {
-            Vector4 directionFactors(1, 0, 0, 0);
-            directionFactors.x = Max(0.0f, -velocity.z);
-            directionFactors.y = Max(0.0f, velocity.z);
-            directionFactors.z = Max(0.0f, velocity.x);
-            directionFactors.w = Max(0.0f, -velocity.x);
-            directionFactors /= directionFactors.x + directionFactors.y + directionFactors.z + directionFactors.w;
-            
-            _weightBlender.SetWeight(animIdle, 0, fadeTime);
-            _weightBlender.SetWeight(animFwd, directionFactors.x, fadeTime);
-            _weightBlender.SetWeight(animBwd, directionFactors.y, fadeTime);
-            _weightBlender.SetWeight(animLeft, directionFactors.z, fadeTime);
-            _weightBlender.SetWeight(animRight, directionFactors.w, fadeTime);
-            _idleTimer = idleTimeout;
-            _idleCasted = false;
-        }
         
         animController.Play(animIdle, 0, true);
         animController.Play(animFwd, 0, true);
         animController.Play(animBwd, 0, true);
         animController.Play(animLeft, 0, true);
         animController.Play(animRight, 0, true);
-        animController.SetWeight(animIdle, _weightBlender.GetNormalizedWeight(animIdle));
-        animController.SetWeight(animFwd, _weightBlender.GetNormalizedWeight(animFwd));
-        animController.SetWeight(animBwd, _weightBlender.GetNormalizedWeight(animBwd));
-        animController.SetWeight(animRight, _weightBlender.GetNormalizedWeight(animRight));
-        animController.SetWeight(animLeft, _weightBlender.GetNormalizedWeight(animLeft));
+        
+        Vector3 scaledVelocity = velocity / 1.7;
+        if ((scaledVelocity * Vector3(1, 0, 1)).length < 0.01)
+        {
+            if (!_idleCasted && _idleTimer <= 0)
+            {
+                _idleCasted = true;
+                _directionBlender.targetDirection = Vector2(0, 0);
+            }
+        }
+        else
+        {
+            Vector2 direction = Vector2(scaledVelocity.x, -scaledVelocity.z) / (Abs(scaledVelocity.x) + Abs(scaledVelocity.z));
+            _directionBlender.targetDirection = direction;
+            
+            _idleTimer = idleTimeout;
+            _idleCasted = false;
+        }
+        
+        Vector2 direction = _directionBlender.direction;
+        animController.SetWeight(animIdle, 1 - Abs(direction.x) - Abs(direction.y));
+        animController.SetWeight(animFwd, Max(0.0, direction.y));
+        animController.SetWeight(animBwd, Max(0.0, -direction.y));
+        animController.SetWeight(animLeft, Max(0.0, direction.x));
+        animController.SetWeight(animRight, Max(0.0, -direction.x));
             
         animController.SetTime(animFwd, Fract(_time));
         animController.SetTime(animBwd, Fract(_time + 0.066666));
         animController.SetTime(animRight, Fract(_time - 0.066666));
         animController.SetTime(animLeft, Fract(_time + 0.1));
         
-        _time += timeStep * velocityScale;
+        _time += timeStep * scaledVelocity.length;
         if (_idleTimer > 0) _idleTimer -= timeStep;
-        _weightBlender.Update(timeStep);
-
-        /*    
-
-        
-        float R = 10;
-        float v = 1.7;
-        float T = 2 * M_PI * R / v;
-        float radius = 5;
-        //node.position = node.position + Vector3(Cos(_time / T * 360), 0, Sin(_time / T * 360)) * timeStep * 2 * M_PI * R / T;*/
+        _directionBlender.Update(timeStep);
     }
 
     int movementType = 0;
@@ -214,7 +185,7 @@ class Animator : ScriptObject
             if (_movementRemainingTime < 0)
             {
                 _movementRemainingTime = Random(1.0, 5.0);
-                _movementDirection = Vector3(Random(-1.0, 1.0), 0.0, Random(-1.0, 1.0)).Normalized();
+                _movementDirection = Vector3(Random(-1, 1), 0.0, Random(-1, 1)).Normalized();
             }
             node.position = node.position + _movementDirection * movementVelocity * timeStep;
             _movementRemainingTime -= timeStep;
