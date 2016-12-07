@@ -469,7 +469,7 @@ void FootAnimation::PostUpdate(float timeStep)
         maxWeight = Max(maxWeight, factor);
         if (maxWeight == factor && factor >= 0.5)
         {
-            isFootstep = track.IsStatic(time);
+            //isFootstep = track.IsStatic(time);
             movementRange = track.GetMomementRange(time);
         }
     };
