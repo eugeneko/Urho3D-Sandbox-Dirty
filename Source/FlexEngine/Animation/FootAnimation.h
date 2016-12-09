@@ -13,13 +13,18 @@ class Animation;
 // class VertexBuffer;
 // struct WorkItem;
 // class WorkQueue;
+class Model;
 
 }
 
 namespace FlexEngine
 {
 
-/// Grass patch data.
+/// Blend animations and return result.
+SharedPtr<Animation> BlendAnimations(Model& model, const PODVector<Animation*>& animations,
+    const PODVector<float>& weights, const PODVector<float>& offsets, const PODVector<float>& timestamps);
+
+/// .
 class FootAnimation : public LogicComponent
 {
     URHO3D_OBJECT(FootAnimation, LogicComponent);

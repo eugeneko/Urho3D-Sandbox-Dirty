@@ -105,7 +105,7 @@ class Animator : ScriptObject
     void UpdateController(float timeStep)
     {
         float idleTimeout = 0.5;
-        String animIdle = "Swat_Idle.ani";
+        String animIdle = "Swat_WalkZero.ani";
         String animFwd = "Swat_WalkFwd.ani";
         String animBwd = "Swat_WalkBwd.ani";
         String animLeft = "Swat_WalkLeft.ani";
@@ -146,10 +146,10 @@ class Animator : ScriptObject
         float epsilon = 0.0001;
         if (weightIdle > epsilon)
         {
-            //animController.Play(animIdle, 0, true);
-            //animController.SetWeight(animIdle, weightIdle);
+            animController.Play(animIdle, 0, true);
+            animController.SetWeight(animIdle, weightIdle);
             
-            animController.Play("Swat_WalkFwd2.ani", 0, true);
+            /*animController.Play("Swat_WalkFwd2.ani", 0, true);
             animController.SetWeight("Swat_WalkFwd2.ani", weightIdle / 4);
             animController.SetSpeed("Swat_WalkFwd2.ani", 0);
             
@@ -163,7 +163,7 @@ class Animator : ScriptObject
             
             animController.Play("Swat_WalkRight2.ani", 0, true);
             animController.SetWeight("Swat_WalkRight2.ani", weightIdle / 4);
-            animController.SetSpeed("Swat_WalkRight2.ani", 0);
+            animController.SetSpeed("Swat_WalkRight2.ani", 0);*/
         }
         
         float time = _directionBlender.time;

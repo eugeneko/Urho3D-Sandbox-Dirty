@@ -25,6 +25,76 @@
 namespace FlexEngine
 {
 
+SharedPtr<Animation> BlendAnimations(Model& model, const PODVector<Animation*>& animations,
+    const PODVector<float>& weights, const PODVector<float>& offsets, const PODVector<float>& timestamps)
+{
+    // Create and setup node
+    Node node(model.GetContext());
+    AnimatedModel* animatedModel = node.CreateComponent<AnimatedModel>();
+    animatedModel->SetModel(&model);
+    for (unsigned i = 0; i < animations.Size(); ++i)
+    {
+        Animation* animation = animations[i];
+        AnimationState* animationState = animatedModel->AddAnimationState(animation);
+        animationState->SetWeight(i < weights.Size() ? weights[i] : 1.0f);
+    }
+
+    // Get all nodes
+    SharedPtr<Animation> result = MakeShared<Animation>(model.GetContext());
+    Node* rootNode = animatedModel->GetSkeleton().GetRootBone()->node_;
+    if (!rootNode)
+        return result;
+
+    PODVector<Node*> nodes;
+    rootNode->GetChildren(nodes, true);
+
+    // Create tracks
+    for (Node* node : nodes)
+        if (!node->GetName().Empty())
+        {
+            AnimationTrack* track = result->CreateTrack(node->GetName());
+            track->channelMask_ = CHANNEL_POSITION | CHANNEL_ROTATION | CHANNEL_SCALE;
+        }
+
+    // Play animation
+    const Vector<SharedPtr<AnimationState>>& animationStates = animatedModel->GetAnimationStates();
+    for (unsigned i = 0; i < timestamps.Size(); ++i)
+    {
+        const float time = timestamps[i];
+
+        // Reset nodes
+        for (Node* node : nodes)
+            if (Bone* bone = model.GetSkeleton().GetBone(node->GetName()))
+                node->SetTransform(bone->initialPosition_, bone->initialRotation_, bone->initialScale_);
+
+        // Play animation
+        for (unsigned j = 0; j < animationStates.Size(); ++j)
+        {
+            float timeOffset = j < offsets.Size() ? offsets[j] : 0.0f;
+            animationStates[j]->SetTime(time + timeOffset);
+            animationStates[j]->Apply();
+        }
+
+        node.MarkDirty();
+
+        // Write tracks
+        for (Node* node : nodes)
+        {
+            if (AnimationTrack* track = result->GetTrack(node->GetName()))
+            {
+                AnimationKeyFrame keyFrame;
+                keyFrame.time_ = time;
+                keyFrame.position_ = node->GetPosition();
+                keyFrame.rotation_ = node->GetRotation();
+                keyFrame.scale_ = node->GetScale();
+                track->AddKeyFrame(keyFrame);
+            }
+        }
+    }
+
+    return result;
+}
+
 /// Non-recursively get children bones by parent name.
 PODVector<Bone*> GetChildren(Skeleton& skeleton, const String& parentName)
 {
@@ -422,7 +492,7 @@ void FootAnimation::PostUpdate(float timeStep)
     SharedPtr<Animation> animBackward(cache->GetResource<Animation>("Swat_WalkBwd.ani"));
     SharedPtr<Animation> animLeft(cache->GetResource<Animation>("Swat_WalkLeft.ani"));
     SharedPtr<Animation> animRight(cache->GetResource<Animation>("Swat_WalkRight.ani"));
-    SharedPtr<Animation> animIdle(cache->GetResource<Animation>("Swat_Idle.ani"));
+    SharedPtr<Animation> animIdle(cache->GetResource<Animation>("Swat_WalkZero.ani"));
     FootAnimationTrack trackForward, trackBackward, trackLeft, trackRight, trackIdle;
     const float threshold = 0.01f;
     CreateFootAnimationTrack(trackForward, model->GetModel(), animForward, footBoneName_, Vector3::BACK * referenceVelocity, threshold);
@@ -469,7 +539,7 @@ void FootAnimation::PostUpdate(float timeStep)
         maxWeight = Max(maxWeight, factor);
         if (maxWeight == factor && factor >= 0.5)
         {
-            //isFootstep = track.IsStatic(time);
+            isFootstep = track.IsStatic(time);
             movementRange = track.GetMomementRange(time);
         }
     };

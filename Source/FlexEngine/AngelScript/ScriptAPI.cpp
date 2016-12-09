@@ -1,5 +1,6 @@
 #include <FlexEngine/AngelScript/ScriptAPI.h>
 
+#include <FlexEngine/Animation/FootAnimation.h>
 #include <FlexEngine/Factory/ModelFactory.h>
 #include <FlexEngine/Factory/ScriptedResource.h>
 #include <FlexEngine/Factory/TextureFactory.h>
@@ -8,6 +9,7 @@
 
 #include <Urho3D/AngelScript/APITemplates.h>
 #include <Urho3D/AngelScript/Script.h>
+#include <Urho3D/Graphics/Animation.h>
 #include <Urho3D/Graphics/Model.h>
 #include <Urho3D/Graphics/Octree.h>
 #include <Urho3D/Graphics/OctreeQuery.h>
@@ -197,6 +199,12 @@ Texture2D* Image_GetTexture2D(const Image* image)
     return ConvertImageToTexture(image).Detach();
 }
 
+Animation* BlendAnimations_wrapper(Model* model, CScriptArray* animations, CScriptArray* weights, CScriptArray* offsets, CScriptArray* timestamps)
+{
+    return !model ? nullptr : BlendAnimations(*model, ArrayToPODVector<Animation*>(animations),
+        ArrayToPODVector<float>(weights), ArrayToPODVector<float>(offsets), ArrayToPODVector<float>(timestamps)).Detach();
+}
+
 static const float TODO_poissonStep = 0.05f;
 const PointCloud2DNorm& TODO_GetDefaultCloud()
 {
@@ -325,6 +333,8 @@ void RegisterAPI(asIScriptEngine* engine)
     engine->RegisterObjectMethod("Image", "void BuildNormalMapAlpha()", asFUNCTION(Image_BuildNormalMapAlpha), asCALL_CDECL_OBJLAST);
     engine->RegisterObjectMethod("Image", "void FillGaps(uint=0)", asFUNCTION(Image_FillGaps), asCALL_CDECL_OBJLAST);
     engine->RegisterObjectMethod("Image", "Texture2D@+ GetTexture2D() const", asFUNCTION(Image_GetTexture2D), asCALL_CDECL_OBJLAST);
+
+    engine->RegisterGlobalFunction("Animation@+ BlendAnimations(Model@+, Array<Animation@>@+, Array<float>@+, Array<float>@+, Array<float>@+)", asFUNCTION(BlendAnimations_wrapper), asCALL_CDECL);
 
     RegisterWeightBlender(engine);
 
