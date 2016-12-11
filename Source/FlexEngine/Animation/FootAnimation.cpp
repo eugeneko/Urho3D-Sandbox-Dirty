@@ -172,8 +172,8 @@ struct FootAnimationKeyFrame
     float time_ = 0.0f;
     /// Heel position.
     Vector3 heelPosition_;
-    /// Knee rotation. Contains only roll component.
-    Quaternion kneeRotation_;
+    /// Direction of knee.
+    Vector3 kneeDirection_;
     /// Fix for thigh rotation.
     Quaternion thighRotationFix_;
     /// Fix for calf rotation.
@@ -187,6 +187,7 @@ struct FootAnimationKeyFrame
 /// Foot animation track.
 struct FootAnimationTrack
 {
+    Vector3 initialDirection_;
     /// Key frames.
     Vector<FootAnimationKeyFrame> keyFrames_;
     /// Static ranges.
@@ -245,7 +246,7 @@ struct FootAnimationTrack
         FootAnimationKeyFrame result;
         result.time_ = time;
         result.heelPosition_ = Lerp(keyFrame->heelPosition_, nextKeyFrame->heelPosition_, t);
-        result.kneeRotation_ = keyFrame->kneeRotation_.Slerp(nextKeyFrame->kneeRotation_, t);
+        result.kneeDirection_ = Lerp(keyFrame->kneeDirection_, nextKeyFrame->kneeDirection_, t);
         result.thighRotationFix_ = keyFrame->thighRotationFix_.Slerp(nextKeyFrame->thighRotationFix_, t);
         result.calfRotationFix_ = keyFrame->calfRotationFix_.Slerp(nextKeyFrame->calfRotationFix_, t);
         result.heelRotationLocal_ = keyFrame->heelRotationLocal_.Slerp(nextKeyFrame->heelRotationLocal_, t);
@@ -299,17 +300,6 @@ Quaternion MixQuaternion(Quaternion& lhs, const Quaternion& rhs, float weight, f
     return lhs.Slerp(rhs, weight / (weight + totalWeight));
 }
 
-/// Get angle of knee rotation.
-float GetKneeRotationAngle(const Vector3& thighPosition, const Vector3& calfPosition, const Vector3& heelPosition,
-    const Vector3& forwardDirection)
-{
-    const Vector3 footDirection = (heelPosition - thighPosition).Normalized();
-    const float kneeDistance = (calfPosition - thighPosition).ProjectOntoAxis(footDirection);
-    const Vector3 kneeDirection = calfPosition - (thighPosition + footDirection * kneeDistance);
-    const Vector3 baseKneeDirection = footDirection.CrossProduct(forwardDirection).CrossProduct(footDirection).Normalized();
-    return AngleSigned(kneeDirection, baseKneeDirection, footDirection);
-}
-
 void CreateFootAnimationTrack(FootAnimationTrack& track, Model* model, Animation* animation, const String& thighName,
     const Vector3& velocity, float threshold)
 {
@@ -336,6 +326,9 @@ void CreateFootAnimationTrack(FootAnimationTrack& track, Model* model, Animation
     Bone* heelBone = skeleton.GetBone(boneNames.heel_);
     if (!thighNode || !calfNode || !heelNode || !thighBone || !calfBone || !heelBone)
         return;
+
+    // Get initial pose
+    track.initialDirection_ = heelNode->GetWorldPosition() - thighNode->GetWorldPosition();
 
     // Get tracks
     PODVector<float> times;
@@ -368,6 +361,11 @@ void CreateFootAnimationTrack(FootAnimationTrack& track, Model* model, Animation
         const Quaternion thighRotation = thighNode->GetRotation();
         const Quaternion calfRotation = calfNode->GetRotation();
 
+        // Get knee direction
+        const Vector3 direction = (heelPosition - thighPosition).Normalized();
+        const Vector3 jointProjection = direction * (calfPosition - thighPosition).ProjectOntoAxis(direction) + thighPosition;
+        const Vector3 jointDirection = Quaternion(direction, track.initialDirection_) * (calfPosition - jointProjection);
+
         // Revert to bind pose
         thighNode->SetTransform(thighBone->initialPosition_, thighBone->initialRotation_, thighBone->initialScale_);
         calfNode->SetTransform(calfBone->initialPosition_, calfBone->initialRotation_, calfBone->initialScale_);
@@ -384,7 +382,7 @@ void CreateFootAnimationTrack(FootAnimationTrack& track, Model* model, Animation
         // Make new frame
         track.keyFrames_[i].time_ = times[i];
         track.keyFrames_[i].heelPosition_ = heelPosition;
-        track.keyFrames_[i].kneeRotation_ = Quaternion(GetKneeRotationAngle(thighPosition, calfPosition, heelPosition, Vector3::FORWARD));
+        track.keyFrames_[i].kneeDirection_ = jointDirection.LengthSquared() > M_EPSILON ? jointDirection.Normalized() : Vector3::FORWARD;
         track.keyFrames_[i].thighRotationFix_ = thighRotationFix;
         track.keyFrames_[i].calfRotationFix_ = calfRotationFix;
         track.keyFrames_[i].heelRotationLocal_ = heelNode->GetRotation();
@@ -420,16 +418,14 @@ void IntersectSphereSphereGuaranteed(const Sphere& first, const Sphere& second, 
 }
 
 /// Resolve knee position.
-Vector3 ResolveKneePosition(const Vector3& thighPosition, const Vector3& targetHeelPosition, const Vector3& forwardDirection,
-    float thighLength, float calfLength, float kneeAngle)
+Vector3 ResolveKneePosition(const Vector3& thighPosition, const Vector3& targetHeelPosition, const Vector3& jointDirection,
+    float thighLength, float calfLength)
 {
     float distance;
     float radius;
     IntersectSphereSphereGuaranteed(Sphere(thighPosition, thighLength), Sphere(targetHeelPosition, calfLength), distance, radius);
     const Vector3 direction = (targetHeelPosition - thighPosition).Normalized();
-    const Vector3 kneeY = direction.CrossProduct(forwardDirection).Normalized();
-    const Vector3 kneeX = kneeY.CrossProduct(direction).Normalized();
-    return thighPosition + direction * distance + kneeX * Cos(kneeAngle) * radius  + kneeY * Sin(kneeAngle) * radius;
+    return thighPosition + direction * distance + jointDirection.Normalized() * radius;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -525,21 +521,23 @@ void FootAnimation::PostUpdate(float timeStep)
     float maxWeight = 0.0f;
     bool isFootstep = false;
     float movementRange = 0;
+    Vector3 initialDirection;
     auto makeMeHappy = [&](const FootAnimationTrack& track, const FootAnimationKeyFrame& rhs, const String& anim)
     {
         float factor = controller->GetWeight(anim);
         float time = controller->GetTime(anim);
         frame.heelPosition_ += rhs.heelPosition_ * factor;
-        frame.kneeRotation_ = MixQuaternion(frame.kneeRotation_, rhs.kneeRotation_, factor, weight);
+        frame.kneeDirection_ += rhs.kneeDirection_ * factor;
         frame.thighRotationFix_ = MixQuaternion(frame.thighRotationFix_, rhs.thighRotationFix_, factor, weight);
         frame.calfRotationFix_ = MixQuaternion(frame.calfRotationFix_, rhs.calfRotationFix_, factor, weight);
         frame.heelRotationLocal_ = MixQuaternion(frame.heelRotationLocal_, rhs.heelRotationLocal_, factor, weight);
         frame.heelRotationWorld_ = MixQuaternion(frame.heelRotationWorld_, rhs.heelRotationWorld_, factor, weight);
+        initialDirection += track.initialDirection_ * factor;
         weight += factor;
         maxWeight = Max(maxWeight, factor);
         if (maxWeight == factor && factor >= 0.5)
         {
-            isFootstep = track.IsStatic(time);
+            //isFootstep = track.IsStatic(time);
             movementRange = track.GetMomementRange(time);
         }
     };
@@ -549,12 +547,11 @@ void FootAnimation::PostUpdate(float timeStep)
     makeMeHappy(trackRight, frameRight, animRight->GetName());
     makeMeHappy(trackIdle, frameIdle, animIdle->GetName());
 
-    const Vector3 forwardDirection = node_->GetRotation() * Vector3::FORWARD;
-
     // Resolve foot shape
     Vector3 newHeelPosition = node_->GetWorldTransform() * (Quaternion(Vector3::UP, groundNormal_) * frame.heelPosition_ + groundOffset_);
-    const Vector3 newCalfPosition = ResolveKneePosition(thighNode->GetWorldPosition(), newHeelPosition, forwardDirection,
-        thighLength, calfLength, frame.kneeRotation_.RollAngle());
+    const Vector3 jointDirection = Quaternion(initialDirection, newHeelPosition - thighNode->GetWorldPosition()) * frame.kneeDirection_;
+    const Vector3 newCalfPosition = ResolveKneePosition(thighNode->GetWorldPosition(), newHeelPosition, jointDirection,
+        thighLength, calfLength);
 
     // Resolve footsteps
     if (isFootstep)
