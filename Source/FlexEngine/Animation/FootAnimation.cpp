@@ -95,6 +95,23 @@ SharedPtr<Animation> BlendAnimations(Model& model, const PODVector<Animation*>& 
     return result;
 }
 
+/// Merge times of animation tracks.
+PODVector<float> MergeAnimationTrackTimes(const PODVector<AnimationTrack*>& tracks)
+{
+    PODVector<float> result;
+    for (AnimationTrack* track : tracks)
+    {
+        if (track)
+        {
+            for (unsigned i = 0; i < track->GetNumKeyFrames(); ++i)
+                result.Push(track->GetKeyFrame(i)->time_);
+        }
+    }
+    Sort(result.Begin(), result.End());
+    result.Erase(Unique(result.Begin(), result.End()), result.End());
+    return result;
+}
+
 /// Non-recursively get children bones by parent name.
 PODVector<Bone*> GetChildren(Skeleton& skeleton, const String& parentName)
 {
@@ -255,24 +272,6 @@ struct FootAnimationTrack
     }
 };
 
-/// Eliminates all but the first element from every consecutive group of equivalent elements from the range [first, last) and returns a past-the-end iterator for the new logical end of the range.
-template <class TIterator>
-TIterator Unique(TIterator first, TIterator last)
-{
-    if (first == last)
-        return last;
-
-    TIterator result = first;
-    while (++first != last)
-    {
-        if (!(*result == *first))
-        {
-            *(++result) = *first;
-        }
-    }
-    return ++result;
-}
-
 /// Append track times to result array.
 void AppendTrackTimes(PODVector<float>& result, AnimationTrack& track)
 {
@@ -426,6 +425,219 @@ Vector3 ResolveKneePosition(const Vector3& thighPosition, const Vector3& targetH
     IntersectSphereSphereGuaranteed(Sphere(thighPosition, thighLength), Sphere(targetHeelPosition, calfLength), distance, radius);
     const Vector3 direction = (targetHeelPosition - thighPosition).Normalized();
     return thighPosition + direction * distance + jointDirection.Normalized() * radius;
+}
+
+//////////////////////////////////////////////////////////////////////////
+CharacterSkeleton::CharacterSkeleton(Context* context)
+    : Resource(context)
+{
+}
+
+
+CharacterSkeleton::~CharacterSkeleton()
+{
+}
+
+void CharacterSkeleton::RegisterObject(Context* context)
+{
+    context->RegisterFactory<CharacterSkeleton>();
+}
+
+bool CharacterSkeleton::BeginLoad(Deserializer& source)
+{
+    SharedPtr<XMLFile> xmlFile = MakeShared<XMLFile>(context_);
+    if (xmlFile->Load(source))
+        return Load(xmlFile->GetRoot());
+    return false;
+}
+
+bool CharacterSkeleton::Load(const XMLElement& source)
+{
+    for (XMLElement segmentNode = source.GetChild("segment2"); !segmentNode.IsNull(); segmentNode = segmentNode.GetNext("segment2"))
+    {
+        CharacterSkeletonSegment2 segment;
+        segment.rootBone_ = segmentNode.GetAttribute("root");
+        segment.jointBone_ = segmentNode.GetAttribute("joint");
+        segment.targetBone_ = segmentNode.GetAttribute("target");
+        const String name = segmentNode.GetAttribute("name");
+        segments2_.Populate(name, segment);
+    }
+    return true;
+}
+
+//////////////////////////////////////////////////////////////////////////
+CharacterAnimation::CharacterAnimation(Context* context)
+    : Resource(context)
+{
+}
+
+CharacterAnimation::~CharacterAnimation()
+{
+}
+
+void CharacterAnimation::RegisterObject(Context* context)
+{
+    context->RegisterFactory<CharacterAnimation>();
+}
+
+bool CharacterAnimation::BeginLoad(Deserializer& source)
+{
+    SharedPtr<XMLFile> xmlFile = MakeShared<XMLFile>(context_);
+    if (xmlFile->Load(source))
+        return Load(xmlFile->GetRoot());
+    return false;
+}
+
+bool CharacterAnimation::Load(const XMLElement& source)
+{
+    for (XMLElement segmentNode = source.GetChild("segment2"); !segmentNode.IsNull(); segmentNode = segmentNode.GetNext("segment2"))
+    {
+        const String name = segmentNode.GetAttribute("name");
+        CharacterAnimationSegment2Track track;
+        track.initialDirection_ = segmentNode.GetVector3("baseDirection");
+
+        for (XMLElement keyFrameNode = segmentNode.GetChild("segment2");
+            !keyFrameNode.IsNull();
+            keyFrameNode = keyFrameNode.GetNext("segment2"))
+        {
+            CharacterAnimationSegment2KeyFrame keyFrame;
+            keyFrame.time_ = keyFrameNode.GetFloat("time");
+            keyFrame.heelPosition_ = keyFrameNode.GetVector3("targetPosition");
+            keyFrame.kneeDirection_ = keyFrameNode.GetVector3("jointOrientation");
+            keyFrame.thighRotationFix_ = keyFrameNode.GetQuaternion("rootRotation");
+            keyFrame.calfRotationFix_ = keyFrameNode.GetQuaternion("jointRotation");
+            keyFrame.heelRotationLocal_ = keyFrameNode.GetQuaternion("targetRotation");
+            keyFrame.heelRotationWorld_ = keyFrameNode.GetQuaternion("targetRotationWorld");
+            track.keyFrames_.Push(keyFrame);
+        }
+        segments2_.Populate(name, track);
+    }
+    return true;
+}
+
+bool CharacterAnimation::Save(XMLElement& dest) const
+{
+    for (const Segment2TrackMap::KeyValue& elem : segments2_)
+    {
+        XMLElement segment2Node = dest.CreateChild("segment2");
+        segment2Node.SetAttribute("name", elem.first_);
+        const CharacterAnimationSegment2Track& track = elem.second_;
+        segment2Node.SetVector3("baseDirection", track.initialDirection_);
+        for (const CharacterAnimationSegment2KeyFrame& keyFrame : track.keyFrames_)
+        {
+            XMLElement keyFrameNode = segment2Node.CreateChild("keyFrame");
+            keyFrameNode.SetFloat("time", keyFrame.time_);
+            keyFrameNode.SetVector3("targetPosition", keyFrame.heelPosition_);
+            keyFrameNode.SetVector3("jointOrientation", keyFrame.kneeDirection_);
+            keyFrameNode.SetQuaternion("rootRotation", keyFrame.thighRotationFix_);
+            keyFrameNode.SetQuaternion("jointRotation", keyFrame.calfRotationFix_);
+            keyFrameNode.SetQuaternion("targetRotation", keyFrame.heelRotationLocal_);
+            keyFrameNode.SetQuaternion("targetRotationWorld", keyFrame.heelRotationWorld_);
+        }
+    }
+    return true;
+}
+
+bool CharacterAnimation::Save(Serializer& dest) const
+{
+    SharedPtr<XMLFile> xml(new XMLFile(context_));
+    XMLElement animationNode = xml->CreateRoot("animation");
+
+    Save(animationNode);
+    return xml->Save(dest);
+}
+
+bool CharacterAnimation::ImportAnimation(CharacterSkeleton& characterSkeleton, Model& model, Animation& animation)
+{
+    // Setup temporary node for playback
+    Node node(context_);
+    AnimatedModel* animatedModel = node.CreateComponent<AnimatedModel>();
+    animatedModel->SetModel(&model);
+    AnimationState* animationState = animatedModel->AddAnimationState(&animation);
+    animationState->SetWeight(1.0f);
+    Skeleton& skeleton = animatedModel->GetSkeleton();
+
+    // Create tracks of 2-segments
+    Segment2TrackMap segments2;
+    for (const CharacterSkeleton::Segment2Map::KeyValue& elem : characterSkeleton.GetSegments2())
+    {
+        const String& name = elem.first_;
+        const CharacterSkeletonSegment2& joint = elem.second_;
+
+        // Get nodes and bones of segment
+        Node* segmentRootNode = node.GetChild(joint.rootBone_, true);
+        Node* segmentJointNode = segmentRootNode ? segmentRootNode->GetChild(joint.jointBone_) : nullptr;
+        Node* segmentTargetNode = segmentJointNode ? segmentJointNode->GetChild(joint.targetBone_) : nullptr;
+        Bone* thighBone = skeleton.GetBone(segmentRootNode->GetName());
+        Bone* calfBone = skeleton.GetBone(segmentJointNode->GetName());
+        Bone* heelBone = skeleton.GetBone(segmentTargetNode->GetName());
+        if (!segmentRootNode || !segmentJointNode || !segmentTargetNode || !thighBone || !calfBone || !heelBone)
+        {
+            URHO3D_LOGERRORF("Failed to load 2-segment '%s' of character skeleton: root='%s', joint='%s', target='%s'",
+                name.CString(), joint.rootBone_.CString(), joint.jointBone_.CString(), joint.targetBone_.CString());
+            return false;
+        }
+
+        // Get initial pose
+        CharacterAnimationSegment2Track track;
+        track.initialDirection_ = segmentTargetNode->GetWorldPosition() - segmentRootNode->GetWorldPosition();
+
+        // Get sample times
+        const PODVector<float> sampleTimes = MergeAnimationTrackTimes(
+        {
+            animation.GetTrack(joint.rootBone_),
+            animation.GetTrack(joint.jointBone_),
+            animation.GetTrack(joint.targetBone_)
+        });
+
+        // Play animation and convert pose
+        const unsigned numKeyFrames = sampleTimes.Size();
+        track.keyFrames_.Resize(numKeyFrames);
+        for (unsigned i = 0; i < numKeyFrames; ++i)
+        {
+            // Play animation
+            animationState->SetTime(sampleTimes[i]);
+            animationState->Apply();
+            node.MarkDirty();
+
+            // Receive animation data
+            const Vector3 thighPosition = segmentRootNode->GetWorldPosition();
+            const Vector3 calfPosition = segmentJointNode->GetWorldPosition();
+            const Vector3 heelPosition = segmentTargetNode->GetWorldPosition();
+            const Quaternion thighRotation = segmentRootNode->GetRotation();
+            const Quaternion calfRotation = segmentJointNode->GetRotation();
+
+            // Get knee direction
+            const Vector3 direction = (heelPosition - thighPosition).Normalized();
+            const Vector3 jointProjection = direction * (calfPosition - thighPosition).ProjectOntoAxis(direction) + thighPosition;
+            const Vector3 jointDirection = Quaternion(direction, track.initialDirection_) * (calfPosition - jointProjection);
+
+            // Revert to bind pose
+            segmentRootNode->SetTransform(thighBone->initialPosition_, thighBone->initialRotation_, thighBone->initialScale_);
+            segmentJointNode->SetTransform(calfBone->initialPosition_, calfBone->initialRotation_, calfBone->initialScale_);
+
+            // Try to resolve foot shape and generate fix angles
+            MatchChildPosition(*segmentRootNode, *segmentJointNode, calfPosition);
+            const Quaternion thighRotationFix = segmentRootNode->GetRotation().Inverse() * thighRotation;
+            segmentRootNode->SetRotation(segmentRootNode->GetRotation() * thighRotationFix);
+
+            MatchChildPosition(*segmentJointNode, *segmentTargetNode, heelPosition);
+            const Quaternion calfRotationFix = segmentJointNode->GetRotation().Inverse() * calfRotation;
+            segmentJointNode->SetRotation(segmentJointNode->GetRotation() * calfRotationFix);
+
+            // Make new frame
+            track.keyFrames_[i].time_ = sampleTimes[i];
+            track.keyFrames_[i].heelPosition_ = heelPosition;
+            track.keyFrames_[i].kneeDirection_ = jointDirection.LengthSquared() > M_EPSILON ? jointDirection.Normalized() : Vector3::FORWARD;
+            track.keyFrames_[i].thighRotationFix_ = thighRotationFix;
+            track.keyFrames_[i].calfRotationFix_ = calfRotationFix;
+            track.keyFrames_[i].heelRotationLocal_ = segmentTargetNode->GetRotation();
+            track.keyFrames_[i].heelRotationWorld_ = segmentTargetNode->GetWorldRotation();
+        }
+        segments2.Populate(name, track);
+    }
+    segments2_.Insert(segments2);
+    return true;
 }
 
 //////////////////////////////////////////////////////////////////////////

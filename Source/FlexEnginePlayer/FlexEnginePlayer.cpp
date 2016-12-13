@@ -46,6 +46,8 @@ void FlexEnginePlayer::Start()
     TreeLevelOfDetail::RegisterObject(context_);
     TreeProxy::RegisterObject(context_);
 
+    CharacterSkeleton::RegisterObject(context_);
+    CharacterAnimation::RegisterObject(context_);
     FootAnimation::RegisterObject(context_);
 
     StaticModelEx::RegisterObject(context_);

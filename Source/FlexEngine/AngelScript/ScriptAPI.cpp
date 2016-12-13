@@ -6,6 +6,7 @@
 #include <FlexEngine/Factory/TextureFactory.h>
 #include <FlexEngine/Math/PoissonRandom.h>
 #include <FlexEngine/Math/WeightBlender.h>
+#include <FlexEngine/Resource/ResourceCacheHelpers.h>
 
 #include <Urho3D/AngelScript/APITemplates.h>
 #include <Urho3D/AngelScript/Script.h>
@@ -15,6 +16,7 @@
 #include <Urho3D/Graphics/OctreeQuery.h>
 #include <Urho3D/Graphics/Terrain.h>
 #include <Urho3D/Resource/Image.h>
+#include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/Node.h>
 #include <Urho3D/Scene/Scene.h>
 
@@ -301,6 +303,44 @@ void RegisterWeightBlender(asIScriptEngine* engine)
     engine->RegisterObjectMethod("WeightBlender", "void Update(float, bool=false)", asMETHOD(WeightBlender, Update), asCALL_THISCALL);
 }
 
+//////////////////////////////////////////////////////////////////////////
+void RegisterCharacterSkeleton(asIScriptEngine* engine)
+{
+    RegisterResource<CharacterSkeleton>(engine, "CharacterSkeleton");
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool CharacterAnimation_ImportAnimation(CharacterSkeleton* characterSkeleton, Model* model, Animation* animation,
+    CharacterAnimation* characterAnimation)
+{
+    return characterSkeleton && model && animation
+        ? characterAnimation->ImportAnimation(*characterSkeleton, *model, *animation)
+        : nullptr;
+}
+
+bool ImportCharacterAnimation(const String& animationName, CharacterSkeleton* characterSkeleton, Model* model)
+{
+    ResourceCache* cache = GetScriptContext()->GetSubsystem<ResourceCache>();
+    Animation* animation = cache->GetResource<Animation>(animationName);
+    CharacterAnimation characterAnimation(GetScriptContext());;
+    if (animation && characterSkeleton && model)
+    {
+        characterAnimation.SetName(animationName + ".xml");
+        if (characterAnimation.ImportAnimation(*characterSkeleton, *model, *animation))
+            return SaveResource(characterAnimation);
+    }
+    return false;
+}
+
+void RegisterCharacterAnimation(asIScriptEngine* engine)
+{
+    RegisterResource<CharacterAnimation>(engine, "CharacterAnimation");
+    engine->RegisterObjectMethod("CharacterAnimation", "bool ImportAnimation(CharacterSkeleton@+, Model@+, Animation@+)", asFUNCTION(CharacterAnimation_ImportAnimation), asCALL_CDECL_OBJLAST);
+
+    engine->RegisterGlobalFunction("bool ImportCharacterAnimation(const String&in, CharacterSkeleton@+, Model@+)", asFUNCTION(ImportCharacterAnimation), asCALL_CDECL);
+}
+
+
 }
 
 void RegisterAPI(asIScriptEngine* engine)
@@ -339,6 +379,9 @@ void RegisterAPI(asIScriptEngine* engine)
     RegisterWeightBlender(engine);
 
     engine->RegisterGlobalFunction("void TODO_CoverTerrainWithObjects(Node@+, Node@+, XMLFile@+, float, float, const Vector2&in, const Vector2&in)", asFUNCTION(TODO_CoverTerrainWithObjects), asCALL_CDECL);
+
+    RegisterCharacterSkeleton(engine);
+    RegisterCharacterAnimation(engine);
 }
 
 }
