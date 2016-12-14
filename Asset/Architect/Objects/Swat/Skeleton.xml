@@ -1,4 +1,5 @@
 <skeleton>
+    <model name = "Objects/Swat/Swat.mdl"/>
     <segment2 name = "LeftFoot" root="swat:LeftUpLeg" joint="swat:LeftLeg" target="swat:LeftFoot" />
     <segment2 name = "RightFoot" root="swat:RightUpLeg" joint="swat:RightLeg" target="swat:RightFoot" />
 </skeleton>

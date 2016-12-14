@@ -435,7 +435,6 @@ CharacterSkeleton::CharacterSkeleton(Context* context)
 {
 }
 
-
 CharacterSkeleton::~CharacterSkeleton()
 {
 }
@@ -449,12 +448,73 @@ bool CharacterSkeleton::BeginLoad(Deserializer& source)
 {
     SharedPtr<XMLFile> xmlFile = MakeShared<XMLFile>(context_);
     if (xmlFile->Load(source))
-        return Load(xmlFile->GetRoot());
+        return BeginLoad(xmlFile->GetRoot());
     return false;
 }
 
-bool CharacterSkeleton::Load(const XMLElement& source)
+bool CharacterSkeleton::EndLoad()
 {
+    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    SharedPtr<Model> model(cache->GetResource<Model>(modelName_));
+    if (!model)
+    {
+        URHO3D_LOGERROR("Could not load CharacterSkeleton model");
+        return false;
+    }
+    Skeleton& skeleton = model->GetSkeleton();
+
+    for (Segment2Map::KeyValue& elem : segments2_)
+    {
+        CharacterSkeletonSegment2& segment = elem.second_;
+        Bone* rootBone = skeleton.GetBone(segment.rootBone_);
+        Bone* jointBone = skeleton.GetBone(segment.jointBone_);
+        Bone* targetBone = skeleton.GetBone(segment.targetBone_);
+
+        if (!rootBone)
+        {
+            URHO3D_LOGERRORF("Root bone '%s' of '%s' 2-segment is not found", segment.rootBone_.CString(), segment.name_.CString());
+            return false;
+        }
+        if (!jointBone)
+        {
+            URHO3D_LOGERRORF("Joint bone '%s' of '%s' 2-segment is not found", segment.jointBone_.CString(), segment.name_.CString());
+            return false;
+        }
+        if (!targetBone)
+        {
+            URHO3D_LOGERRORF("Target bone '%s' of '%s' 2-segment is not found", segment.targetBone_.CString(), segment.name_.CString());
+            return false;
+        }
+        if (jointBone->parentIndex_ != rootBone - &skeleton.GetBones()[0])
+        {
+            URHO3D_LOGERRORF("Joint bone of '%s' 2-segment must be a child of root bone", segment.name_.CString());
+            return false;
+        }
+        if (targetBone->parentIndex_ != jointBone - &skeleton.GetBones()[0])
+        {
+            URHO3D_LOGERRORF("Target bone of '%s' 2-segment must be a child of joint bone", segment.name_.CString());
+            return false;
+        }
+
+        segment.initialRootRotation_ = rootBone->initialRotation_;
+        segment.initialJointRotation_ = jointBone->initialRotation_;
+        segment.initialTargetRotation_ = targetBone->initialRotation_;
+    }
+    return true;
+}
+
+bool CharacterSkeleton::BeginLoad(const XMLElement& source)
+{
+    modelName_ = source.GetChild("model").GetAttribute("name");
+    if (modelName_.Empty())
+    {
+        URHO3D_LOGERROR("CharacterSkeleton model name mustn't be empty");
+        return false;
+    }
+
+    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    cache->BackgroundLoadResource<Model>(modelName_, true, this);
+
     for (XMLElement segmentNode = source.GetChild("segment2"); !segmentNode.IsNull(); segmentNode = segmentNode.GetNext("segment2"))
     {
         CharacterSkeletonSegment2 segment;
@@ -462,8 +522,20 @@ bool CharacterSkeleton::Load(const XMLElement& source)
         segment.rootBone_ = segmentNode.GetAttribute("root");
         segment.jointBone_ = segmentNode.GetAttribute("joint");
         segment.targetBone_ = segmentNode.GetAttribute("target");
-        const String name = segmentNode.GetAttribute("name");
-        segments2_.Populate(name, segment);
+
+        if (segment.name_.Empty())
+        {
+            URHO3D_LOGERROR("CharacterSkeleton 2-segment name mustn't be empty");
+            return false;
+        }
+
+        if (segment.rootBone_.Empty() || segment.jointBone_.Empty() || segment.targetBone_.Empty())
+        {
+            URHO3D_LOGERROR("CharacterSkeleton 2-segment bones names mustn't be empty");
+            return false;
+        }
+
+        segments2_.Populate(segment.name_, segment);
     }
     return true;
 }
@@ -703,13 +775,9 @@ void CharacterAnimationController::UpdateSegment2(const CharacterSkeletonSegment
     Node* calfNode = thighNode->GetChild(segment.jointBone_);
     Node* heelNode = calfNode->GetChild(segment.targetBone_);
 
-    // #TODO Don't use skeleton
-    // #TODO Check model skeleton in CharacterSkeleton::BeginLoad
-    AnimatedModel* model = node_->GetComponent<AnimatedModel>();
-    Skeleton& skeleton = model->GetSkeleton();
-    thighNode->SetRotationSilent(skeleton.GetBone(thighNode->GetName())->initialRotation_);
-    calfNode->SetRotationSilent(skeleton.GetBone(calfNode->GetName())->initialRotation_);
-    heelNode->SetRotationSilent(skeleton.GetBone(heelNode->GetName())->initialRotation_);
+    thighNode->SetRotationSilent(segment.initialRootRotation_);
+    calfNode->SetRotationSilent(segment.initialJointRotation_);
+    heelNode->SetRotationSilent(segment.initialTargetRotation_);
     thighNode->MarkDirty();
 
     // Apply animations

@@ -38,6 +38,12 @@ struct CharacterSkeletonSegment2
     String jointBone_;
     /// Name of the bone that is related to the target position of the segment. Must be a child of the joint bone.
     String targetBone_;
+    /// Initial rotation of root bone.
+    Quaternion initialRootRotation_;
+    /// Initial rotation of joint bone.
+    Quaternion initialJointRotation_;
+    /// Initial rotation of target bone.
+    Quaternion initialTargetRotation_;
 };
 
 /// Character skeleton.
@@ -59,14 +65,18 @@ public:
 
     /// Load resource from stream. May be called from a worker thread. Return true if successful.
     virtual bool BeginLoad(Deserializer& source);
+    /// Finish resource loading. Always called from the main thread. Return true if successful.
+    virtual bool EndLoad();
 
     /// Load from an XML element. Return true if successful.
-    bool Load(const XMLElement& source);
+    bool BeginLoad(const XMLElement& source);
 
     /// Get 2-segments.
     const Segment2Map& GetSegments2() const { return segments2_; }
 
 private:
+    /// Model name.
+    String modelName_;
     /// Container of 2-segments.
     Segment2Map segments2_;
 };
