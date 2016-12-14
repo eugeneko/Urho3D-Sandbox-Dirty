@@ -48,7 +48,7 @@ void FlexEnginePlayer::Start()
 
     CharacterSkeleton::RegisterObject(context_);
     CharacterAnimation::RegisterObject(context_);
-    FootAnimation::RegisterObject(context_);
+    CharacterAnimationController::RegisterObject(context_);
 
     StaticModelEx::RegisterObject(context_);
     Grass::RegisterObject(context_);

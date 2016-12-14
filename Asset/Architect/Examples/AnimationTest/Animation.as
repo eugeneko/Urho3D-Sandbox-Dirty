@@ -43,7 +43,7 @@ class DirectionBlender
 
 class Animator : ScriptObject
 {
-    bool disableFoot = false;
+    bool useCharacterAnimation = false;
     
     Vector3 _prevPosition;
     float _idleTimer;
@@ -51,12 +51,16 @@ class Animator : ScriptObject
     WeightBlender _weightBlender;
     DirectionBlender _directionBlender;
     
+    AnimationController@ GetAnimationController()
+    {
+        return node.GetComponent(useCharacterAnimation ? "CharacterAnimationController" : "AnimationController");
+    }
     void DelayedStart()
     {
-        AnimationController@ animController = node.GetComponent("AnimationController");
+        AnimationController@ animController = GetAnimationController();
         AnimatedModel@ animModel = node.GetComponent("AnimatedModel");
         
-        if (disableFoot)
+        if (useCharacterAnimation)
         {
             animModel.skeleton.GetBone("swat:LeftUpLeg").animated = false;
             animModel.skeleton.GetBone("swat:LeftLeg").animated = false;
@@ -105,13 +109,13 @@ class Animator : ScriptObject
     void UpdateController(float timeStep)
     {
         float idleTimeout = 0.5;
-        String animIdle = "Swat_WalkZero.ani";
-        String animFwd = "Swat_WalkFwd.ani";
-        String animBwd = "Swat_WalkBwd.ani";
-        String animLeft = "Swat_WalkLeft.ani";
-        String animRight = "Swat_WalkRight.ani";
+        String animIdle = "Objects/Swat/WalkZero.ani";
+        String animFwd = "Objects/Swat/WalkFwd.ani";
+        String animBwd = "Objects/Swat/WalkBwd.ani";
+        String animLeft = "Objects/Swat/WalkLeft.ani";
+        String animRight = "Objects/Swat/WalkRight.ani";
         
-        AnimationController@ animController = node.GetComponent("AnimationController");
+        AnimationController@ animController = GetAnimationController();
         Vector3 velocity = (node.position - _prevPosition) / timeStep;
         _prevPosition = node.position;
         
@@ -202,7 +206,7 @@ class Animator : ScriptObject
         case 3:
         {
             int dirIndex = int(_movementTime / movementScale) % 2;
-            Vector3 dir = dirIndex == 0 ? Vector3(1, 0, 3).Normalized() : Vector3(-1, 0, -3).Normalized();
+            Vector3 dir = dirIndex == 0 ? Vector3(-1, 0, 1).Normalized() : Vector3(1, 0, -1).Normalized();
             node.position = node.position + dir * movementVelocity * timeStep;
             break;
         }

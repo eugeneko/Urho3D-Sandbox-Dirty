@@ -22,6 +22,8 @@
 // #include <Urho3D/Scene/Node.h>
 #include <Urho3D/Resource/ResourceCache.h>
 
+#include <algorithm>
+
 namespace FlexEngine
 {
 
@@ -108,7 +110,7 @@ PODVector<float> MergeAnimationTrackTimes(const PODVector<AnimationTrack*>& trac
         }
     }
     Sort(result.Begin(), result.End());
-    result.Erase(Unique(result.Begin(), result.End()), result.End());
+    result.Erase(RandomAccessIterator<float>(std::unique(result.Begin().ptr_, result.End().ptr_)), result.End());
     return result;
 }
 
@@ -339,7 +341,7 @@ void CreateFootAnimationTrack(FootAnimationTrack& track, Model* model, Animation
     AppendTrackTimes(times, *heelTrack);
 
     Sort(times.Begin(), times.End());
-    times.Erase(Unique(times.Begin(), times.End()), times.End());
+    times.Erase(RandomAccessIterator<float>(std::unique(times.Begin().ptr_, times.End().ptr_)), times.End());
 
     // Play animation and convert pose
     const unsigned numKeyFrames = times.Size();
@@ -456,6 +458,7 @@ bool CharacterSkeleton::Load(const XMLElement& source)
     for (XMLElement segmentNode = source.GetChild("segment2"); !segmentNode.IsNull(); segmentNode = segmentNode.GetNext("segment2"))
     {
         CharacterSkeletonSegment2 segment;
+        segment.name_ = segmentNode.GetAttribute("name");
         segment.rootBone_ = segmentNode.GetAttribute("root");
         segment.jointBone_ = segmentNode.GetAttribute("joint");
         segment.targetBone_ = segmentNode.GetAttribute("target");
@@ -492,13 +495,13 @@ bool CharacterAnimation::Load(const XMLElement& source)
 {
     for (XMLElement segmentNode = source.GetChild("segment2"); !segmentNode.IsNull(); segmentNode = segmentNode.GetNext("segment2"))
     {
-        const String name = segmentNode.GetAttribute("name");
         CharacterAnimationSegment2Track track;
+        track.name_ = segmentNode.GetAttribute("name");
         track.initialDirection_ = segmentNode.GetVector3("baseDirection");
 
-        for (XMLElement keyFrameNode = segmentNode.GetChild("segment2");
+        for (XMLElement keyFrameNode = segmentNode.GetChild("keyFrame");
             !keyFrameNode.IsNull();
-            keyFrameNode = keyFrameNode.GetNext("segment2"))
+            keyFrameNode = keyFrameNode.GetNext("keyFrame"))
         {
             CharacterAnimationSegment2KeyFrame keyFrame;
             keyFrame.time_ = keyFrameNode.GetFloat("time");
@@ -510,7 +513,7 @@ bool CharacterAnimation::Load(const XMLElement& source)
             keyFrame.heelRotationWorld_ = keyFrameNode.GetQuaternion("targetRotationWorld");
             track.keyFrames_.Push(keyFrame);
         }
-        segments2_.Populate(name, track);
+        segments2_.Populate(track.name_, track);
     }
     return true;
 }
@@ -520,8 +523,8 @@ bool CharacterAnimation::Save(XMLElement& dest) const
     for (const Segment2TrackMap::KeyValue& elem : segments2_)
     {
         XMLElement segment2Node = dest.CreateChild("segment2");
-        segment2Node.SetAttribute("name", elem.first_);
         const CharacterAnimationSegment2Track& track = elem.second_;
+        segment2Node.SetAttribute("name", track.name_);
         segment2Node.SetVector3("baseDirection", track.initialDirection_);
         for (const CharacterAnimationSegment2KeyFrame& keyFrame : track.keyFrames_)
         {
@@ -561,7 +564,6 @@ bool CharacterAnimation::ImportAnimation(CharacterSkeleton& characterSkeleton, M
     Segment2TrackMap segments2;
     for (const CharacterSkeleton::Segment2Map::KeyValue& elem : characterSkeleton.GetSegments2())
     {
-        const String& name = elem.first_;
         const CharacterSkeletonSegment2& joint = elem.second_;
 
         // Get nodes and bones of segment
@@ -574,12 +576,13 @@ bool CharacterAnimation::ImportAnimation(CharacterSkeleton& characterSkeleton, M
         if (!segmentRootNode || !segmentJointNode || !segmentTargetNode || !thighBone || !calfBone || !heelBone)
         {
             URHO3D_LOGERRORF("Failed to load 2-segment '%s' of character skeleton: root='%s', joint='%s', target='%s'",
-                name.CString(), joint.rootBone_.CString(), joint.jointBone_.CString(), joint.targetBone_.CString());
+                joint.name_.CString(), joint.rootBone_.CString(), joint.jointBone_.CString(), joint.targetBone_.CString());
             return false;
         }
 
         // Get initial pose
         CharacterAnimationSegment2Track track;
+        track.name_ = joint.name_;
         track.initialDirection_ = segmentTargetNode->GetWorldPosition() - segmentRootNode->GetWorldPosition();
 
         // Get sample times
@@ -634,201 +637,145 @@ bool CharacterAnimation::ImportAnimation(CharacterSkeleton& characterSkeleton, M
             track.keyFrames_[i].heelRotationLocal_ = segmentTargetNode->GetRotation();
             track.keyFrames_[i].heelRotationWorld_ = segmentTargetNode->GetWorldRotation();
         }
-        segments2.Populate(name, track);
+        segments2.Populate(elem.first_, track);
     }
     segments2_.Insert(segments2);
     return true;
 }
 
 //////////////////////////////////////////////////////////////////////////
-FootAnimation::FootAnimation(Context* context)
-    : LogicComponent(context)
+CharacterAnimationController::CharacterAnimationController(Context* context)
+    : AnimationController(context)
 {
 }
 
-FootAnimation::~FootAnimation()
+CharacterAnimationController::~CharacterAnimationController()
 {
-
 }
 
-void FootAnimation::RegisterObject(Context* context)
+void CharacterAnimationController::RegisterObject(Context* context)
 {
-    context->RegisterFactory<FootAnimation>(FLEXENGINE_CATEGORY);
-
-    URHO3D_COPY_BASE_ATTRIBUTES(LogicComponent);
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Animation", GetAnimationAttr, SetAnimationAttr, ResourceRef, ResourceRef(Animation::GetTypeNameStatic()), AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Foot Root Bone", String, footBoneName_, "", AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Ground Offset", Vector3, groundOffset_, Vector3::ZERO, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Adjust Foot", float, adjustFoot_, 0.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Adjust to Ground", float, adjustToGround_, 0.0f, AM_DEFAULT);
+    context->RegisterFactory<CharacterAnimationController>();
+    URHO3D_COPY_BASE_ATTRIBUTES(AnimationController);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Skeleton", GetSkeletonAttr, SetSkeletonAttr, ResourceRef, ResourceRef(XMLFile::GetTypeStatic()), AM_DEFAULT);
 }
 
-void FootAnimation::ApplyAttributes()
+void CharacterAnimationController::Update(float timeStep)
 {
-    if (node_)
+    AnimationController::Update(timeStep);
+    AnimatedModel* animatedModel = node_->GetComponent<AnimatedModel>();
+    animatedModel->ApplyAnimation();
+
+    if (skeleton_ && !skeleton_->GetSegments2().Empty())
     {
+        for (const CharacterSkeleton::Segment2Map::KeyValue& elem : skeleton_->GetSegments2())
+            UpdateSegment2(elem.second_);
     }
 }
 
-void FootAnimation::DelayedStart()
+void CharacterAnimationController::SetSkeletonAttr(const ResourceRef& value)
 {
-    prevPosition_ = node_->GetPosition();
+    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    skeleton_ = cache->GetResource<CharacterSkeleton>(value.name_);
 }
 
-void FootAnimation::PostUpdate(float timeStep)
+Urho3D::ResourceRef CharacterAnimationController::GetSkeletonAttr() const
 {
-    if (!animation_ || !node_)
-        return;
+    return ResourceRef(XMLFile::GetTypeStatic(), GetResourceName(skeleton_));
+}
 
-
-    if (Node* plane = node_->GetChild("Plane"))
-    {
-        groundOffset_ = plane->GetPosition();
-        groundNormal_ = plane->GetRotation() * Vector3::UP;
-    }
-
-    const Vector3 velocity = (node_->GetPosition() - prevPosition_) / timeStep;
-    prevPosition_ = node_->GetPosition();
-
-    const float referenceVelocity = 1.8f;
-
-    AnimatedModel* model = node_->GetComponent<AnimatedModel>();
-    AnimationController* controller = node_->GetComponent<AnimationController>();
+CharacterAnimation* CharacterAnimationController::GetCharacterAnimation(const String& animationName)
+{
+    if (animationCache_.Contains(animationName))
+        return animationCache_[animationName];
 
     ResourceCache* cache = GetSubsystem<ResourceCache>();
-    SharedPtr<Animation> animForward(cache->GetResource<Animation>("Swat_WalkFwd.ani"));
-    SharedPtr<Animation> animBackward(cache->GetResource<Animation>("Swat_WalkBwd.ani"));
-    SharedPtr<Animation> animLeft(cache->GetResource<Animation>("Swat_WalkLeft.ani"));
-    SharedPtr<Animation> animRight(cache->GetResource<Animation>("Swat_WalkRight.ani"));
-    SharedPtr<Animation> animIdle(cache->GetResource<Animation>("Swat_WalkZero.ani"));
-    FootAnimationTrack trackForward, trackBackward, trackLeft, trackRight, trackIdle;
-    const float threshold = 0.01f;
-    CreateFootAnimationTrack(trackForward, model->GetModel(), animForward, footBoneName_, Vector3::BACK * referenceVelocity, threshold);
-    CreateFootAnimationTrack(trackBackward, model->GetModel(), animBackward, footBoneName_, Vector3::FORWARD * referenceVelocity, threshold);
-    CreateFootAnimationTrack(trackLeft, model->GetModel(), animLeft, footBoneName_, Vector3::RIGHT * referenceVelocity, threshold);
-    CreateFootAnimationTrack(trackRight, model->GetModel(), animRight, footBoneName_, Vector3::LEFT * referenceVelocity, threshold);
-    CreateFootAnimationTrack(trackIdle, model->GetModel(), animIdle, footBoneName_, Vector3::ZERO, threshold);
-    trackIdle.staticRanges_.Clear();
+    CharacterAnimation* characterAnimation = cache->GetResource<CharacterAnimation>(animationName + ".xml");
+    animationCache_[animationName] = characterAnimation;
+    return characterAnimation;
+}
 
+void CharacterAnimationController::UpdateSegment2(const CharacterSkeletonSegment2& segment)
+{
+    // Get nodes and bones
+    // #TODO Cache these ops
+    Node* thighNode = node_->GetChild(segment.rootBone_, true);
+    Node* calfNode = thighNode->GetChild(segment.jointBone_);
+    Node* heelNode = calfNode->GetChild(segment.targetBone_);
+
+    // #TODO Don't use skeleton
+    // #TODO Check model skeleton in CharacterSkeleton::BeginLoad
+    AnimatedModel* model = node_->GetComponent<AnimatedModel>();
     Skeleton& skeleton = model->GetSkeleton();
-    Node* thighNode = node_->GetChild(footBoneName_, true);
-    Node* calfNode = thighNode->GetChildren()[0];
-    Node* heelNode = calfNode->GetChildren()[0];
-    thighNode->SetRotationSilent(model->GetSkeleton().GetBone(thighNode->GetName())->initialRotation_);
-    calfNode->SetRotationSilent(model->GetSkeleton().GetBone(calfNode->GetName())->initialRotation_);
-    heelNode->SetRotationSilent(model->GetSkeleton().GetBone(heelNode->GetName())->initialRotation_);
+    thighNode->SetRotationSilent(skeleton.GetBone(thighNode->GetName())->initialRotation_);
+    calfNode->SetRotationSilent(skeleton.GetBone(calfNode->GetName())->initialRotation_);
+    heelNode->SetRotationSilent(skeleton.GetBone(heelNode->GetName())->initialRotation_);
     thighNode->MarkDirty();
+
+    // Apply animations
+    float accumulatedWeight = 0.0f;
+    Vector3 baseDirection;
+    CharacterAnimationSegment2KeyFrame keyFrame;
+    keyFrame.time_ = -1;
+    for (const AnimationControl& animationControl : GetAnimations())
+    {
+        CharacterAnimation* characterAnimation = GetCharacterAnimation(animationControl.name_);
+        if (!characterAnimation)
+            continue;
+        AnimationState* animationState = GetAnimationState(animationControl.name_);
+        if (!animationState)
+            continue;
+        CharacterAnimationSegment2Track* track = characterAnimation->FindTrack(segment.name_);
+        if (!track)
+            continue;
+
+        // Apply animation to key frame
+        unsigned frameIndex = 0;
+        const CharacterAnimationSegment2KeyFrame animationFrame = track->SampleFrame(animationState->GetTime(), frameIndex);
+        float factor = animationState->GetWeight();
+        keyFrame.heelPosition_ += animationFrame.heelPosition_ * factor;
+        keyFrame.kneeDirection_ += animationFrame.kneeDirection_ * factor;
+        keyFrame.thighRotationFix_ = MixQuaternion(keyFrame.thighRotationFix_, animationFrame.thighRotationFix_, factor, accumulatedWeight);
+        keyFrame.calfRotationFix_ = MixQuaternion(keyFrame.calfRotationFix_, animationFrame.calfRotationFix_, factor, accumulatedWeight);
+        keyFrame.heelRotationLocal_ = MixQuaternion(keyFrame.heelRotationLocal_, animationFrame.heelRotationLocal_, factor, accumulatedWeight);
+        keyFrame.heelRotationWorld_ = MixQuaternion(keyFrame.heelRotationWorld_, animationFrame.heelRotationWorld_, factor, accumulatedWeight);
+        baseDirection += track->initialDirection_ * factor;
+        accumulatedWeight += factor;
+    }
+
     const float thighLength = (thighNode->GetWorldPosition() - calfNode->GetWorldPosition()).Length();
     const float calfLength = (calfNode->GetWorldPosition() - heelNode->GetWorldPosition()).Length();
 
-    unsigned frameIndex = 0;
-    const FootAnimationKeyFrame frameForward = trackForward.SampleFrame(controller->GetTime(animForward->GetName()), frameIndex);
-    const FootAnimationKeyFrame frameBackward = trackBackward.SampleFrame(controller->GetTime(animBackward->GetName()), frameIndex);
-    const FootAnimationKeyFrame frameLeft = trackLeft.SampleFrame(controller->GetTime(animLeft->GetName()), frameIndex);
-    const FootAnimationKeyFrame frameRight = trackRight.SampleFrame(controller->GetTime(animRight->GetName()), frameIndex);
-    const FootAnimationKeyFrame frameIdle = trackIdle.SampleFrame(controller->GetTime(animIdle->GetName()), frameIndex);
-    FootAnimationKeyFrame frame;
-    frame.time_ = frameForward.time_;
-    float weight = 0.0f;
-    float maxWeight = 0.0f;
-    bool isFootstep = false;
-    float movementRange = 0;
-    Vector3 initialDirection;
-    auto makeMeHappy = [&](const FootAnimationTrack& track, const FootAnimationKeyFrame& rhs, const String& anim)
-    {
-        float factor = controller->GetWeight(anim);
-        float time = controller->GetTime(anim);
-        frame.heelPosition_ += rhs.heelPosition_ * factor;
-        frame.kneeDirection_ += rhs.kneeDirection_ * factor;
-        frame.thighRotationFix_ = MixQuaternion(frame.thighRotationFix_, rhs.thighRotationFix_, factor, weight);
-        frame.calfRotationFix_ = MixQuaternion(frame.calfRotationFix_, rhs.calfRotationFix_, factor, weight);
-        frame.heelRotationLocal_ = MixQuaternion(frame.heelRotationLocal_, rhs.heelRotationLocal_, factor, weight);
-        frame.heelRotationWorld_ = MixQuaternion(frame.heelRotationWorld_, rhs.heelRotationWorld_, factor, weight);
-        initialDirection += track.initialDirection_ * factor;
-        weight += factor;
-        maxWeight = Max(maxWeight, factor);
-        if (maxWeight == factor && factor >= 0.5)
-        {
-            //isFootstep = track.IsStatic(time);
-            movementRange = track.GetMomementRange(time);
-        }
-    };
-    makeMeHappy(trackForward, frameForward, animForward->GetName());
-    makeMeHappy(trackBackward, frameBackward, animBackward->GetName());
-    makeMeHappy(trackLeft, frameLeft, animLeft->GetName());
-    makeMeHappy(trackRight, frameRight, animRight->GetName());
-    makeMeHappy(trackIdle, frameIdle, animIdle->GetName());
+    // #TODO Fix
+    Vector3 groundNormal_ = Vector3::UP;
+    Vector3 groundOffset_ = Vector3::ZERO;
 
     // Resolve foot shape
-    Vector3 newHeelPosition = node_->GetWorldTransform() * (Quaternion(Vector3::UP, groundNormal_) * frame.heelPosition_ + groundOffset_);
-    const Vector3 jointDirection = Quaternion(initialDirection, newHeelPosition - thighNode->GetWorldPosition()) * frame.kneeDirection_;
+    Vector3 newHeelPosition = node_->GetWorldTransform() * (Quaternion(Vector3::UP, groundNormal_) * keyFrame.heelPosition_ + groundOffset_);
+    const Vector3 jointDirection = Quaternion(baseDirection, newHeelPosition - thighNode->GetWorldPosition()) * keyFrame.kneeDirection_;
     const Vector3 newCalfPosition = ResolveKneePosition(thighNode->GetWorldPosition(), newHeelPosition, jointDirection,
         thighLength, calfLength);
-
-    // Resolve footsteps
-    if (isFootstep)
-    {
-        if (movementRange_ > 0)
-            newHeelPosition -= fadeDelta_ * (fadeRemaining_ / movementRange_);
-        expectedPosition_ = newHeelPosition;
-        if (!wasFootstep_)
-            footstepPosition_ = newHeelPosition;
-        else
-            newHeelPosition = footstepPosition_;
-        fadeRemaining_ = 0;
-        movementRange_ = 0;
-        fadeDelta_ = Vector3::ZERO;
-    }
-    else if (wasFootstep_)
-    {
-        movementRange_ = movementRange;
-        fadeRemaining_ = movementRange;
-        fadeDelta_ = expectedPosition_ - footstepPosition_;
-    }
-
-    if (movementRange_ > 0 && !isFootstep)
-        newHeelPosition -= fadeDelta_ * (fadeRemaining_ / movementRange_);
-    wasFootstep_ = isFootstep;
 
     // Apply foot shape
     if (!MatchChildPosition(*thighNode, *calfNode, newCalfPosition))
         URHO3D_LOGWARNING("Failed to resolve thigh-calf segment of foot animation");
-    thighNode->SetRotation(thighNode->GetRotation() * frame.thighRotationFix_);
+    thighNode->SetRotation(thighNode->GetRotation() * keyFrame.thighRotationFix_);
 
     if (!MatchChildPosition(*calfNode, *heelNode, newHeelPosition))
         URHO3D_LOGWARNING("Failed to resolve calf-heel segment of foot animation");
-    calfNode->SetRotation(calfNode->GetRotation() * frame.calfRotationFix_);
+    calfNode->SetRotation(calfNode->GetRotation() * keyFrame.calfRotationFix_);
+
+    // #TODO Remove
+    float adjustToGround_ = 0.0f;
+    float adjustFoot_ = 0.0f;
 
     // Resolve heel rotation
-    const Quaternion origHeelRotation = calfNode->GetWorldRotation() * frame.heelRotationLocal_;
-    const Quaternion fixedHeelRotation = node_->GetWorldRotation() * frame.heelRotationWorld_;
+    const Quaternion origHeelRotation = calfNode->GetWorldRotation() * keyFrame.heelRotationLocal_;
+    const Quaternion fixedHeelRotation = node_->GetWorldRotation() * keyFrame.heelRotationWorld_;
     const Quaternion adjustToGoundRotation = Quaternion::IDENTITY.Slerp(Quaternion(Vector3::UP, groundNormal_), adjustToGround_);
     heelNode->SetWorldRotation(adjustToGoundRotation * origHeelRotation.Slerp(fixedHeelRotation, adjustFoot_));
 
     thighNode->MarkDirty();
-    fadeRemaining_ = Max(0.0f, fadeRemaining_ - timeStep);
-}
-
-void FootAnimation::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
-{
-    if (debug && IsEnabledEffective())
-    {
-        if (wasFootstep_)
-        {
-            debug->AddSphere(Sphere(footstepPosition_, 0.2f), Color::RED, depthTest);
-        }
-    }
-}
-
-void FootAnimation::SetAnimationAttr(const ResourceRef& value)
-{
-    ResourceCache* cache = GetSubsystem<ResourceCache>();
-    animation_ = cache->GetResource<Animation>(value.name_);
-}
-
-ResourceRef FootAnimation::GetAnimationAttr() const
-{
-    return GetResourceRef(animation_, Animation::GetTypeStatic());
 }
 
 }

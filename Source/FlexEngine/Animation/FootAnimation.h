@@ -2,6 +2,7 @@
 
 #include <FlexEngine/Common.h>
 
+#include <Urho3D/Graphics/AnimationController.h>
 #include <Urho3D/Resource/Resource.h>
 #include <Urho3D/Resource/XMLFile.h>
 #include <Urho3D/Scene/LogicComponent.h>
@@ -29,6 +30,8 @@ SharedPtr<Animation> BlendAnimations(Model& model, const PODVector<Animation*>& 
 /// Description of character skeleton 2-segment.
 struct CharacterSkeletonSegment2
 {
+    /// Name of the segment.
+    String name_;
     /// Name of the bone that is related to the root position of the segment.
     String rootBone_;
     /// Name of the bone that is related to the joint position of the segment. Must be a child of the root bone.
@@ -44,7 +47,7 @@ class CharacterSkeleton : public Resource
 
 public:
     /// Container of 2-segment.
-    using Segment2Map = HashMap<String, CharacterSkeletonSegment2>;
+    using Segment2Map = HashMap<StringHash, CharacterSkeletonSegment2>;
 
 public:
     /// Construct.
@@ -93,6 +96,8 @@ struct CharacterAnimationSegment2KeyFrame
 // #TODO Rename members!
 struct CharacterAnimationSegment2Track
 {
+    /// Name of the segment.
+    String name_;
     /// Base direction is used for resolving joint angle.
     Vector3 initialDirection_;
     /// Key frames.
@@ -149,7 +154,7 @@ class CharacterAnimation : public Resource
 
 public:
     /// Map of tracks for 2-segments.
-    using Segment2TrackMap = HashMap<String, CharacterAnimationSegment2Track>;
+    using Segment2TrackMap = HashMap<StringHash, CharacterAnimationSegment2Track>;
 public:
     /// Construct.
     CharacterAnimation(Context* context);
@@ -170,6 +175,8 @@ public:
 
     /// Import animation using model and skeleton.
     bool ImportAnimation(CharacterSkeleton& characterSkeleton, Model& model, Animation& animation);
+    /// Find track by name.
+    CharacterAnimationSegment2Track* FindTrack(const String& name) const { return segments2_[name]; }
 
 private:
     /// Tracks for 2-segments.
@@ -177,56 +184,39 @@ private:
 
 };
 
-/// .
-class FootAnimation : public LogicComponent
+/// Character Animation Controller.
+class CharacterAnimationController : public AnimationController
 {
-    URHO3D_OBJECT(FootAnimation, LogicComponent);
+    URHO3D_OBJECT(CharacterAnimationController, AnimationController);
 
 public:
     /// Construct.
-    FootAnimation(Context* context);
+    CharacterAnimationController(Context* context);
     /// Destruct.
-    virtual ~FootAnimation();
+    virtual ~CharacterAnimationController();
     /// Register object factory.
     static void RegisterObject(Context* context);
-    /// Apply attribute changes that can not be applied immediately. Called after scene load or a network update.
-    virtual void ApplyAttributes() override;
 
-    /// Called before the first update. At this point all other components of the node should exist. Will also be called if update events are not wanted; in that case the event is immediately unsubscribed afterward.
-    virtual void DelayedStart() override;
-    /// Called on scene update, variable timestep.
-    virtual void PostUpdate(float timeStep) override;
-    /// Visualize the component as debug geometry.
-    virtual void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
+    /// Update the animations. Is called from HandleScenePostUpdate().
+    virtual void Update(float timeStep) override;
 
-    /// Set animation attribute.
-    void SetAnimationAttr(const ResourceRef& value);
-    /// Return animation attribute.
-    ResourceRef GetAnimationAttr() const;
+    /// Set skeleton attribute.
+    void SetSkeletonAttr(const ResourceRef& value);
+    /// Return skeleton attribute.
+    ResourceRef GetSkeletonAttr() const;
 
 private:
-    /// Source animation.
-    SharedPtr<Animation> animation_;
-    /// Foot bone name.
-    String footBoneName_;
-    /// Ground offset.
-    Vector3 groundOffset_ = Vector3::ZERO;
-    /// Ground normal.
-    Vector3 groundNormal_ = Vector3::UP;
-    /// Whether to adjust foot rotation. Set 0 to remain local transforms from animation as-is.
-    float adjustFoot_ = 0.0f;
-    /// Whether to adjust foot rotation to ground orientation. Set 0 to ignore ground normal.
-    float adjustToGround_ = 0.0f;
+    /// Get character animation.
+    CharacterAnimation* GetCharacterAnimation(const String& animationName);
+    /// Update 2-segment.
+    void UpdateSegment2(const CharacterSkeletonSegment2& segment);
 
-    Vector3 prevPosition_;
+private:
+    /// Skeleton.
+    SharedPtr<CharacterSkeleton> skeleton_;
+    /// Cached animations.
+    HashMap<StringHash, SharedPtr<CharacterAnimation>> animationCache_;
 
-    bool wasFootstep_ = false;
-    Vector3 footstepPosition_;
-    Vector3 expectedPosition_;
-
-    float fadeRemaining_ = 0;
-    float movementRange_ = 0;
-    Vector3 fadeDelta_ = Vector3::ZERO;
 };
 
 }
