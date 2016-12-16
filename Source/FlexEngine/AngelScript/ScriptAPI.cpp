@@ -201,9 +201,9 @@ Texture2D* Image_GetTexture2D(const Image* image)
     return ConvertImageToTexture(image).Detach();
 }
 
-Animation* BlendAnimations_wrapper(Model* model, CScriptArray* animations, CScriptArray* weights, CScriptArray* offsets, CScriptArray* timestamps)
+Animation* BlendAnimations_wrapper(Model* model, CharacterSkeleton* skeleton, CScriptArray* animations, CScriptArray* weights, CScriptArray* offsets, CScriptArray* timestamps)
 {
-    return !model ? nullptr : BlendAnimations(*model, ArrayToPODVector<Animation*>(animations),
+    return !model ? nullptr : BlendAnimations(*model, skeleton, ArrayToPODVector<Animation*>(animations),
         ArrayToPODVector<float>(weights), ArrayToPODVector<float>(offsets), ArrayToPODVector<float>(timestamps)).Detach();
 }
 
@@ -374,14 +374,14 @@ void RegisterAPI(asIScriptEngine* engine)
     engine->RegisterObjectMethod("Image", "void FillGaps(uint=0)", asFUNCTION(Image_FillGaps), asCALL_CDECL_OBJLAST);
     engine->RegisterObjectMethod("Image", "Texture2D@+ GetTexture2D() const", asFUNCTION(Image_GetTexture2D), asCALL_CDECL_OBJLAST);
 
-    engine->RegisterGlobalFunction("Animation@+ BlendAnimations(Model@+, Array<Animation@>@+, Array<float>@+, Array<float>@+, Array<float>@+)", asFUNCTION(BlendAnimations_wrapper), asCALL_CDECL);
-
     RegisterWeightBlender(engine);
 
     engine->RegisterGlobalFunction("void TODO_CoverTerrainWithObjects(Node@+, Node@+, XMLFile@+, float, float, const Vector2&in, const Vector2&in)", asFUNCTION(TODO_CoverTerrainWithObjects), asCALL_CDECL);
 
     RegisterCharacterSkeleton(engine);
     RegisterCharacterAnimation(engine);
+
+    engine->RegisterGlobalFunction("Animation@+ BlendAnimations(Model@+, CharacterSkeleton@+, Array<Animation@>@+, Array<float>@+, Array<float>@+, Array<float>@+)", asFUNCTION(BlendAnimations_wrapper), asCALL_CDECL);
 }
 
 }

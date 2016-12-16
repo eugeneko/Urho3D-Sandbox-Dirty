@@ -2,4 +2,6 @@
     <model name = "Objects/Swat/Swat.mdl"/>
     <segment2 name = "LeftFoot" root="swat:LeftUpLeg" joint="swat:LeftLeg" target="swat:LeftFoot" />
     <segment2 name = "RightFoot" root="swat:RightUpLeg" joint="swat:RightLeg" target="swat:RightFoot" />
+    <segment2 name = "LeftHand" root="swat:LeftShoulder" joint="swat:LeftArm" target="swat:LeftForeArm" />
+    <segment2 name = "RightHand" root="swat:RightShoulder" joint="swat:RightArm" target="swat:RightForeArm" />
 </skeleton>

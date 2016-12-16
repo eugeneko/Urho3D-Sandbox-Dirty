@@ -27,18 +27,23 @@
 namespace FlexEngine
 {
 
-SharedPtr<Animation> BlendAnimations(Model& model, const PODVector<Animation*>& animations,
+SharedPtr<Animation> BlendAnimations(Model& model, CharacterSkeleton* skeleton,
+    const PODVector<Animation*>& animations,
     const PODVector<float>& weights, const PODVector<float>& offsets, const PODVector<float>& timestamps)
 {
     // Create and setup node
     Node node(model.GetContext());
     AnimatedModel* animatedModel = node.CreateComponent<AnimatedModel>();
     animatedModel->SetModel(&model);
+
+    // Create controller for better blending if skeleton is passed
+    CharacterAnimationController* animationController = node.CreateComponent<CharacterAnimationController>();
+    animationController->SetSkeletonAttr(ResourceRef(XMLFile::GetTypeStatic(), skeleton->GetName()));
     for (unsigned i = 0; i < animations.Size(); ++i)
     {
-        Animation* animation = animations[i];
-        AnimationState* animationState = animatedModel->AddAnimationState(animation);
-        animationState->SetWeight(i < weights.Size() ? weights[i] : 1.0f);
+        const String& animationName = animations[i]->GetName();
+        animationController->Play(animationName, 0, false);
+        animationController->SetWeight(animationName, i < weights.Size() ? weights[i] : 1.0f);
     }
 
     // Get all nodes
@@ -49,6 +54,7 @@ SharedPtr<Animation> BlendAnimations(Model& model, const PODVector<Animation*>& 
 
     PODVector<Node*> nodes;
     rootNode->GetChildren(nodes, true);
+    nodes.Push(rootNode);
 
     // Create tracks
     for (Node* node : nodes)
@@ -59,7 +65,7 @@ SharedPtr<Animation> BlendAnimations(Model& model, const PODVector<Animation*>& 
         }
 
     // Play animation
-    const Vector<SharedPtr<AnimationState>>& animationStates = animatedModel->GetAnimationStates();
+    const Vector<AnimationControl>& animationControls = animationController->GetAnimations();
     for (unsigned i = 0; i < timestamps.Size(); ++i)
     {
         const float time = timestamps[i];
@@ -70,13 +76,12 @@ SharedPtr<Animation> BlendAnimations(Model& model, const PODVector<Animation*>& 
                 node->SetTransform(bone->initialPosition_, bone->initialRotation_, bone->initialScale_);
 
         // Play animation
-        for (unsigned j = 0; j < animationStates.Size(); ++j)
+        for (unsigned j = 0; j < animationControls.Size(); ++j)
         {
-            float timeOffset = j < offsets.Size() ? offsets[j] : 0.0f;
-            animationStates[j]->SetTime(time + timeOffset);
-            animationStates[j]->Apply();
+            const float timeOffset = j < offsets.Size() ? offsets[j] : 0.0f;
+            animationController->SetTime(animationControls[i].name_, time + timeOffset);
         }
-
+        animationController->Update(0);
         node.MarkDirty();
 
         // Write tracks
@@ -737,7 +742,11 @@ void CharacterAnimationController::Update(float timeStep)
     AnimationController::Update(timeStep);
     AnimatedModel* animatedModel = node_->GetComponent<AnimatedModel>();
     animatedModel->ApplyAnimation();
+    ApplyAnimation();
+}
 
+void CharacterAnimationController::ApplyAnimation()
+{
     if (skeleton_ && !skeleton_->GetSegments2().Empty())
     {
         for (const CharacterSkeleton::Segment2Map::KeyValue& elem : skeleton_->GetSegments2())

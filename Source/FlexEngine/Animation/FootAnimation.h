@@ -23,10 +23,6 @@ class Model;
 namespace FlexEngine
 {
 
-/// Blend animations and return result.
-SharedPtr<Animation> BlendAnimations(Model& model, const PODVector<Animation*>& animations,
-    const PODVector<float>& weights, const PODVector<float>& offsets, const PODVector<float>& timestamps);
-
 /// Description of character skeleton 2-segment.
 struct CharacterSkeletonSegment2
 {
@@ -81,6 +77,10 @@ private:
     Segment2Map segments2_;
 };
 
+/// Blend animations and return result.
+SharedPtr<Animation> BlendAnimations(Model& model, CharacterSkeleton* skeleton,
+    const PODVector<Animation*>& animations,
+    const PODVector<float>& weights, const PODVector<float>& offsets, const PODVector<float>& timestamps);
 
 /// Key frame of 2-segment animation track.
 // #TODO Rename members!
@@ -209,6 +209,8 @@ public:
 
     /// Update the animations. Is called from HandleScenePostUpdate().
     virtual void Update(float timeStep) override;
+    /// Apply animations.
+    void ApplyAnimation();
 
     /// Set skeleton attribute.
     void SetSkeletonAttr(const ResourceRef& value);
@@ -220,6 +222,10 @@ private:
     CharacterAnimation* GetCharacterAnimation(const String& animationName);
     /// Update 2-segment.
     void UpdateSegment2(const CharacterSkeletonSegment2& segment);
+    /// State of 2-segment.
+    struct Segment2State
+    {
+    };
 
 private:
     /// Skeleton.
