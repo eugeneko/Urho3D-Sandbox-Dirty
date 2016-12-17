@@ -743,6 +743,18 @@ void CharacterAnimationController::SetTargetTransform(StringHash segment, const 
     state.targetTransform_ = transform;
 }
 
+void CharacterAnimationController::SetTargetRotationAmount(StringHash segment, float rotationAmount)
+{
+    Segment2State& state = segment2states_[segment];
+    state.targetRotationAmount_ = rotationAmount;
+}
+
+void CharacterAnimationController::SetTargetRotationBalance(StringHash segment, float globalFactor)
+{
+    Segment2State& state = segment2states_[segment];
+    state.globalRotationFactor_ = globalFactor;
+}
+
 void CharacterAnimationController::CleanSegment2(StringHash segment)
 {
     segment2states_.Erase(segment);
@@ -852,15 +864,11 @@ void CharacterAnimationController::UpdateSegment2(const CharacterSkeletonSegment
         URHO3D_LOGWARNING("Failed to resolve calf-heel segment of foot animation");
     calfNode->SetRotation(calfNode->GetRotation() * keyFrame.calfRotationFix_);
 
-    // #TODO Remove
-    float adjustToGround_ = 0.0f;
-    float adjustFoot_ = 0.0f;
-
     // Resolve heel rotation
     const Quaternion origHeelRotation = calfNode->GetWorldRotation() * keyFrame.heelRotationLocal_;
     const Quaternion fixedHeelRotation = node_->GetWorldRotation() * keyFrame.heelRotationWorld_;
-    const Quaternion adjustToGoundRotation = Quaternion::IDENTITY.Slerp(state.targetTransform_.Rotation(), adjustToGround_);
-    heelNode->SetWorldRotation(adjustToGoundRotation * origHeelRotation.Slerp(fixedHeelRotation, adjustFoot_));
+    const Quaternion adjustToGoundRotation = Quaternion::IDENTITY.Slerp(state.targetTransform_.Rotation(), state.targetRotationAmount_);
+    heelNode->SetWorldRotation(adjustToGoundRotation * origHeelRotation.Slerp(fixedHeelRotation, state.globalRotationFactor_));
 
     thighNode->MarkDirty();
 }

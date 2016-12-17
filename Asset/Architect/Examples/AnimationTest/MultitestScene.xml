@@ -7,8 +7,8 @@
 	<attribute name="Elapsed Time" value="0" />
 	<attribute name="Next Replicated Node ID" value="648" />
 	<attribute name="Next Replicated Component ID" value="68" />
-	<attribute name="Next Local Node ID" value="16777572" />
-	<attribute name="Next Local Component ID" value="16778416" />
+	<attribute name="Next Local Node ID" value="16777573" />
+	<attribute name="Next Local Component ID" value="16778428" />
 	<attribute name="Variables" />
 	<attribute name="Variable Names" value="" />
 	<component type="Octree" id="1" />
@@ -106,6 +106,8 @@
 				<attribute name="Script File" value="ScriptFile;Animation.as" />
 				<attribute name="Class Name" value="Animator" />
 				<attribute name="useCharacterAnimation" value="true" />
+				<attribute name="footRotationAmount" value="0" />
+				<attribute name="footRotationGlobal" value="0.5" />
 				<attribute name="movementType" value="1" />
 				<attribute name="movementScale" value="5" />
 				<attribute name="movementVelocity" value="1.8" />
@@ -699,6 +701,8 @@
 				<attribute name="Script File" value="ScriptFile;Animation.as" />
 				<attribute name="Class Name" value="Animator" />
 				<attribute name="useCharacterAnimation" value="false" />
+				<attribute name="footRotationAmount" value="0" />
+				<attribute name="footRotationGlobal" value="0.5" />
 				<attribute name="movementType" value="1" />
 				<attribute name="movementScale" value="5" />
 				<attribute name="movementVelocity" value="1.8" />
@@ -1301,6 +1305,8 @@
 				<attribute name="Script File" value="ScriptFile;Animation.as" />
 				<attribute name="Class Name" value="Animator" />
 				<attribute name="useCharacterAnimation" value="false" />
+				<attribute name="footRotationAmount" value="0" />
+				<attribute name="footRotationGlobal" value="0.5" />
 				<attribute name="movementType" value="3" />
 				<attribute name="movementScale" value="5" />
 				<attribute name="movementVelocity" value="1.8" />
@@ -1904,6 +1910,8 @@
 				<attribute name="Script File" value="ScriptFile;Animation.as" />
 				<attribute name="Class Name" value="Animator" />
 				<attribute name="useCharacterAnimation" value="true" />
+				<attribute name="footRotationAmount" value="0" />
+				<attribute name="footRotationGlobal" value="0.5" />
 				<attribute name="movementType" value="3" />
 				<attribute name="movementScale" value="5" />
 				<attribute name="movementVelocity" value="1.8" />
@@ -2507,6 +2515,8 @@
 				<attribute name="Script File" value="ScriptFile;Animation.as" />
 				<attribute name="Class Name" value="Animator" />
 				<attribute name="useCharacterAnimation" value="true" />
+				<attribute name="footRotationAmount" value="0" />
+				<attribute name="footRotationGlobal" value="0.8" />
 				<attribute name="movementType" value="3" />
 				<attribute name="movementScale" value="5" />
 				<attribute name="movementVelocity" value="1.8" />

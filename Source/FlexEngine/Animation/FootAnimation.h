@@ -209,6 +209,10 @@ public:
 
     /// Set target transform of segment.
     void SetTargetTransform(StringHash segment, const Matrix3x4& transform);
+    /// Set amount of transformation applied to rotation of target bone.
+    void SetTargetRotationAmount(StringHash segment, float rotationAmount);
+    /// Set target bone local/global rotation balance.
+    void SetTargetRotationBalance(StringHash segment, float globalFactor);
     /// Clean up segment configuration.
     void CleanSegment2(StringHash segment);
 
@@ -232,6 +236,10 @@ private:
     {
         /// Transform of target point.
         Matrix3x4 targetTransform_;
+        /// Adjusts amount of transformation applied to rotation of target bone.
+        float targetRotationAmount_ = 0.0f;
+        /// Adjusts balance between local and global rotation of target bone.
+        float globalRotationFactor_ = 0.0f;
     };
 
 private:

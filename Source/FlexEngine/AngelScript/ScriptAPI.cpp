@@ -346,12 +346,26 @@ void CharacterAnimationController_SetTargetTransform(const String& segment, cons
     characterAnimationController->SetTargetTransform(segment, transform);
 }
 
+void CharacterAnimationController_SetTargetRotationAmount(const String& segment, float rotationAmount,
+    CharacterAnimationController* characterAnimationController)
+{
+    characterAnimationController->SetTargetRotationAmount(segment, rotationAmount);
+}
+
+void CharacterAnimationController_SetTargetRotationBalance(const String& segment, float globalFactor,
+    CharacterAnimationController* characterAnimationController)
+{
+    characterAnimationController->SetTargetRotationBalance(segment, globalFactor);
+}
+
 void RegisterCharacterAnimationController(asIScriptEngine* engine)
 {
     RegisterComponent<CharacterAnimationController>(engine, "CharacterAnimationController");
     RegisterSubclass<CharacterAnimationController, AnimationController>(engine, "AnimationController", "CharacterAnimationController");
 
     engine->RegisterObjectMethod("CharacterAnimationController", "void SetTargetTransform(const String&in, const Matrix3x4&in)", asFUNCTION(CharacterAnimationController_SetTargetTransform), asCALL_CDECL_OBJLAST);
+    engine->RegisterObjectMethod("CharacterAnimationController", "void SetTargetRotationAmount(const String&in, float)", asFUNCTION(CharacterAnimationController_SetTargetRotationAmount), asCALL_CDECL_OBJLAST);
+    engine->RegisterObjectMethod("CharacterAnimationController", "void SetTargetRotationBalance(const String&in, float)", asFUNCTION(CharacterAnimationController_SetTargetRotationBalance), asCALL_CDECL_OBJLAST);
 }
 
 }

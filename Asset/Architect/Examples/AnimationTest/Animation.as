@@ -44,6 +44,8 @@ class DirectionBlender
 class Animator : ScriptObject
 {
     bool useCharacterAnimation = false;
+    float footRotationAmount = 0;
+    float footRotationGlobal = 0.5;
     
     Vector3 _prevPosition;
     float _idleTimer;
@@ -151,15 +153,21 @@ class Animator : ScriptObject
         updateAnimation(animController, animLeft, weightLeft, scaledVelocity.length, Fract(time - 0.066666), epsilon);
         updateAnimation(animController, animRight, weightRight, scaledVelocity.length, Fract(time + 0.1), epsilon);
         
-        CharacterAnimationController@ characterAnimController = animController;
-        if (characterAnimController !is null)
+        // animController.type == StringHash("CharacterAnimationController")
+        if (animController !is null && animController.typeName == "CharacterAnimationController")
         {
+            CharacterAnimationController@ characterAnimController = animController;
             Node@ groundControl = node.GetChild("control:Ground");
             if (groundControl !is null)
             {
                 characterAnimController.SetTargetTransform("LeftFoot", groundControl.transform);
                 characterAnimController.SetTargetTransform("RightFoot", groundControl.transform);
             }
+
+            characterAnimController.SetTargetRotationAmount("LeftFoot", footRotationAmount);
+            characterAnimController.SetTargetRotationAmount("RightFoot", footRotationAmount);
+            characterAnimController.SetTargetRotationBalance("LeftFoot", footRotationGlobal);
+            characterAnimController.SetTargetRotationBalance("RightFoot", footRotationGlobal);
         }
     }
 
