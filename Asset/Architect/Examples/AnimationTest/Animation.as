@@ -208,7 +208,7 @@ class Animator : ScriptObject
         case 4:
         {
             int dirIndex = int(_movementTime / movementScale) % 2;
-            Vector3 dir = dirIndex == 0 ? Vector3(-1, 0, 1) : Vector3(1, 0, -1);
+            Vector3 dir = dirIndex == 0 ? Vector3(-1, 0, -1).Normalized() : Vector3(1, 0, 1).Normalized();
             node.position = node.position + dir * movementVelocity * timeStep;
             break;
         }
