@@ -737,6 +737,17 @@ void CharacterAnimationController::RegisterObject(Context* context)
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Skeleton", GetSkeletonAttr, SetSkeletonAttr, ResourceRef, ResourceRef(XMLFile::GetTypeStatic()), AM_DEFAULT);
 }
 
+void CharacterAnimationController::SetTargetTransform(StringHash segment, const Matrix3x4& transform)
+{
+    Segment2State& state = segment2states_[segment];
+    state.targetTransform_ = transform;
+}
+
+void CharacterAnimationController::CleanSegment2(StringHash segment)
+{
+    segment2states_.Erase(segment);
+}
+
 void CharacterAnimationController::Update(float timeStep)
 {
     AnimationController::Update(timeStep);
@@ -823,12 +834,11 @@ void CharacterAnimationController::UpdateSegment2(const CharacterSkeletonSegment
     const float thighLength = (thighNode->GetWorldPosition() - calfNode->GetWorldPosition()).Length();
     const float calfLength = (calfNode->GetWorldPosition() - heelNode->GetWorldPosition()).Length();
 
-    // #TODO Fix
-    Vector3 groundNormal_ = Vector3::UP;
-    Vector3 groundOffset_ = Vector3::ZERO;
+    // Get state
+    const Segment2State& state = segment2states_[segment.name_];
 
     // Resolve foot shape
-    Vector3 newHeelPosition = node_->GetWorldTransform() * (Quaternion(Vector3::UP, groundNormal_) * keyFrame.heelPosition_ + groundOffset_);
+    Vector3 newHeelPosition = node_->GetWorldTransform() * state.targetTransform_ * keyFrame.heelPosition_;
     const Vector3 jointDirection = Quaternion(baseDirection, newHeelPosition - thighNode->GetWorldPosition()) * keyFrame.kneeDirection_;
     const Vector3 newCalfPosition = ResolveKneePosition(thighNode->GetWorldPosition(), newHeelPosition, jointDirection,
         thighLength, calfLength);
@@ -849,7 +859,7 @@ void CharacterAnimationController::UpdateSegment2(const CharacterSkeletonSegment
     // Resolve heel rotation
     const Quaternion origHeelRotation = calfNode->GetWorldRotation() * keyFrame.heelRotationLocal_;
     const Quaternion fixedHeelRotation = node_->GetWorldRotation() * keyFrame.heelRotationWorld_;
-    const Quaternion adjustToGoundRotation = Quaternion::IDENTITY.Slerp(Quaternion(Vector3::UP, groundNormal_), adjustToGround_);
+    const Quaternion adjustToGoundRotation = Quaternion::IDENTITY.Slerp(state.targetTransform_.Rotation(), adjustToGround_);
     heelNode->SetWorldRotation(adjustToGoundRotation * origHeelRotation.Slerp(fixedHeelRotation, adjustFoot_));
 
     thighNode->MarkDirty();

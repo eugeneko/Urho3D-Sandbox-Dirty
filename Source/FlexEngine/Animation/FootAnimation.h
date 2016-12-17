@@ -207,6 +207,11 @@ public:
     /// Register object factory.
     static void RegisterObject(Context* context);
 
+    /// Set target transform of segment.
+    void SetTargetTransform(StringHash segment, const Matrix3x4& transform);
+    /// Clean up segment configuration.
+    void CleanSegment2(StringHash segment);
+
     /// Update the animations. Is called from HandleScenePostUpdate().
     virtual void Update(float timeStep) override;
     /// Apply animations.
@@ -225,6 +230,8 @@ private:
     /// State of 2-segment.
     struct Segment2State
     {
+        /// Transform of target point.
+        Matrix3x4 targetTransform_;
     };
 
 private:
@@ -232,6 +239,8 @@ private:
     SharedPtr<CharacterSkeleton> skeleton_;
     /// Cached animations.
     HashMap<StringHash, SharedPtr<CharacterAnimation>> animationCache_;
+    /// States.
+    HashMap<StringHash, Segment2State> segment2states_;
 
 };
 

@@ -48,7 +48,6 @@ class Animator : ScriptObject
     Vector3 _prevPosition;
     float _idleTimer;
     bool _idleCasted;
-    WeightBlender _weightBlender;
     DirectionBlender _directionBlender;
     
     AnimationController@ GetAnimationController()
@@ -69,13 +68,6 @@ class Animator : ScriptObject
             animModel.skeleton.GetBone("swat:RightLeg").animated = false;
             animModel.skeleton.GetBone("swat:RightFoot").animated = false;
         }
-        
-        /*animModel.skeleton.GetBone("swat:LeftShoulder").animated = false;
-        animModel.skeleton.GetBone("swat:LeftArm").animated = false;
-        animModel.skeleton.GetBone("swat:LeftForeArm").animated = false;
-        animModel.skeleton.GetBone("swat:RightShoulder").animated = false;
-        animModel.skeleton.GetBone("swat:RightArm").animated = false;
-        animModel.skeleton.GetBone("swat:RightForeArm").animated = false;*/
         
         _prevPosition = node.position;
         _idleTimer = 0;
@@ -100,7 +92,6 @@ class Animator : ScriptObject
             {
                 animController.Play(anim, 0, true);
                 animController.SetTime(anim, time);
-                //Print(anim + ":" + time);
             }
         }
         animController.SetSpeed(anim, speed);
@@ -152,22 +143,6 @@ class Animator : ScriptObject
         {
             animController.Play(animIdle, 0, true);
             animController.SetWeight(animIdle, weightIdle);
-            
-            /*animController.Play("Swat_WalkFwd2.ani", 0, true);
-            animController.SetWeight("Swat_WalkFwd2.ani", weightIdle / 4);
-            animController.SetSpeed("Swat_WalkFwd2.ani", 0);
-            
-            animController.Play("Swat_WalkBwd2.ani", 0, true);
-            animController.SetWeight("Swat_WalkBwd2.ani", weightIdle / 4);
-            animController.SetSpeed("Swat_WalkBwd2.ani", 0);
-            
-            animController.Play("Swat_WalkLeft2.ani", 0, true);
-            animController.SetWeight("Swat_WalkLeft2.ani", weightIdle / 4);
-            animController.SetSpeed("Swat_WalkLeft2.ani", 0);
-            
-            animController.Play("Swat_WalkRight2.ani", 0, true);
-            animController.SetWeight("Swat_WalkRight2.ani", weightIdle / 4);
-            animController.SetSpeed("Swat_WalkRight2.ani", 0);*/
         }
         
         float time = _directionBlender.time;
@@ -175,8 +150,20 @@ class Animator : ScriptObject
         updateAnimation(animController, animBwd, weightBwd, scaledVelocity.length, Fract(time + 0.066666), epsilon);
         updateAnimation(animController, animLeft, weightLeft, scaledVelocity.length, Fract(time - 0.066666), epsilon);
         updateAnimation(animController, animRight, weightRight, scaledVelocity.length, Fract(time + 0.1), epsilon);
+        
+        CharacterAnimationController@ characterAnimController = animController;
+        if (characterAnimController !is null)
+        {
+            Node@ groundControl = node.GetChild("control:Ground");
+            if (groundControl !is null)
+            {
+                characterAnimController.SetTargetTransform("LeftFoot", groundControl.transform);
+                characterAnimController.SetTargetTransform("RightFoot", groundControl.transform);
+            }
+        }
     }
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
     int movementType = 0;
     float movementScale = 5.0;
     float movementVelocity = 1.0;

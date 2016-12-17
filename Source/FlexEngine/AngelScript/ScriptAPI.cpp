@@ -340,6 +340,19 @@ void RegisterCharacterAnimation(asIScriptEngine* engine)
     engine->RegisterGlobalFunction("bool ImportCharacterAnimation(const String&in, CharacterSkeleton@+, Model@+)", asFUNCTION(ImportCharacterAnimation), asCALL_CDECL);
 }
 
+void CharacterAnimationController_SetTargetTransform(const String& segment, const Matrix3x4& transform,
+    CharacterAnimationController* characterAnimationController)
+{
+    characterAnimationController->SetTargetTransform(segment, transform);
+}
+
+void RegisterCharacterAnimationController(asIScriptEngine* engine)
+{
+    RegisterComponent<CharacterAnimationController>(engine, "CharacterAnimationController");
+    RegisterSubclass<CharacterAnimationController, AnimationController>(engine, "AnimationController", "CharacterAnimationController");
+
+    engine->RegisterObjectMethod("CharacterAnimationController", "void SetTargetTransform(const String&in, const Matrix3x4&in)", asFUNCTION(CharacterAnimationController_SetTargetTransform), asCALL_CDECL_OBJLAST);
+}
 
 }
 
@@ -380,6 +393,7 @@ void RegisterAPI(asIScriptEngine* engine)
 
     RegisterCharacterSkeleton(engine);
     RegisterCharacterAnimation(engine);
+    RegisterCharacterAnimationController(engine);
 
     engine->RegisterGlobalFunction("Animation@+ BlendAnimations(Model@+, CharacterSkeleton@+, Array<Animation@>@+, Array<float>@+, Array<float>@+, Array<float>@+)", asFUNCTION(BlendAnimations_wrapper), asCALL_CDECL);
 }
