@@ -1,43 +1,52 @@
 class DirectionBlender
 {
-    void set_threshold(float threshold) { threshold_ = threshold; }
     void set_switchSpeed(float switchSpeed) { switchSpeed_ = switchSpeed; }
-    void set_targetDirection(Vector2 targetDirection) { targetDirection_ = targetDirection; }
-    Vector2 get_direction() { return direction_; }
-    float get_time() { return time_; }
+    void set_pendingDirection(Vector2 pendingDirection) { pendingDirection_ = pendingDirection; }
+    Vector2 get_pendingDirection() const { return pendingDirection_; }
+    
+    Vector4 get_weights() const { return getCurrentWeights(); }
 
     void Update(float timeStep, float timeRate)
     {
-        bool forceFast = direction_.length < epsilon_ || targetDirection_.length < epsilon_;
-        bool fastSwitch = forceFast || direction_.Angle(targetDirection_) <= threshold_;
-        if (fastSwitch)
-            move(targetDirection_, timeStep, timeRate);
-        else
+        // Start new interpolation
+        if (!isInterpolating_ && (firstDirection_ - pendingDirection_).length > epsilon_)
         {
-            float remaining = move(Vector2(0, 0), timeStep, timeRate);
-            if (remaining > 0)
-                move(targetDirection_, remaining, timeRate);
+            isInterpolating_ = true;
+            interpolateFactor_ = 0;
+            secondDirection_ = pendingDirection_;
+        }
+        
+        // Interpolate
+        if (isInterpolating_)
+        {
+            interpolateFactor_ += timeStep * switchSpeed_;
+            if (interpolateFactor_ >= 1)
+            {
+                firstDirection_ = secondDirection_;
+                isInterpolating_ = false;
+            }
         }
     }
     
-    private float move(Vector2 target, float timeStep, float timeRate)
+    // Return (Forward, Backward, Left, Right)
+    private Vector4 getWeights(Vector2 direction) const
     {
-        Vector2 delta = target - direction_;
-        float usedTime = Min(timeStep, delta.length / switchSpeed_);
-        time_ += timeStep * timeRate;
-        direction_ += delta.Normalized() * usedTime * switchSpeed_;
-        if (direction_.length < epsilon_)
-            time_ = 0;
-        return timeStep - usedTime;
+        return Vector4(Max(0.0, direction.y), Max(0.0, -direction.y), Max(0.0, direction.x), Max(0.0, -direction.x));
+    }
+    
+    private Vector4 getCurrentWeights() const
+    {
+        return isInterpolating_ ? (getWeights(firstDirection_) * (1 - interpolateFactor_) +  getWeights(secondDirection_) * interpolateFactor_) : getWeights(firstDirection_);
     }
 
     float epsilon_ = 0.0001;
-    float threshold_ = 1;
     float switchSpeed_ = 1;
     
-    Vector2 direction_ = Vector2(0, 0);
-    Vector2 targetDirection_ = Vector2(0, 0);
-    float time_ = 0;
+    Vector2 firstDirection_;
+    Vector2 secondDirection_;
+    float interpolateFactor_ = -1;
+    bool isInterpolating_ = false;
+    Vector2 pendingDirection_;
 };
 
 
@@ -46,6 +55,7 @@ class Animator : ScriptObject
     bool useCharacterAnimation = false;
     float footRotationAmount = 0;
     float footRotationGlobal = 0.5;
+    float footOffset = 0;
     
     Vector3 _prevPosition;
     float _idleTimer;
@@ -75,9 +85,8 @@ class Animator : ScriptObject
         _idleTimer = 0;
         _idleCasted = false;
         
-        _directionBlender.threshold = 120;
         _directionBlender.switchSpeed = 3;
-        _directionBlender.targetDirection = Vector2(0, 0);
+        _directionBlender.pendingDirection = Vector2(0, 0);
     }
 
     void Update(float timeStep)
@@ -86,23 +95,25 @@ class Animator : ScriptObject
         ApplyMovement(timeStep);
     }
     
-    private void updateAnimation(AnimationController@ animController, const String &in anim, float weight, float speed, float time, float epsilon)
+    private float computeDistance(float time1, float length1, float time2, float length2)
+    {
+        float dist1 = time2 - time1;
+        float dist2 = time1 < time2 ? time2 - (time1 + length1) : (time2 + length2) - time1;
+        return Abs(dist1) < Abs(dist2) ? dist1 : dist2;
+    }
+    
+    private void updateAnimation(AnimationController@ animController, const String &in anim, float weight, float speed, float epsilon)
     {
         if (weight > epsilon)
-        {
-            //if (animController.GetWeight(anim) < epsilon)
-            {
-                animController.Play(anim, 0, true);
-                animController.SetTime(anim, time);
-            }
-        }
+            animController.Play(anim, 0, true);
         animController.SetSpeed(anim, speed);
         animController.SetWeight(anim, weight);
     }
+    
     void UpdateController(float timeStep)
     {
         float idleTimeout = 0.5;
-        String animIdle = "Objects/Swat/WalkZero.ani";
+        String animIdle = "Objects/Swat/Idle.ani";
         String animFwd = "Objects/Swat/WalkFwd.ani";
         String animBwd = "Objects/Swat/WalkBwd.ani";
         String animLeft = "Objects/Swat/WalkLeft.ani";
@@ -118,13 +129,13 @@ class Animator : ScriptObject
             if (!_idleCasted && _idleTimer <= 0)
             {
                 _idleCasted = true;
-                _directionBlender.targetDirection = Vector2(0, 0);
+                _directionBlender.pendingDirection = Vector2(0, 0);
             }
         }
         else
         {
             Vector2 direction = Vector2(scaledVelocity.x, -scaledVelocity.z) / (Abs(scaledVelocity.x) + Abs(scaledVelocity.z));
-            _directionBlender.targetDirection = direction;
+            _directionBlender.pendingDirection = direction;
             
             _idleTimer = idleTimeout;
             _idleCasted = false;
@@ -133,23 +144,72 @@ class Animator : ScriptObject
         if (_idleTimer > 0) _idleTimer -= timeStep;
         _directionBlender.Update(timeStep, scaledVelocity.length);
 
-        Vector2 direction = _directionBlender.direction;
-        float weightIdle = 1 - Abs(direction.x) - Abs(direction.y);
-        float weightFwd = Max(0.0, direction.y);
-        float weightBwd = Max(0.0, -direction.y);
-        float weightLeft = Max(0.0, direction.x);
-        float weightRight = Max(0.0, -direction.x);
+        Vector4 weight = _directionBlender.weights;
+        float weightSum = weight.DotProduct(Vector4(1, 1, 1, 1));
+        if (weightSum > 1)
+        {
+            weight /= weightSum;
+            weightSum = 1;
+        }
+
+        float weightIdle = 1 - weightSum;
+        float weightFwd = weight.x;
+        float weightBwd = weight.y;
+        float weightLeft = weight.z;
+        float weightRight = weight.w;
         
         float epsilon = 0.0001;
         if (weightIdle > epsilon)
             animController.Play(animIdle, 0, true);
         animController.SetWeight(animIdle, weightIdle);
         
-        float time = _directionBlender.time;
-        updateAnimation(animController, animFwd, weightFwd, scaledVelocity.length, Fract(time), epsilon);
-        updateAnimation(animController, animBwd, weightBwd, scaledVelocity.length, Fract(time + 0.066666), epsilon);
-        updateAnimation(animController, animLeft, weightLeft, scaledVelocity.length, Fract(time - 0.066666), epsilon);
-        updateAnimation(animController, animRight, weightRight, scaledVelocity.length, Fract(time + 0.1), epsilon);
+        updateAnimation(animController, animFwd, weightFwd, scaledVelocity.length, epsilon);
+        updateAnimation(animController, animBwd, weightBwd, scaledVelocity.length, epsilon);
+        updateAnimation(animController, animLeft, weightLeft, scaledVelocity.length, epsilon);
+        updateAnimation(animController, animRight, weightRight, scaledVelocity.length, epsilon);
+        
+        // Synchronize mainstream
+        float syncFactor = 0.2;
+        Vector2 dir = _directionBlender.pendingDirection;
+        String mainstreamY = dir.y > 0 ? animFwd : dir.y < 0 ? animBwd : "";
+        String mainstreamX = dir.x > 0 ? animLeft : dir.x < 0 ? animRight : "";
+        if (!mainstreamY.empty && !mainstreamX.empty && animController.GetWeight(mainstreamY) > 0 && animController.GetWeight(mainstreamX))
+        {
+            float timeY = animController.GetTime(mainstreamY);
+            float timeX = animController.GetTime(mainstreamX);
+            float speedY = animController.GetSpeed(mainstreamY);
+            float speedX = animController.GetSpeed(mainstreamX);
+            if (timeX != timeY && speedX == speedY)
+            {
+                float lengthY = animController.GetLength(mainstreamY);
+                float lengthX = animController.GetLength(mainstreamX);
+
+                float dist = computeDistance(timeY, lengthY, timeX, lengthX);
+                if (dist < 0)
+                {
+                    float future = speedY * (1 - syncFactor) * timeStep;
+                    if (future >= Abs(dist))
+                    {
+                        Print("Snap! " + future + " < " + Abs(dist));
+                        animController.SetTime(mainstreamY, timeX);
+                    }
+                    else
+                        animController.SetSpeed(mainstreamY, speedY * syncFactor);
+                }
+                else
+                {
+                    float future = speedX * (1 - syncFactor) * timeStep;
+                    if (future >= Abs(dist))
+                    {
+                        Print("Snap! " + future + " < " + Abs(dist));
+                        animController.SetTime(mainstreamX, timeY);
+                    }
+                    else
+                        animController.SetSpeed(mainstreamX, speedX * syncFactor);
+                }
+                Print(timeY + "/" + timeX);
+            }  
+        }
         
         // animController.type == StringHash("CharacterAnimationController")
         if (animController !is null && animController.typeName == "CharacterAnimationController")
@@ -158,8 +218,13 @@ class Animator : ScriptObject
             Node@ groundControl = node.GetChild("control:Ground");
             if (groundControl !is null)
             {
-                characterAnimController.SetTargetTransform("LeftFoot", groundControl.transform);
-                characterAnimController.SetTargetTransform("RightFoot", groundControl.transform);
+                //Vector3 
+                //Quaternion rotateOffset(Vector3(1, 0, 0), Vector3(direction.x, 0, direction.y));
+                Quaternion rotateOffset;
+                Matrix3x4 leftOffset(rotateOffset * Vector3(footOffset, 0, 0), Quaternion(), Vector3(1, 1, 1));
+                Matrix3x4 rightOffset(rotateOffset * Vector3(-footOffset, 0, 0), Quaternion(), Vector3(1, 1, 1));
+                characterAnimController.SetTargetTransform("LeftFoot", groundControl.transform * leftOffset);
+                characterAnimController.SetTargetTransform("RightFoot", groundControl.transform * rightOffset);
             }
 
             characterAnimController.SetTargetRotationAmount("LeftFoot", footRotationAmount);
@@ -219,6 +284,13 @@ class Animator : ScriptObject
             }
             node.position = node.position + _movementDirection * movementVelocity * timeStep;
             _movementRemainingTime -= timeStep;
+            break;
+        }
+        case 6:
+        {
+            int dirIndex = int(_movementTime / movementScale) % 2;
+            Vector3 dir = dirIndex == 0 ? Vector3(0, 0, 1) : Vector3(1, 0, 1).Normalized();
+            node.position = node.position + dir * movementVelocity * timeStep;
             break;
         }
         }
