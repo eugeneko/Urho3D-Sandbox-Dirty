@@ -142,10 +142,8 @@ class Animator : ScriptObject
         
         float epsilon = 0.0001;
         if (weightIdle > epsilon)
-        {
             animController.Play(animIdle, 0, true);
-            animController.SetWeight(animIdle, weightIdle);
-        }
+        animController.SetWeight(animIdle, weightIdle);
         
         float time = _directionBlender.time;
         updateAnimation(animController, animFwd, weightFwd, scaledVelocity.length, Fract(time), epsilon);

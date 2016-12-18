@@ -431,7 +431,8 @@ Vector3 ResolveKneePosition(const Vector3& thighPosition, const Vector3& targetH
     float radius;
     IntersectSphereSphereGuaranteed(Sphere(thighPosition, thighLength), Sphere(targetHeelPosition, calfLength), distance, radius);
     const Vector3 direction = (targetHeelPosition - thighPosition).Normalized();
-    return thighPosition + direction * distance + jointDirection.Normalized() * radius;
+    const Vector3 orthoJointDirection = direction.CrossProduct(jointDirection).CrossProduct(direction).Normalized();
+    return thighPosition + direction * distance + orthoJointDirection * radius;
 }
 
 //////////////////////////////////////////////////////////////////////////
