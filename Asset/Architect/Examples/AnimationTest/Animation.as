@@ -85,7 +85,7 @@ class Animator : ScriptObject
         _idleTimer = 0;
         _idleCasted = false;
         
-        _directionBlender.switchSpeed = 3;
+        _directionBlender.switchSpeed = 4;
         _directionBlender.pendingDirection = Vector2(0, 0);
     }
 
@@ -173,7 +173,7 @@ class Animator : ScriptObject
         Vector2 dir = _directionBlender.pendingDirection;
         String mainstreamY = dir.y > 0 ? animFwd : dir.y < 0 ? animBwd : "";
         String mainstreamX = dir.x > 0 ? animLeft : dir.x < 0 ? animRight : "";
-        if (!mainstreamY.empty && !mainstreamX.empty && animController.GetWeight(mainstreamY) > 0 && animController.GetWeight(mainstreamX))
+        if (!mainstreamY.empty && !mainstreamX.empty && animController.GetWeight(mainstreamY) > 0 && animController.GetWeight(mainstreamX) > 0)
         {
             float timeY = animController.GetTime(mainstreamY);
             float timeX = animController.GetTime(mainstreamX);
@@ -189,10 +189,7 @@ class Animator : ScriptObject
                 {
                     float future = speedY * (1 - syncFactor) * timeStep;
                     if (future >= Abs(dist))
-                    {
-                        Print("Snap! " + future + " < " + Abs(dist));
                         animController.SetTime(mainstreamY, timeX);
-                    }
                     else
                         animController.SetSpeed(mainstreamY, speedY * syncFactor);
                 }
@@ -200,14 +197,10 @@ class Animator : ScriptObject
                 {
                     float future = speedX * (1 - syncFactor) * timeStep;
                     if (future >= Abs(dist))
-                    {
-                        Print("Snap! " + future + " < " + Abs(dist));
                         animController.SetTime(mainstreamX, timeY);
-                    }
                     else
                         animController.SetSpeed(mainstreamX, speedX * syncFactor);
                 }
-                Print(timeY + "/" + timeX);
             }  
         }
         
