@@ -129,6 +129,7 @@
 			<attribute name="footOffset" value="0" />
 			<attribute name="movementType" value="1" />
 			<attribute name="movementScale" value="5" />
+			<attribute name="movementVelocity" value="1.8" />
 		</component>
 		<node id="240">
 			<attribute name="Is Enabled" value="true" />

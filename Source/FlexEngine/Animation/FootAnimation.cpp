@@ -852,8 +852,8 @@ void CharacterAnimationController::UpdateSegment2(const CharacterSkeletonSegment
 
     // Resolve foot shape
     Vector3 newHeelPosition = node_->GetWorldTransform() * state.targetTransform_ * keyFrame.heelPosition_;
-    const Vector3 jointDirection = Quaternion(baseDirection, newHeelPosition - thighNode->GetWorldPosition()) * keyFrame.kneeDirection_;
-    const Vector3 newCalfPosition = ResolveKneePosition(thighNode->GetWorldPosition(), newHeelPosition, jointDirection,
+    const Vector3 jointDirection = Quaternion(node_->GetWorldRotation() * baseDirection, newHeelPosition - thighNode->GetWorldPosition()) * keyFrame.kneeDirection_;
+    const Vector3 newCalfPosition = ResolveKneePosition(thighNode->GetWorldPosition(), newHeelPosition, node_->GetWorldRotation() * jointDirection,
         thighLength, calfLength);
 
     // Apply foot shape

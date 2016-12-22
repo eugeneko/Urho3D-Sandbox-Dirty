@@ -28,7 +28,7 @@ class DirectionBlender
         }
     }
     
-    // Return (Forward, Backward, Left, Right)
+    // Return (Forward, Backward, Left, Right) weights.
     private Vector4 getWeights(Vector2 direction) const
     {
         return Vector4(Max(0.0, direction.y), Max(0.0, -direction.y), Max(0.0, direction.x), Max(0.0, -direction.x));
@@ -120,8 +120,8 @@ class Animator : ScriptObject
         String animRight = "Objects/Swat/WalkRight.ani";
         
         AnimationController@ animController = GetAnimationController();
-        Vector3 velocity = (node.position - _prevPosition) / timeStep;
-        _prevPosition = node.position;
+        Vector3 velocity = node.rotation.Inverse() * (node.worldPosition - _prevPosition) / timeStep;
+        _prevPosition = node.worldPosition;
         
         Vector3 scaledVelocity = velocity / 1.7;
         if ((scaledVelocity * Vector3(1, 0, 1)).length < 0.01)
