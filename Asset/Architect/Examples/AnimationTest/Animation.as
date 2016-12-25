@@ -16,7 +16,6 @@ class DirectionBlender
             Vector4 weightDelta = delta / deltaLength * Min(deltaLength, timeStep * switchSpeed_);
             weights_ += weightDelta;
         }
-        Print(weights_.x + "/" + weights_.y + "/" + weights_.z + "/" + weights_.w);
     }
     
     // Return (Forward, Backward, Left, Right) weights.
@@ -68,7 +67,7 @@ class Animator : ScriptObject
         _idleTimer = 0;
         _idleCasted = false;
         
-        _directionBlender.switchSpeed = 3;
+        _directionBlender.switchSpeed = 5;
         _directionBlender.pendingDirection = Vector2(0, 0);
     }
 
@@ -95,7 +94,7 @@ class Animator : ScriptObject
     
     void UpdateController(float timeStep)
     {
-        float idleTimeout = 0.1;
+        float idleTimeout = 0.05;
         String animIdle = "Objects/Swat/Idle.ani";
         String animFwd = "Objects/Swat/WalkFwd.ani";
         String animBwd = "Objects/Swat/WalkBwd.ani";
@@ -118,7 +117,6 @@ class Animator : ScriptObject
         else
         {
             Vector2 direction = Vector2(scaledVelocity.x, -scaledVelocity.z) / (Abs(scaledVelocity.x) + Abs(scaledVelocity.z));
-            Print(direction.x + "/" + direction.y);
             _directionBlender.pendingDirection = direction;
             
             _idleTimer = idleTimeout;
@@ -143,10 +141,7 @@ class Animator : ScriptObject
         float weightRight = weight.w;
         
         float epsilon = 0.0001;
-        if (weightIdle > epsilon)
-            animController.Play(animIdle, 0, true);
-        animController.SetWeight(animIdle, weightIdle);
-        
+        updateAnimation(animController, animIdle, weightIdle, 1, epsilon);
         updateAnimation(animController, animFwd, weightFwd, scaledVelocity.length, epsilon);
         updateAnimation(animController, animBwd, weightBwd, scaledVelocity.length, epsilon);
         updateAnimation(animController, animLeft, weightLeft, scaledVelocity.length, epsilon);
@@ -195,13 +190,8 @@ class Animator : ScriptObject
             Node@ groundControl = node.GetChild("control:Ground");
             if (groundControl !is null)
             {
-                //Vector3 
-                //Quaternion rotateOffset(Vector3(1, 0, 0), Vector3(direction.x, 0, direction.y));
-                Quaternion rotateOffset;
-                Matrix3x4 leftOffset(rotateOffset * Vector3(footOffset, 0, 0), Quaternion(), Vector3(1, 1, 1));
-                Matrix3x4 rightOffset(rotateOffset * Vector3(-footOffset, 0, 0), Quaternion(), Vector3(1, 1, 1));
-                characterAnimController.SetTargetTransform("LeftFoot", groundControl.transform * leftOffset);
-                characterAnimController.SetTargetTransform("RightFoot", groundControl.transform * rightOffset);
+                characterAnimController.SetTargetTransform("LeftFoot", groundControl.transform);
+                characterAnimController.SetTargetTransform("RightFoot", groundControl.transform);
             }
 
             characterAnimController.SetTargetRotationAmount("LeftFoot", footRotationAmount);
