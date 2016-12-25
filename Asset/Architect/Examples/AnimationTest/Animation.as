@@ -202,7 +202,7 @@ class Animator : ScriptObject
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////
-    int movementType = 0;
+    String movementType = 0;
     float movementScale = 5.0;
     float movementVelocity = 1.0;
     
@@ -213,9 +213,7 @@ class Animator : ScriptObject
     {
         Node@ parent = node.parent;
         _movementTime += timeStep;
-        switch (movementType)
-        {
-        case 0:
+        if (movementType == "Control")
         {
             Vector3 dir;
             if (input.keyDown['I']) dir += Vector3(0, 0, 1);
@@ -223,61 +221,51 @@ class Animator : ScriptObject
             if (input.keyDown['J']) dir += Vector3(-1, 0, 0);
             if (input.keyDown['L']) dir += Vector3(1, 0, 0);
             parent.position = parent.position + dir.Normalized() * movementVelocity * timeStep;
-            break;
         }
-        case 1:
-        {
-            int dirIndex = int(_movementTime / movementScale) % 4;
-            Vector3 dir = dirIndex == 0 ? Vector3(1, 0, 0) : dirIndex == 1 ? Vector3(0, 0, 1) : dirIndex == 2 ? Vector3(-1, 0, 0) : Vector3(0, 0, -1);
-            parent.position = parent.position + dir * movementVelocity * timeStep;
-            break;
-        }
-        case 2:
-        {
-            int dirIndex = int(_movementTime / movementScale) % 2;
-            Vector3 dir = dirIndex == 0 ? Vector3(0, 0, 1) : Vector3(0, 0, -1);
-            parent.position = parent.position + dir * movementVelocity * timeStep;
-            break;
-        }
-        case 3:
-        {
-            int dirIndex = int(_movementTime / movementScale) % 2;
-            Vector3 dir = dirIndex == 0 ? Vector3(-1, 0, 1).Normalized() : Vector3(1, 0, -1).Normalized();
-            parent.position = parent.position + dir * movementVelocity * timeStep;
-            break;
-        }
-        case 4:
-        {
-            int dirIndex = int(_movementTime / movementScale) % 2;
-            Vector3 dir = dirIndex == 0 ? Vector3(-1, 0, -1).Normalized() : Vector3(1, 0, 1).Normalized();
-            parent.position = parent.position + dir * movementVelocity * timeStep;
-            break;
-        }
-        case 5:
+        else if (movementType == "Walk")
         {
             if (_movementRemainingTime < 0)
             {
                 _movementRemainingTime = Random(3.0, 4.0);
                 _movementDirection = Vector3(Random(-1, 1), 0.0, Random(-1, 1)).Normalized();
             }
+            if (parent.position.x < -20 && _movementDirection.x < 0) _movementDirection.x *= -1;
+            if (parent.position.x >  20 && _movementDirection.x > 0) _movementDirection.x *= -1;
+            if (parent.position.z < -20 && _movementDirection.z < 0) _movementDirection.z *= -1;
+            if (parent.position.z >  20 && _movementDirection.z > 0) _movementDirection.z *= -1;
+
             parent.position = parent.position + _movementDirection * movementVelocity * timeStep;
             _movementRemainingTime -= timeStep;
-            break;
         }
-        case 6:
+        else if (movementType == "Path_Quad")
+        {
+            int dirIndex = int(_movementTime / movementScale) % 4;
+            Vector3 dir = dirIndex == 0 ? Vector3(1, 0, 0) : dirIndex == 1 ? Vector3(0, 0, 1) : dirIndex == 2 ? Vector3(-1, 0, 0) : Vector3(0, 0, -1);
+            parent.position = parent.position + dir * movementVelocity * timeStep;
+        }
+        else if (movementType == "Path_FB")
+        {
+            int dirIndex = int(_movementTime / movementScale) % 2;
+            Vector3 dir = dirIndex == 0 ? Vector3(0, 0, 1) : Vector3(0, 0, -1);
+            parent.position = parent.position + dir * movementVelocity * timeStep;
+        }
+        else if (movementType == "Path_DiagA")
+        {
+            int dirIndex = int(_movementTime / movementScale) % 2;
+            Vector3 dir = dirIndex == 0 ? Vector3(-1, 0, 1).Normalized() : Vector3(1, 0, -1).Normalized();
+            parent.position = parent.position + dir * movementVelocity * timeStep;
+        }
+        else if (movementType == "Path_DiagB")
+        {
+            int dirIndex = int(_movementTime / movementScale) % 2;
+            Vector3 dir = dirIndex == 0 ? Vector3(1, 0, 1).Normalized() : Vector3(-1, 0, -1).Normalized();
+            parent.position = parent.position + dir * movementVelocity * timeStep;
+        }
+        else if (movementType == "Path_FS")
         {
             int dirIndex = int(_movementTime / movementScale) % 2;
             Vector3 dir = dirIndex == 0 ? Vector3(0, 0, 1) : Vector3(1, 0, 1).Normalized();
             parent.position = parent.position + dir * movementVelocity * timeStep;
-            break;
-        }
-        case 7:
-        {
-            int dirIndex = int(_movementTime / movementScale) % 2;
-            Vector3 dir = dirIndex == 0 ? Vector3(0, 0, 1) : Vector3(1, 0, 0);
-            parent.position = parent.position + dir * movementVelocity * timeStep;
-            break;
-        }
         }
     }
 }

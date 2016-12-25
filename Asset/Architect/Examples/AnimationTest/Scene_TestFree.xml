@@ -135,7 +135,7 @@
 				<attribute name="footRotationAmount" value="0" />
 				<attribute name="footRotationGlobal" value="0.5" />
 				<attribute name="footOffset" value="0" />
-				<attribute name="movementType" value="0" />
+				<attribute name="movementType" value="Control" />
 				<attribute name="movementScale" value="5" />
 				<attribute name="movementVelocity" value="1.8" />
 			</component>

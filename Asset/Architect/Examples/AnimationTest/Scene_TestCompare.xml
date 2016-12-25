@@ -18,7 +18,7 @@
 		<attribute name="Name" value="Light" />
 		<attribute name="Tags" />
 		<attribute name="Position" value="0 0 0" />
-		<attribute name="Rotation" value="0.939693 0.34202 0 0" />
+		<attribute name="Rotation" value="-1.75089e-07 -5.58794e-08 0.939694 -0.342021" />
 		<attribute name="Scale" value="1 1 1" />
 		<attribute name="Variables" />
 		<component type="Light" id="5">
@@ -134,7 +134,7 @@
 				<attribute name="footRotationAmount" value="0" />
 				<attribute name="footRotationGlobal" value="0.5" />
 				<attribute name="footOffset" value="0" />
-				<attribute name="movementType" value="3" />
+				<attribute name="movementType" value="Path_DiagB" />
 				<attribute name="movementScale" value="5" />
 				<attribute name="movementVelocity" value="1.8" />
 			</component>
@@ -740,7 +740,7 @@
 				<attribute name="footRotationAmount" value="0" />
 				<attribute name="footRotationGlobal" value="0.5" />
 				<attribute name="footOffset" value="0" />
-				<attribute name="movementType" value="3" />
+				<attribute name="movementType" value="Path_DiagB" />
 				<attribute name="movementScale" value="5" />
 				<attribute name="movementVelocity" value="1.8" />
 			</component>
@@ -1346,7 +1346,7 @@
 				<attribute name="footRotationAmount" value="0" />
 				<attribute name="footRotationGlobal" value="0.8" />
 				<attribute name="footOffset" value="0" />
-				<attribute name="movementType" value="3" />
+				<attribute name="movementType" value="Path_DiagB" />
 				<attribute name="movementScale" value="5" />
 				<attribute name="movementVelocity" value="1.8" />
 			</component>
