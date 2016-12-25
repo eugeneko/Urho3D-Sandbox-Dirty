@@ -4,28 +4,19 @@ class DirectionBlender
     void set_pendingDirection(Vector2 pendingDirection) { pendingDirection_ = pendingDirection; }
     Vector2 get_pendingDirection() const { return pendingDirection_; }
     
-    Vector4 get_weights() const { return getCurrentWeights(); }
+    Vector4 get_weights() const { return weights_; }
 
-    void Update(float timeStep, float timeRate)
+    void Update(float timeStep)
     {
-        // Start new interpolation
-        if (!isInterpolating_ && (firstDirection_ - pendingDirection_).length > epsilon_)
+        Vector4 pendingWeights = getWeights(pendingDirection_);
+        Vector4 delta = pendingWeights - weights_;
+        float deltaLength = Sqrt(delta.DotProduct(delta));
+        if (deltaLength > epsilon_)
         {
-            isInterpolating_ = true;
-            interpolateFactor_ = 0;
-            secondDirection_ = pendingDirection_;
+            Vector4 weightDelta = delta / deltaLength * Min(deltaLength, timeStep * switchSpeed_);
+            weights_ += weightDelta;
         }
-        
-        // Interpolate
-        if (isInterpolating_)
-        {
-            interpolateFactor_ += timeStep * switchSpeed_;
-            if (interpolateFactor_ >= 1)
-            {
-                firstDirection_ = secondDirection_;
-                isInterpolating_ = false;
-            }
-        }
+        Print(weights_.x + "/" + weights_.y + "/" + weights_.z + "/" + weights_.w);
     }
     
     // Return (Forward, Backward, Left, Right) weights.
@@ -33,20 +24,12 @@ class DirectionBlender
     {
         return Vector4(Max(0.0, direction.y), Max(0.0, -direction.y), Max(0.0, direction.x), Max(0.0, -direction.x));
     }
-    
-    private Vector4 getCurrentWeights() const
-    {
-        return isInterpolating_ ? (getWeights(firstDirection_) * (1 - interpolateFactor_) +  getWeights(secondDirection_) * interpolateFactor_) : getWeights(firstDirection_);
-    }
 
     float epsilon_ = 0.0001;
     float switchSpeed_ = 1;
     
-    Vector2 firstDirection_;
-    Vector2 secondDirection_;
-    float interpolateFactor_ = -1;
-    bool isInterpolating_ = false;
     Vector2 pendingDirection_;
+    Vector4 weights_;
 };
 
 
@@ -85,7 +68,7 @@ class Animator : ScriptObject
         _idleTimer = 0;
         _idleCasted = false;
         
-        _directionBlender.switchSpeed = 4;
+        _directionBlender.switchSpeed = 3;
         _directionBlender.pendingDirection = Vector2(0, 0);
     }
 
@@ -112,7 +95,7 @@ class Animator : ScriptObject
     
     void UpdateController(float timeStep)
     {
-        float idleTimeout = 0.5;
+        float idleTimeout = 0.1;
         String animIdle = "Objects/Swat/Idle.ani";
         String animFwd = "Objects/Swat/WalkFwd.ani";
         String animBwd = "Objects/Swat/WalkBwd.ani";
@@ -135,6 +118,7 @@ class Animator : ScriptObject
         else
         {
             Vector2 direction = Vector2(scaledVelocity.x, -scaledVelocity.z) / (Abs(scaledVelocity.x) + Abs(scaledVelocity.z));
+            Print(direction.x + "/" + direction.y);
             _directionBlender.pendingDirection = direction;
             
             _idleTimer = idleTimeout;
@@ -142,7 +126,7 @@ class Animator : ScriptObject
         }
                 
         if (_idleTimer > 0) _idleTimer -= timeStep;
-        _directionBlender.Update(timeStep, scaledVelocity.length);
+        _directionBlender.Update(timeStep);
 
         Vector4 weight = _directionBlender.weights;
         float weightSum = weight.DotProduct(Vector4(1, 1, 1, 1));
@@ -237,35 +221,46 @@ class Animator : ScriptObject
     Vector3 _movementDirection;
     void ApplyMovement(float timeStep)
     {
+        Node@ parent = node.parent;
         _movementTime += timeStep;
         switch (movementType)
         {
+        case 0:
+        {
+            Vector3 dir;
+            if (input.keyDown['I']) dir += Vector3(0, 0, 1);
+            if (input.keyDown['K']) dir += Vector3(0, 0, -1);
+            if (input.keyDown['J']) dir += Vector3(-1, 0, 0);
+            if (input.keyDown['L']) dir += Vector3(1, 0, 0);
+            parent.position = parent.position + dir.Normalized() * movementVelocity * timeStep;
+            break;
+        }
         case 1:
         {
             int dirIndex = int(_movementTime / movementScale) % 4;
             Vector3 dir = dirIndex == 0 ? Vector3(1, 0, 0) : dirIndex == 1 ? Vector3(0, 0, 1) : dirIndex == 2 ? Vector3(-1, 0, 0) : Vector3(0, 0, -1);
-            node.position = node.position + dir * movementVelocity * timeStep;
+            parent.position = parent.position + dir * movementVelocity * timeStep;
             break;
         }
         case 2:
         {
             int dirIndex = int(_movementTime / movementScale) % 2;
             Vector3 dir = dirIndex == 0 ? Vector3(0, 0, 1) : Vector3(0, 0, -1);
-            node.position = node.position + dir * movementVelocity * timeStep;
+            parent.position = parent.position + dir * movementVelocity * timeStep;
             break;
         }
         case 3:
         {
             int dirIndex = int(_movementTime / movementScale) % 2;
             Vector3 dir = dirIndex == 0 ? Vector3(-1, 0, 1).Normalized() : Vector3(1, 0, -1).Normalized();
-            node.position = node.position + dir * movementVelocity * timeStep;
+            parent.position = parent.position + dir * movementVelocity * timeStep;
             break;
         }
         case 4:
         {
             int dirIndex = int(_movementTime / movementScale) % 2;
             Vector3 dir = dirIndex == 0 ? Vector3(-1, 0, -1).Normalized() : Vector3(1, 0, 1).Normalized();
-            node.position = node.position + dir * movementVelocity * timeStep;
+            parent.position = parent.position + dir * movementVelocity * timeStep;
             break;
         }
         case 5:
@@ -275,7 +270,7 @@ class Animator : ScriptObject
                 _movementRemainingTime = Random(3.0, 4.0);
                 _movementDirection = Vector3(Random(-1, 1), 0.0, Random(-1, 1)).Normalized();
             }
-            node.position = node.position + _movementDirection * movementVelocity * timeStep;
+            parent.position = parent.position + _movementDirection * movementVelocity * timeStep;
             _movementRemainingTime -= timeStep;
             break;
         }
@@ -283,7 +278,14 @@ class Animator : ScriptObject
         {
             int dirIndex = int(_movementTime / movementScale) % 2;
             Vector3 dir = dirIndex == 0 ? Vector3(0, 0, 1) : Vector3(1, 0, 1).Normalized();
-            node.position = node.position + dir * movementVelocity * timeStep;
+            parent.position = parent.position + dir * movementVelocity * timeStep;
+            break;
+        }
+        case 7:
+        {
+            int dirIndex = int(_movementTime / movementScale) % 2;
+            Vector3 dir = dirIndex == 0 ? Vector3(0, 0, 1) : Vector3(1, 0, 0);
+            parent.position = parent.position + dir * movementVelocity * timeStep;
             break;
         }
         }
