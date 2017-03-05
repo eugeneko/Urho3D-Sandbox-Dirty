@@ -6,9 +6,9 @@
 	<attribute name="Snap Threshold" value="5" />
 	<attribute name="Elapsed Time" value="0" />
 	<attribute name="Next Replicated Node ID" value="145" />
-	<attribute name="Next Replicated Component ID" value="223" />
-	<attribute name="Next Local Node ID" value="16777316" />
-	<attribute name="Next Local Component ID" value="16778416" />
+	<attribute name="Next Replicated Component ID" value="224" />
+	<attribute name="Next Local Node ID" value="16777318" />
+	<attribute name="Next Local Component ID" value="16778440" />
 	<attribute name="Variables" />
 	<attribute name="Variable Names" value="" />
 	<component type="Octree" id="1" />
@@ -38,6 +38,11 @@
 	</component>
 	<component type="WindSystem" id="39">
 		<attribute name="Pulse Frequency" value="0.25" />
+	</component>
+	<component type="Zone" id="223">
+		<attribute name="Bounding Box Min" value="-1000 -1000 -1000" />
+		<attribute name="Bounding Box Max" value="1000 1000 1000" />
+		<attribute name="Ambient Color" value="0.4 0.4 0.4 1" />
 	</component>
 	<node id="76">
 		<attribute name="Is Enabled" value="true" />
@@ -121,7 +126,7 @@
 						<variant type="Int" value="-662911500" />
 						<variant type="Int" value="-662911500" />
 					</attribute>
-					<attribute name="Hash" value="-2131052376" />
+					<attribute name="Hash" value="816899448" />
 					<attribute name="Destination Model" value="Model;Objects/WhiteTree/Branch3m.mdl" />
 				</component>
 				<component type="TreeLevelOfDetail" id="174">
@@ -147,7 +152,7 @@
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<component type="BranchGroup" id="176">
-						<attribute name="Hash" value="1421020264" />
+						<attribute name="Hash" value="1422113212" />
 						<attribute name="Frequency" value="0" />
 						<attribute name="Relative Size" value="false" />
 						<attribute name="Growth Scale" value="1 0.5" />
@@ -163,7 +168,7 @@
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<component type="BranchGroup" id="178">
-							<attribute name="Hash" value="-2044229980" />
+							<attribute name="Hash" value="865815690" />
 							<attribute name="Spawn Mode" value="Absolute" />
 							<attribute name="Frequency" value="8" />
 							<attribute name="Growth Location" value="0.3 1" />
@@ -185,7 +190,7 @@
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<component type="BranchGroup" id="179">
-								<attribute name="Hash" value="711024622" />
+								<attribute name="Hash" value="1743850003" />
 								<attribute name="Spawn Mode" value="Absolute" />
 								<attribute name="Frequency" value="6" />
 								<attribute name="Growth Location" value="0.1 1" />
@@ -207,7 +212,7 @@
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<component type="BranchGroup" id="180">
-									<attribute name="Hash" value="-240472922" />
+									<attribute name="Hash" value="-1866850996" />
 									<attribute name="Spawn Mode" value="Absolute" />
 									<attribute name="Frequency" value="9" />
 									<attribute name="Growth Location" value="0.1 1" />
@@ -287,7 +292,7 @@
 						<variant type="Int" value="-662693532" />
 						<variant type="Int" value="-662693532" />
 					</attribute>
-					<attribute name="Hash" value="862801754" />
+					<attribute name="Hash" value="166552756" />
 					<attribute name="Destination Model" value="Model;Objects/WhiteTree/Tree29A.mdl" />
 					<attribute name="Main Wind" value="0.2" />
 					<attribute name="Turbulence Magnitude" value="0.12" />
@@ -322,11 +327,10 @@
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<component type="BranchGroup" id="188">
-						<attribute name="Hash" value="1416490826" />
+						<attribute name="Hash" value="1718732416" />
 						<attribute name="Frequency" value="0" />
 						<attribute name="Growth Scale" value="29 1" />
 						<attribute name="Branch Material" value="Material;Objects/WhiteTree/BarkA.xml" />
-						<attribute name="UV Scale" value="1 4" />
 						<attribute name="Quality" value="3" />
 						<attribute name="Radius" value="0.25 0.02" />
 						<attribute name="Resistance" value="0.8" />
@@ -341,7 +345,7 @@
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<component type="BranchGroup" id="189">
-							<attribute name="Hash" value="1086233733" />
+							<attribute name="Hash" value="1218960015" />
 							<attribute name="Spawn Mode" value="Absolute" />
 							<attribute name="Frequency" value="11" />
 							<attribute name="Growth Location" value="0.15 0.7" />
@@ -349,7 +353,6 @@
 							<attribute name="Growth Scale" value="0.3 0.3" />
 							<attribute name="Growth Angle" value="40 60" />
 							<attribute name="Branch Material" value="Material;Objects/WhiteTree/BarkA.xml" />
-							<attribute name="UV Scale" value="1 4" />
 							<attribute name="Fake Ending" value="true" />
 							<attribute name="Gravity Intensity" value="5" />
 							<attribute name="Wind Main" value="0.2" />
@@ -365,7 +368,7 @@
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<component type="BranchGroup" id="190">
-								<attribute name="Hash" value="748854067" />
+								<attribute name="Hash" value="1551491191" />
 								<attribute name="Spawn Mode" value="Absolute" />
 								<attribute name="Frequency" value="3" />
 								<attribute name="Growth Location" value="0.2 0.4" />
@@ -373,7 +376,6 @@
 								<attribute name="Growth Scale" value="0.4 0.5" />
 								<attribute name="Growth Angle" value="60 60" />
 								<attribute name="Branch Material" value="Material;Objects/WhiteTree/BarkA.xml" />
-								<attribute name="UV Scale" value="1 4" />
 								<attribute name="Fake Ending" value="true" />
 								<attribute name="Gravity Intensity" value="10" />
 								<attribute name="Wind Main" value="0.1" />
@@ -388,7 +390,7 @@
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<component type="BranchGroup" id="191">
-									<attribute name="Hash" value="-774592698" />
+									<attribute name="Hash" value="1937782522" />
 									<attribute name="Spawn Mode" value="Absolute" />
 									<attribute name="Frequency" value="2" />
 									<attribute name="Growth Location" value="0.2 0.4" />
@@ -396,7 +398,6 @@
 									<attribute name="Growth Scale" value="0.4 0.5" />
 									<attribute name="Growth Angle" value="60 60" />
 									<attribute name="Branch Material" value="Material;Objects/WhiteTree/BarkA.xml" />
-									<attribute name="UV Scale" value="1 4" />
 									<attribute name="Fake Ending" value="true" />
 									<attribute name="Gravity Intensity" value="10" />
 									<attribute name="Wind Turbulence" value="1" />
@@ -452,7 +453,7 @@
 						<variant type="Int" value="-662693532" />
 						<variant type="Int" value="-662693532" />
 					</attribute>
-					<attribute name="Hash" value="1493472283" />
+					<attribute name="Hash" value="240545490" />
 					<attribute name="Destination Model" value="Model;Objects/WhiteTree/Tree19A.mdl" />
 					<attribute name="Main Wind" value="0.2" />
 					<attribute name="Turbulence Magnitude" value="0.12" />
@@ -487,11 +488,10 @@
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<component type="BranchGroup" id="198">
-						<attribute name="Hash" value="1278293733" />
+						<attribute name="Hash" value="232838043" />
 						<attribute name="Frequency" value="0" />
 						<attribute name="Growth Scale" value="19 1" />
 						<attribute name="Branch Material" value="Material;Objects/WhiteTree/BarkA.xml" />
-						<attribute name="UV Scale" value="1 4" />
 						<attribute name="Quality" value="3" />
 						<attribute name="Radius" value="0.17 0.015" />
 						<attribute name="Resistance" value="0.7" />
@@ -506,7 +506,7 @@
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<component type="BranchGroup" id="199">
-							<attribute name="Hash" value="1281651936" />
+							<attribute name="Hash" value="235242835" />
 							<attribute name="Spawn Mode" value="Absolute" />
 							<attribute name="Frequency" value="7" />
 							<attribute name="Growth Location" value="0.15 0.7" />
@@ -514,7 +514,6 @@
 							<attribute name="Growth Scale" value="0.3 0.3" />
 							<attribute name="Growth Angle" value="60 60" />
 							<attribute name="Branch Material" value="Material;Objects/WhiteTree/BarkA.xml" />
-							<attribute name="UV Scale" value="1 4" />
 							<attribute name="Fake Ending" value="true" />
 							<attribute name="Gravity Intensity" value="5" />
 							<attribute name="Wind Main" value="0.2" />
@@ -530,7 +529,7 @@
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<component type="BranchGroup" id="200">
-								<attribute name="Hash" value="430814082" />
+								<attribute name="Hash" value="-1386163657" />
 								<attribute name="Spawn Mode" value="Absolute" />
 								<attribute name="Frequency" value="3" />
 								<attribute name="Growth Location" value="0.2 0.4" />
@@ -538,7 +537,6 @@
 								<attribute name="Growth Scale" value="0.4 0.5" />
 								<attribute name="Growth Angle" value="60 60" />
 								<attribute name="Branch Material" value="Material;Objects/WhiteTree/BarkA.xml" />
-								<attribute name="UV Scale" value="1 4" />
 								<attribute name="Fake Ending" value="true" />
 								<attribute name="Gravity Intensity" value="1" />
 								<attribute name="Wind Main" value="0.1" />
@@ -553,7 +551,7 @@
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<component type="BranchGroup" id="201">
-									<attribute name="Hash" value="1489466210" />
+									<attribute name="Hash" value="370090740" />
 									<attribute name="Spawn Mode" value="Absolute" />
 									<attribute name="Frequency" value="1" />
 									<attribute name="Growth Location" value="0.2 0.4" />
@@ -561,7 +559,6 @@
 									<attribute name="Growth Scale" value="0.4 0.5" />
 									<attribute name="Growth Angle" value="60 60" />
 									<attribute name="Branch Material" value="Material;Objects/WhiteTree/BarkA.xml" />
-									<attribute name="UV Scale" value="1 4" />
 									<attribute name="Fake Ending" value="true" />
 									<attribute name="Gravity Intensity" value="1" />
 									<attribute name="Wind Turbulence" value="1" />
@@ -617,7 +614,7 @@
 						<variant type="Int" value="-662693532" />
 						<variant type="Int" value="-662693532" />
 					</attribute>
-					<attribute name="Hash" value="2004600875" />
+					<attribute name="Hash" value="907476733" />
 					<attribute name="Destination Model" value="Model;Objects/WhiteTree/Tree11A.mdl" />
 					<attribute name="Main Wind" value="0.2" />
 					<attribute name="Turbulence Magnitude" value="0.12" />
@@ -652,11 +649,10 @@
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<component type="BranchGroup" id="208">
-						<attribute name="Hash" value="-776264584" />
+						<attribute name="Hash" value="-1249964146" />
 						<attribute name="Frequency" value="0" />
 						<attribute name="Growth Scale" value="11 1" />
 						<attribute name="Branch Material" value="Material;Objects/WhiteTree/BarkA.xml" />
-						<attribute name="UV Scale" value="1 4" />
 						<attribute name="Quality" value="3" />
 						<attribute name="Radius" value="0.11 0.01" />
 						<attribute name="Resistance" value="0.6" />
@@ -671,7 +667,7 @@
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<component type="BranchGroup" id="209">
-							<attribute name="Hash" value="-2060280417" />
+							<attribute name="Hash" value="-1602742817" />
 							<attribute name="Spawn Mode" value="Absolute" />
 							<attribute name="Frequency" value="8" />
 							<attribute name="Growth Location" value="0.2 0.7" />
@@ -679,7 +675,6 @@
 							<attribute name="Growth Scale" value="0.2 0.2" />
 							<attribute name="Growth Angle" value="30 60" />
 							<attribute name="Branch Material" value="Material;Objects/WhiteTree/BarkA.xml" />
-							<attribute name="UV Scale" value="1 4" />
 							<attribute name="Fake Ending" value="true" />
 							<attribute name="Gravity Intensity" value="5" />
 							<attribute name="Wind Main" value="0.2" />
@@ -735,7 +730,7 @@
 						<variant type="Int" value="-662693532" />
 						<variant type="Int" value="-662693532" />
 					</attribute>
-					<attribute name="Hash" value="384810906" />
+					<attribute name="Hash" value="815261702" />
 					<attribute name="Destination Model" value="Model;Objects/WhiteTree/Tree5A.mdl" />
 					<attribute name="Main Wind" value="0.2" />
 					<attribute name="Turbulence Magnitude" value="0.12" />
@@ -770,11 +765,10 @@
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<component type="BranchGroup" id="216">
-						<attribute name="Hash" value="1162829146" />
+						<attribute name="Hash" value="-781542403" />
 						<attribute name="Frequency" value="0" />
 						<attribute name="Growth Scale" value="5 1" />
 						<attribute name="Branch Material" value="Material;Objects/WhiteTree/BarkA.xml" />
-						<attribute name="UV Scale" value="1 4" />
 						<attribute name="Quality" value="3" />
 						<attribute name="Radius" value="0.06 0.01" />
 						<attribute name="Wind Main" value="0.5" />
@@ -788,7 +782,7 @@
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<component type="BranchGroup" id="217">
-							<attribute name="Hash" value="1293419147" />
+							<attribute name="Hash" value="1676943068" />
 							<attribute name="Spawn Mode" value="Absolute" />
 							<attribute name="Frequency" value="4" />
 							<attribute name="Growth Location" value="0.2 0.5" />
@@ -796,7 +790,6 @@
 							<attribute name="Growth Scale" value="0.2 0.2" />
 							<attribute name="Growth Angle" value="60 70" />
 							<attribute name="Branch Material" value="Material;Objects/WhiteTree/BarkA.xml" />
-							<attribute name="UV Scale" value="1 4" />
 							<attribute name="Fake Ending" value="true" />
 							<attribute name="Gravity Intensity" value="10" />
 							<attribute name="Wind Main" value="0.2" />
@@ -899,6 +892,7 @@
 			<attribute name="Variables" />
 			<component type="Light" id="5">
 				<attribute name="Light Type" value="Directional" />
+				<attribute name="Color" value="0.6 0.6 0.6 1" />
 				<attribute name="Cast Shadows" value="true" />
 			</component>
 		</node>
