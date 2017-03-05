@@ -21,6 +21,7 @@ cmake_policy (SET CMP0020 OLD)
 
 set (CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMake/Modules)
 set (URHO3D_HOME ${CMAKE_SOURCE_DIR}/../Urho3D)
+set (URHO3D_EDITOR_HOME ${CMAKE_SOURCE_DIR}/../Urho3DEditor CACHE PATH "Path to Urho3D Editor")
 set (URHO3D_SOURCE ${URHO3D_HOME}_source)
 
 file(COPY ${URHO3D_SOURCE}/CMake DESTINATION ${CMAKE_SOURCE_DIR})
@@ -54,3 +55,24 @@ source_group ("Natvis" FILES ${CMAKE_SOURCE_DIR}/Urho3D.natvis)
 
 set (TARGET_NAME FlexEnginePlayer)
 setup_main_executable ()
+
+#
+# Setup Qt
+#
+
+set (CMAKE_INCLUDE_CURRENT_DIR ON)
+set (CMAKE_AUTOMOC ON)
+find_package (Qt5Core)
+
+#
+# Setup Editor
+#
+
+add_subdirectory (${URHO3D_EDITOR_HOME}/Source/Urho3DEditor ${CMAKE_BINARY_DIR}/Urho3D-Editor)
+include_directories (${URHO3D_EDITOR_HOME}/Source)
+
+set (SOURCE_FILES ${CMAKE_SOURCE_DIR}/EditorSource/Main.cpp)
+qt5_add_resources(SOURCE_FILES ${URHO3D_EDITOR_HOME}/Resources/QDarkStyle/QDarkStyle.qrc ${URHO3D_EDITOR_HOME}/Resources/Editor/Editor.qrc)
+set (TARGET_NAME Editor)
+setup_main_executable ()
+target_link_libraries (Editor Urho3DEditor)
