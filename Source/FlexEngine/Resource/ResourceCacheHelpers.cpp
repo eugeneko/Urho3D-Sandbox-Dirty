@@ -65,7 +65,7 @@ bool SaveResource(Resource& resource, bool reloadAfter)
     CreateDirectoriesToFile(*cache, outputFileName);
 
     // Save file
-    if (resource.Save(outputFileName))
+    if (resource.SaveFile(outputFileName))
     {
         // Reload resource
         if (reloadAfter)

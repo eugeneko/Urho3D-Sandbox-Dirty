@@ -70,15 +70,15 @@ SharedPtr<Texture2D> RenderViews(Context* context, unsigned width, unsigned heig
         for (const ViewDescription& desc : views)
         {
             // Construct scene
-            Scene scene(context);
-            Octree* octree = scene.CreateComponent<Octree>();
-            Zone* zone = scene.CreateComponent<Zone>();
+            SharedPtr<Scene> scene(new Scene(context));
+            Octree* octree = scene->CreateComponent<Octree>();
+            Zone* zone = scene->CreateComponent<Zone>();
             zone->SetAmbientColor(Color(1.0f, 1.0f, 1.0f));
             zone->SetFogColor(Color::TRANSPARENT);
             zone->SetBoundingBox(BoundingBox(
                 Vector3(-M_LARGE_VALUE, -M_LARGE_VALUE, -M_LARGE_VALUE), Vector3(M_LARGE_VALUE, M_LARGE_VALUE, M_LARGE_VALUE)));
-            scene.AddChild(desc.node_);
-            scene.AddChild(desc.camera_);
+            scene->AddChild(desc.node_);
+            scene->AddChild(desc.camera_);
 
             // Get camera
             Camera* camera = desc.camera_->GetComponent<Camera>();
@@ -93,7 +93,7 @@ SharedPtr<Texture2D> RenderViews(Context* context, unsigned width, unsigned heig
             viewport.SetCamera(camera);
             viewport.SetRect(desc.viewport_);
             viewport.SetRenderPath(desc.renderPath_);
-            viewport.SetScene(&scene);
+            viewport.SetScene(scene);
 
             // Render scene
             View view(context);
@@ -101,8 +101,8 @@ SharedPtr<Texture2D> RenderViews(Context* context, unsigned width, unsigned heig
             view.Update(FrameInfo());
             view.Render();
 
-            scene.RemoveChild(desc.node_);
-            scene.RemoveChild(desc.camera_);
+            scene->RemoveChild(desc.node_);
+            scene->RemoveChild(desc.camera_);
         }
         graphics->EndFrame();
     }

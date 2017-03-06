@@ -1,17 +1,22 @@
 #include <FlexEngine/AngelScript/ScriptAPI.h>
 
+#include <FlexEngine/Animation/FootAnimation.h>
 #include <FlexEngine/Factory/ModelFactory.h>
 #include <FlexEngine/Factory/ScriptedResource.h>
 #include <FlexEngine/Factory/TextureFactory.h>
 #include <FlexEngine/Math/PoissonRandom.h>
+#include <FlexEngine/Math/WeightBlender.h>
+#include <FlexEngine/Resource/ResourceCacheHelpers.h>
 
 #include <Urho3D/AngelScript/APITemplates.h>
 #include <Urho3D/AngelScript/Script.h>
+#include <Urho3D/Graphics/Animation.h>
 #include <Urho3D/Graphics/Model.h>
 #include <Urho3D/Graphics/Octree.h>
 #include <Urho3D/Graphics/OctreeQuery.h>
 #include <Urho3D/Graphics/Terrain.h>
 #include <Urho3D/Resource/Image.h>
+#include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/Node.h>
 #include <Urho3D/Scene/Scene.h>
 
@@ -196,6 +201,12 @@ Texture2D* Image_GetTexture2D(const Image* image)
     return ConvertImageToTexture(image).Detach();
 }
 
+Animation* BlendAnimations_wrapper(Model* model, CharacterSkeleton* skeleton, CScriptArray* animations, CScriptArray* weights, CScriptArray* offsets, CScriptArray* timestamps)
+{
+    return !model ? nullptr : BlendAnimations(*model, skeleton, ArrayToPODVector<Animation*>(animations),
+        ArrayToPODVector<float>(weights), ArrayToPODVector<float>(offsets), ArrayToPODVector<float>(timestamps)).Detach();
+}
+
 static const float TODO_poissonStep = 0.05f;
 const PointCloud2DNorm& TODO_GetDefaultCloud()
 {
@@ -256,6 +267,107 @@ void RegisterScriptContext(asIScriptEngine* engine, const char* name)
     engine->RegisterObjectMethod(name, "void Clear()", asFUNCTION(ScriptContext_ClearItems), asCALL_CDECL_OBJLAST);
 }
 
+void WeightBlender_Contruct(WeightBlender* ptr)
+{
+    new(ptr) WeightBlender();
+}
+
+void WeightBlender_Desturct(WeightBlender* ptr)
+{
+    ptr->~WeightBlender();
+}
+
+void WeightBlender_SetWeight(const String& key, float weight, float fadeTime, WeightBlender* ptr)
+{
+    ptr->SetWeight(key, weight, fadeTime);
+}
+
+float WeightBlender_GetWeight(const String& key, const WeightBlender* ptr)
+{
+    return ptr->GetWeight(key);
+}
+
+float WeightBlender_GetNormalizedWeight(const String& key, const WeightBlender* ptr)
+{
+    return ptr->GetNormalizedWeight(key);
+}
+
+void RegisterWeightBlender(asIScriptEngine* engine)
+{
+    engine->RegisterObjectType("WeightBlender", sizeof(WeightBlender), asOBJ_VALUE);
+    engine->RegisterObjectBehaviour("WeightBlender", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(WeightBlender_Contruct), asCALL_CDECL_OBJLAST);
+    engine->RegisterObjectBehaviour("WeightBlender", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(WeightBlender_Desturct), asCALL_CDECL_OBJLAST);
+    engine->RegisterObjectMethod("WeightBlender", "void SetWeight(const String&in, float, float=0)", asFUNCTION(WeightBlender_SetWeight), asCALL_CDECL_OBJLAST);
+    engine->RegisterObjectMethod("WeightBlender", "float GetWeight(const String&in) const", asFUNCTION(WeightBlender_GetWeight), asCALL_CDECL_OBJLAST);
+    engine->RegisterObjectMethod("WeightBlender", "float GetNormalizedWeight(const String&in) const", asFUNCTION(WeightBlender_GetNormalizedWeight), asCALL_CDECL_OBJLAST);
+    engine->RegisterObjectMethod("WeightBlender", "void Update(float, bool=false)", asMETHOD(WeightBlender, Update), asCALL_THISCALL);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void RegisterCharacterSkeleton(asIScriptEngine* engine)
+{
+    RegisterResource<CharacterSkeleton>(engine, "CharacterSkeleton");
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool CharacterAnimation_ImportAnimation(CharacterSkeleton* characterSkeleton, Model* model, Animation* animation,
+    CharacterAnimation* characterAnimation)
+{
+    return characterSkeleton && model && animation
+        ? characterAnimation->ImportAnimation(*characterSkeleton, *model, *animation)
+        : nullptr;
+}
+
+bool ImportCharacterAnimation(const String& animationName, CharacterSkeleton* characterSkeleton, Model* model)
+{
+    ResourceCache* cache = GetScriptContext()->GetSubsystem<ResourceCache>();
+    Animation* animation = cache->GetResource<Animation>(animationName);
+    CharacterAnimation characterAnimation(GetScriptContext());;
+    if (animation && characterSkeleton && model)
+    {
+        characterAnimation.SetName(animationName + ".xml");
+        if (characterAnimation.ImportAnimation(*characterSkeleton, *model, *animation))
+            return SaveResource(characterAnimation);
+    }
+    return false;
+}
+
+void RegisterCharacterAnimation(asIScriptEngine* engine)
+{
+    RegisterResource<CharacterAnimation>(engine, "CharacterAnimation");
+    engine->RegisterObjectMethod("CharacterAnimation", "bool ImportAnimation(CharacterSkeleton@+, Model@+, Animation@+)", asFUNCTION(CharacterAnimation_ImportAnimation), asCALL_CDECL_OBJLAST);
+
+    engine->RegisterGlobalFunction("bool ImportCharacterAnimation(const String&in, CharacterSkeleton@+, Model@+)", asFUNCTION(ImportCharacterAnimation), asCALL_CDECL);
+}
+
+void CharacterAnimationController_SetTargetTransform(const String& segment, const Matrix3x4& transform,
+    CharacterAnimationController* characterAnimationController)
+{
+    characterAnimationController->SetTargetTransform(segment, transform);
+}
+
+void CharacterAnimationController_SetTargetRotationAmount(const String& segment, float rotationAmount,
+    CharacterAnimationController* characterAnimationController)
+{
+    characterAnimationController->SetTargetRotationAmount(segment, rotationAmount);
+}
+
+void CharacterAnimationController_SetTargetRotationBalance(const String& segment, float globalFactor,
+    CharacterAnimationController* characterAnimationController)
+{
+    characterAnimationController->SetTargetRotationBalance(segment, globalFactor);
+}
+
+void RegisterCharacterAnimationController(asIScriptEngine* engine)
+{
+    RegisterComponent<CharacterAnimationController>(engine, "CharacterAnimationController");
+    RegisterSubclass<CharacterAnimationController, AnimationController>(engine, "AnimationController", "CharacterAnimationController");
+
+    engine->RegisterObjectMethod("CharacterAnimationController", "void SetTargetTransform(const String&in, const Matrix3x4&in)", asFUNCTION(CharacterAnimationController_SetTargetTransform), asCALL_CDECL_OBJLAST);
+    engine->RegisterObjectMethod("CharacterAnimationController", "void SetTargetRotationAmount(const String&in, float)", asFUNCTION(CharacterAnimationController_SetTargetRotationAmount), asCALL_CDECL_OBJLAST);
+    engine->RegisterObjectMethod("CharacterAnimationController", "void SetTargetRotationBalance(const String&in, float)", asFUNCTION(CharacterAnimationController_SetTargetRotationBalance), asCALL_CDECL_OBJLAST);
+}
+
 }
 
 void RegisterAPI(asIScriptEngine* engine)
@@ -289,7 +401,15 @@ void RegisterAPI(asIScriptEngine* engine)
     engine->RegisterObjectMethod("Image", "void FillGaps(uint=0)", asFUNCTION(Image_FillGaps), asCALL_CDECL_OBJLAST);
     engine->RegisterObjectMethod("Image", "Texture2D@+ GetTexture2D() const", asFUNCTION(Image_GetTexture2D), asCALL_CDECL_OBJLAST);
 
+    RegisterWeightBlender(engine);
+
     engine->RegisterGlobalFunction("void TODO_CoverTerrainWithObjects(Node@+, Node@+, XMLFile@+, float, float, const Vector2&in, const Vector2&in)", asFUNCTION(TODO_CoverTerrainWithObjects), asCALL_CDECL);
+
+    RegisterCharacterSkeleton(engine);
+    RegisterCharacterAnimation(engine);
+    RegisterCharacterAnimationController(engine);
+
+    engine->RegisterGlobalFunction("Animation@+ BlendAnimations(Model@+, CharacterSkeleton@+, Array<Animation@>@+, Array<float>@+, Array<float>@+, Array<float>@+)", asFUNCTION(BlendAnimations_wrapper), asCALL_CDECL);
 }
 
 }

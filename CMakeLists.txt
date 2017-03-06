@@ -1,33 +1,35 @@
-# Set project name
 project (FlexEngine)
-set (TARGET_NAME FlexEngine)
+cmake_minimum_required(VERSION 3.2.3)
 
-# Set minimum version
-cmake_minimum_required (VERSION 2.8.6)
-if (COMMAND cmake_policy)
-    cmake_policy (SET CMP0003 NEW)
-    if (CMAKE_VERSION VERSION_GREATER 2.8.12 OR CMAKE_VERSION VERSION_EQUAL 2.8.12)
-        # INTERFACE_LINK_LIBRARIES defines the link interface
-        cmake_policy (SET CMP0022 NEW)
-    endif ()
-    if (CMAKE_VERSION VERSION_GREATER 3.0.0 OR CMAKE_VERSION VERSION_EQUAL 3.0.0)
-        # Disallow use of the LOCATION target property - therefore we set to OLD as we still need it
-        cmake_policy (SET CMP0026 OLD)
-        # MACOSX_RPATH is enabled by default
-        cmake_policy (SET CMP0042 NEW)
-    endif ()
-endif ()
+#
+# Setup CMake
+#
 
-# Set CMake modules search path
+cmake_policy (SET CMP0003 NEW)
+# INTERFACE_LINK_LIBRARIES defines the link interface
+cmake_policy (SET CMP0022 NEW)
+# Disallow use of the LOCATION target property - therefore we set to OLD as we still need it
+cmake_policy (SET CMP0026 OLD)
+# MACOSX_RPATH is enabled by default
+cmake_policy (SET CMP0042 NEW)
+# Automatically link Qt executables to qtmain target on Windows - don't need it.
+cmake_policy (SET CMP0020 OLD)
+
+#
+# Setup Urho3D
+#
+
 set (CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMake/Modules)
 set (URHO3D_HOME ${CMAKE_SOURCE_DIR}/../Urho3D)
 set (URHO3D_SOURCE ${URHO3D_HOME}_source)
 
-# Include Urho3D Cmake common module
 file(COPY ${URHO3D_SOURCE}/CMake DESTINATION ${CMAKE_SOURCE_DIR})
 include (Urho3D-CMake-common)
 
-# Define source files
+#
+# Setup Player
+#
+
 set (SOURCE_FOLDER ${CMAKE_SOURCE_DIR}/Source/)
 file (GLOB_RECURSE FLEX_SRC
     ${CMAKE_SOURCE_DIR}/*.natvis
@@ -37,7 +39,6 @@ file (GLOB_RECURSE FLEX_SRC
 include_directories (${SOURCE_FOLDER})
 set (SOURCE_FILES ${FLEX_SRC})
 
-# Setup folders
 foreach (SOURCE_FILE ${SOURCE_FILES})
     string (REPLACE "${SOURCE_FOLDER}" "" PATH ${SOURCE_FILE})
     get_filename_component (PATH ${PATH} PATH)
@@ -51,5 +52,5 @@ endforeach ()
 
 source_group ("Natvis" FILES ${CMAKE_SOURCE_DIR}/Urho3D.natvis)
 
-# Setup target with resource copying
+set (TARGET_NAME FlexEnginePlayer)
 setup_main_executable ()
