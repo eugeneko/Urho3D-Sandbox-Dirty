@@ -933,7 +933,7 @@
 			<attribute name="Variables" />
 			<component type="Skybox" id="222">
 				<attribute name="Model" value="Model;Models/Box.mdl" />
-				<attribute name="Material" value="Material;Textures/ThickCloudsWater/Material.xml" />
+				<attribute name="Material" value="Material;Materials/Skybox.xml" />
 			</component>
 		</node>
 	</node>
