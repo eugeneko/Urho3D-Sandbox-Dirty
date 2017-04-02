@@ -24,7 +24,7 @@ set (URHO3D_HOME ${CMAKE_SOURCE_DIR}/../Urho3D)
 set (URHO3D_SOURCE ${URHO3D_HOME}_source)
 
 file(COPY ${URHO3D_SOURCE}/CMake DESTINATION ${CMAKE_SOURCE_DIR})
-include (Urho3D-CMake-common)
+include (UrhoCommon)
 
 #
 # Setup Player
